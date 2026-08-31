@@ -438,27 +438,11 @@ function HomeView({
           ))}
         </div>
 
-        <div className="mt-12 rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm sm:flex sm:items-center sm:justify-between sm:p-8">
-          <div className="flex items-start gap-4">
-            <div className="rounded-2xl bg-amber-100 p-3 text-amber-800">
-              <Info size={20} />
-            </div>
-            <div>
-              <h3 className="font-display text-lg font-black text-slate-950">
-                Observed convergence, not proof
-              </h3>
-              <p className="mt-1 max-w-[730px] text-sm leading-6 text-slate-600">
-                The chart shows whether survey answers became more similar as
-                the self-reported persona depth changed. It does not prove that
-                added dimensions caused the change or that the persona is
-                accurate in every context.
-              </p>
-            </div>
-          </div>
+        <div className="mt-8 flex justify-end">
           <button
             type="button"
             onClick={onLicense}
-            className="mt-5 shrink-0 text-sm font-bold text-slate-600 underline decoration-slate-300 underline-offset-4 hover:text-slate-950 sm:ml-6 sm:mt-0"
+            className="text-sm font-bold text-slate-600 underline decoration-slate-300 underline-offset-4 hover:text-slate-950"
           >
             Sources and license
           </button>
