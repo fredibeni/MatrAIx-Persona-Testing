@@ -14,7 +14,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: 'Mirror Match - Persona Survey Lab',
-  description: 'Playful independent surveys for comparing Human and Persona answers.',
+  description:
+    'Local survey experiments for tracking how Agent answers converge as persona detail grows.',
 };
 
 export default function RootLayout({
