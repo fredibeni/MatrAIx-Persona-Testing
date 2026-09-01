@@ -985,6 +985,15 @@ function ResultView({
         </section>
 
         <div className="mx-auto mt-7 flex max-w-[900px] flex-wrap items-center justify-center gap-3 pb-14">
+          {!isAgent && (
+            <button
+              type="button"
+              onClick={onHumanChange}
+              className="secondary-button focus-ring"
+            >
+              <RotateCcw size={16} /> Retake benchmark
+            </button>
+          )}
           <button
             type="button"
             onClick={onHome}
@@ -992,23 +1001,13 @@ function ResultView({
           >
             <Home size={16} /> Results
           </button>
-          {isAgent ? (
-            hasCompletedHuman && (
-              <button
-                type="button"
-                onClick={onHistory}
-                className="secondary-button focus-ring"
-              >
-                <History size={16} /> Earlier run history
-              </button>
-            )
-          ) : (
+          {isAgent && hasCompletedHuman && (
             <button
               type="button"
-              onClick={onHumanChange}
+              onClick={onHistory}
               className="secondary-button focus-ring"
             >
-              <RotateCcw size={16} /> Retake benchmark
+              <History size={16} /> Earlier run history
             </button>
           )}
         </div>

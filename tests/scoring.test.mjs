@@ -267,6 +267,30 @@ assert.match(
   /onClick=\{onHumanChange\}[\s\S]*?<RotateCcw[\s\S]*?Retake benchmark/,
   'completed Human results must retain the Retake benchmark control',
 );
+const resultActionsStart = resultViewSource.indexOf(
+  'className="mx-auto mt-7 flex max-w-[900px]',
+);
+assert.ok(
+  resultActionsStart >= 0,
+  'the completed-result action row must remain discoverable',
+);
+const resultActionsSource = resultViewSource.slice(resultActionsStart);
+const retakeActionStart = resultActionsSource.indexOf(
+  'onClick={onHumanChange}',
+);
+const resultsActionStart = resultActionsSource.indexOf('onClick={onHome}');
+const historyActionStart = resultActionsSource.indexOf('onClick={onHistory}');
+assert.ok(
+  retakeActionStart >= 0 &&
+    resultsActionStart > retakeActionStart &&
+    historyActionStart > resultsActionStart,
+  'Human results must render Retake benchmark before Results while Agent results keep Results before Earlier run history',
+);
+assert.match(
+  resultActionsSource.slice(resultsActionStart, historyActionStart),
+  /isAgent[\s\S]*?hasCompletedHuman/,
+  'Earlier run history must remain limited to completed Agent comparisons',
+);
 const questionDetailsStart = validationPageSource.indexOf(
   '<details className="validation-question-details">',
 );

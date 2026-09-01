@@ -13715,22 +13715,26 @@ function Si({ survey: e, actor: t, run: n, agentRun: r, hasCompletedHuman: i, on
 				}),
 				/* @__PURE__ */ (0, z.jsxs)("div", {
 					className: "mx-auto mt-7 flex max-w-[900px] flex-wrap items-center justify-center gap-3 pb-14",
-					children: [/* @__PURE__ */ (0, z.jsxs)("button", {
-						type: "button",
-						onClick: s,
-						className: "secondary-button focus-ring",
-						children: [/* @__PURE__ */ (0, z.jsx)(A, { size: 16 }), " Results"]
-					}), l ? i && /* @__PURE__ */ (0, z.jsxs)("button", {
-						type: "button",
-						onClick: a,
-						className: "secondary-button focus-ring",
-						children: [/* @__PURE__ */ (0, z.jsx)(se, { size: 16 }), " Earlier run history"]
-					}) : /* @__PURE__ */ (0, z.jsxs)("button", {
-						type: "button",
-						onClick: o,
-						className: "secondary-button focus-ring",
-						children: [/* @__PURE__ */ (0, z.jsx)(ce, { size: 16 }), " Retake benchmark"]
-					})]
+					children: [
+						!l && /* @__PURE__ */ (0, z.jsxs)("button", {
+							type: "button",
+							onClick: o,
+							className: "secondary-button focus-ring",
+							children: [/* @__PURE__ */ (0, z.jsx)(ce, { size: 16 }), " Retake benchmark"]
+						}),
+						/* @__PURE__ */ (0, z.jsxs)("button", {
+							type: "button",
+							onClick: s,
+							className: "secondary-button focus-ring",
+							children: [/* @__PURE__ */ (0, z.jsx)(A, { size: 16 }), " Results"]
+						}),
+						l && i && /* @__PURE__ */ (0, z.jsxs)("button", {
+							type: "button",
+							onClick: a,
+							className: "secondary-button focus-ring",
+							children: [/* @__PURE__ */ (0, z.jsx)(se, { size: 16 }), " Earlier run history"]
+						})
+					]
 				})
 			]
 		})
