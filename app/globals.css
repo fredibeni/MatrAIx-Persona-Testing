@@ -1340,9 +1340,6 @@ button:disabled {
   grid-template-columns: auto minmax(180px, 280px);
   gap: 10px;
   margin-bottom: 13px;
-  border-radius: 15px;
-  background: var(--validation-surface);
-  padding: 13px;
 }
 
 .validation-embedded .validation-results-toolbar label {
