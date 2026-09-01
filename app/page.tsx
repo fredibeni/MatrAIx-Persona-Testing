@@ -723,13 +723,6 @@ function QuizView({
             >
               <ArrowLeft size={17} /> Previous
             </button>
-            <button
-              type="button"
-              onClick={onHome}
-              className="quiet-button focus-ring"
-            >
-              Results
-            </button>
           </div>
           <button
             type="button"

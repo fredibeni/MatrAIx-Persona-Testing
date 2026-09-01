@@ -115,6 +115,46 @@ const validationStylesSource = readFileSync(
   new URL('../app/globals.css', import.meta.url),
   'utf8',
 );
+const quizViewStart = validationPageSource.indexOf('function QuizView(');
+const quizViewEnd = validationPageSource.indexOf(
+  'function CategoryProfile(',
+  quizViewStart,
+);
+assert.ok(
+  quizViewStart >= 0 && quizViewEnd > quizViewStart,
+  'the validation quiz view must remain discoverable for navigation checks',
+);
+const quizViewSource = validationPageSource.slice(quizViewStart, quizViewEnd);
+assert.doesNotMatch(
+  quizViewSource,
+  />\s*Results\s*</,
+  'mid-survey question pages must not render a Results button',
+);
+assert.match(
+  quizViewSource,
+  /onClick=\{\(\) => setIndex\(\(value\) => Math\.max\(0, value - 1\)\)\}[\s\S]*?<ArrowLeft[\s\S]*?Previous/,
+  'mid-survey question pages must retain Previous navigation',
+);
+assert.match(
+  quizViewSource,
+  /onClick=\{next\}[\s\S]*?\{isLast \? 'Finish this run' : 'Next'\}[\s\S]*?<ArrowRight/,
+  'mid-survey question pages must retain Next and final-question completion navigation',
+);
+
+const resultViewStart = validationPageSource.indexOf('function ResultView(');
+const resultViewEnd = validationPageSource.indexOf(
+  'function ComparisonView(',
+  resultViewStart,
+);
+assert.ok(
+  resultViewStart >= 0 && resultViewEnd > resultViewStart,
+  'the completed validation result view must remain discoverable',
+);
+assert.match(
+  validationPageSource.slice(resultViewStart, resultViewEnd),
+  /onClick=\{onHome\}[\s\S]*?<Home[\s\S]*?Results/,
+  'completed validation views must retain their Results navigation',
+);
 const questionDetailsStart = validationPageSource.indexOf(
   '<details className="validation-question-details">',
 );

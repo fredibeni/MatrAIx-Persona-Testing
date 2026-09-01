@@ -13488,20 +13488,15 @@ function _i({ survey: e, actor: t, run: n, agentRun: r, onSaveAnswer: i, onCompl
 				}),
 				/* @__PURE__ */ (0, z.jsxs)("div", {
 					className: "quiz-footer-actions",
-					children: [/* @__PURE__ */ (0, z.jsxs)("div", {
+					children: [/* @__PURE__ */ (0, z.jsx)("div", {
 						className: "quiz-footer-secondary-actions",
-						children: [/* @__PURE__ */ (0, z.jsxs)("button", {
+						children: /* @__PURE__ */ (0, z.jsxs)("button", {
 							type: "button",
 							onClick: () => l((e) => Math.max(0, e - 1)),
 							disabled: c === 0,
 							className: "secondary-button focus-ring",
 							children: [/* @__PURE__ */ (0, z.jsx)(D, { size: 17 }), " Previous"]
-						}), /* @__PURE__ */ (0, z.jsx)("button", {
-							type: "button",
-							onClick: o,
-							className: "quiet-button focus-ring",
-							children: "Results"
-						})]
+						})
 					}), /* @__PURE__ */ (0, z.jsxs)("button", {
 						type: "button",
 						onClick: v,
