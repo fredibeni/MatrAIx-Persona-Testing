@@ -1384,10 +1384,12 @@ button:disabled {
 
 .validation-embedded .validation-overall-results span {
   display: block;
+  min-height: 3.75em;
   color: var(--validation-muted);
   font-size: 10px;
   font-weight: 760;
   letter-spacing: 0.07em;
+  line-height: 1.25;
   text-transform: uppercase;
 }
 
@@ -2172,6 +2174,10 @@ button:disabled {
   .validation-embedded .validation-overall-results,
   .validation-embedded .validation-question-result dl {
     grid-template-columns: 1fr;
+  }
+
+  .validation-embedded .validation-overall-results span {
+    min-height: 0;
   }
 
   .validation-embedded .quiz-topline,

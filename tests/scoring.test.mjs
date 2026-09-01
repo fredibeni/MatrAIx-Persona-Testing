@@ -421,6 +421,45 @@ const overallResultsMarkup = validationPageSource.slice(
   overallResultsStart,
   overallResultsEnd,
 );
+const overallMetricLabelRule = validationStylesSource.match(
+  /\.validation-embedded \.validation-overall-results span\s*\{([^}]*)\}/,
+);
+assert.ok(
+  overallMetricLabelRule,
+  'the overall Results metric label rule must remain discoverable',
+);
+assert.match(
+  overallMetricLabelRule?.[1] ?? '',
+  /min-height:\s*3\.75em;/,
+  'overall Results labels must reserve three aligned rows before their values',
+);
+assert.match(
+  overallMetricLabelRule?.[1] ?? '',
+  /line-height:\s*1\.25;/,
+  'overall Results label row height must stay fixed for aligned values',
+);
+const compactValidationStylesStart = validationStylesSource.indexOf(
+  '@media (max-width: 650px) {',
+);
+const compactValidationStylesEnd = validationStylesSource.indexOf(
+  "\n#validation-root[data-validation-host-viewport='wide']",
+  compactValidationStylesStart,
+);
+assert.ok(
+  compactValidationStylesStart >= 0 &&
+    compactValidationStylesEnd > compactValidationStylesStart,
+  'the compact Validation styles must remain discoverable',
+);
+const compactOverallMetricLabelRule = validationStylesSource
+  .slice(compactValidationStylesStart, compactValidationStylesEnd)
+  .match(
+    /\.validation-embedded \.validation-overall-results span\s*\{([^}]*)\}/,
+  );
+assert.match(
+  compactOverallMetricLabelRule?.[1] ?? '',
+  /min-height:\s*0;/,
+  'stacked overall Results cards must release the shared label height',
+);
 assert.doesNotMatch(
   overallResultsMarkup,
   /<span>Agent responses<\/span>/,
