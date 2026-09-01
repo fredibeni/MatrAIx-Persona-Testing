@@ -150,7 +150,7 @@ input:focus-visible {
   margin-top: -18px;
   margin-inline: -12px;
   margin-bottom: 20px;
-  padding: 14px 0;
+  padding: 14px 0 0;
   border: 0;
   border-radius: 0;
   background: transparent;
@@ -1377,7 +1377,7 @@ h1 {
     margin-top: -11px;
     margin-inline: -7px;
     margin-bottom: 14px;
-    padding: 10px 0;
+    padding: 10px 0 0;
   }
 
   .sidebar-workspace-body {
