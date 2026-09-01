@@ -403,6 +403,19 @@ assert.match(
   /<p>Starts 10 fresh runs per survey<\/p>/,
   'the Agent validation helper copy must describe the number of runs concisely',
 );
+const resultsToolbarRule = validationStylesSource.match(
+  /\.validation-embedded \.validation-results-toolbar\s*\{([^}]*)\}/,
+);
+assert.match(
+  resultsToolbarRule?.[1] ?? '',
+  /grid-template-columns:\s*max-content minmax\(180px, 280px\);/,
+  'the experiment selector must sit directly beside its label',
+);
+assert.match(
+  validationStylesSource,
+  /@media \(max-width: 780px\) \{[\s\S]*?\.validation-embedded \.validation-results-toolbar\s*\{\s*grid-template-columns:\s*1fr;\s*\}/,
+  'the compact experiment toolbar must keep its stacked layout',
+);
 const resultsToolbarStart = validationPageSource.indexOf(
   '<div className="validation-results-toolbar">',
 );

@@ -1324,7 +1324,7 @@ button:disabled {
 .validation-embedded .validation-results-toolbar {
   display: grid;
   align-items: center;
-  grid-template-columns: auto minmax(180px, 280px);
+  grid-template-columns: max-content minmax(180px, 280px);
   gap: 10px;
   margin-bottom: 13px;
 }
