@@ -144,6 +144,31 @@ assert.doesNotMatch(
   /surveys represented/,
   'the removed Agent responses card copy must not remain',
 );
+assert.doesNotMatch(
+  overallResultsMarkup,
+  /<span>Human benchmarks<\/span>/,
+  'the overall Human benchmarks card must not be rendered',
+);
+assert.doesNotMatch(
+  overallResultsMarkup,
+  /Current completed benchmarks/,
+  'the removed Human benchmarks card copy must not remain',
+);
+assert.match(
+  overallResultsMarkup,
+  /<span>Overall benchmark match<\/span>/,
+  'the overall benchmark match card must remain',
+);
+assert.match(
+  overallResultsMarkup,
+  /<span>Overall Agent consistency<\/span>/,
+  'the overall Agent consistency card must remain',
+);
+assert.equal(
+  (overallResultsMarkup.match(/<div>/g) ?? []).length,
+  2,
+  'the overall Results summary must render exactly its two remaining metric cards',
+);
 
 const partialExperimentWarning = validationExperimentWarning({
   completedRuns: 39,

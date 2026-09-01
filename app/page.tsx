@@ -531,11 +531,6 @@ function ResultsView({
             </strong>
             <small>Agreement with the most common answer per question</small>
           </div>
-          <div>
-            <span>Human benchmarks</span>
-            <strong>{aggregate?.overall.humanBenchmarkCount ?? 0}/4</strong>
-            <small>Current completed benchmarks</small>
-          </div>
         </section>
 
         <p className="validation-results-method">

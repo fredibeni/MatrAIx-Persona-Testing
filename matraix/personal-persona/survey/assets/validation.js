@@ -13334,23 +13334,15 @@ function hi({ store: e, onHuman: t, onRunAll: n, onLicense: r, runningExperiment
 				/* @__PURE__ */ (0, z.jsxs)("section", {
 					className: "validation-overall-results",
 					"aria-live": "polite",
-					children: [
-						/* @__PURE__ */ (0, z.jsxs)("div", { children: [
-							/* @__PURE__ */ (0, z.jsx)("span", { children: "Overall benchmark match" }),
-							/* @__PURE__ */ (0, z.jsx)("strong", { children: u?.overall.benchmarkSimilarity === null || !u ? "No benchmarks" : an(u.overall.benchmarkSimilarity) }),
-							/* @__PURE__ */ (0, z.jsx)("small", { children: u ? `${u.overall.benchmarkedSurveyCount} of 4 surveys compared` : "Complete Human benchmarks to compare" })
-						] }),
-						/* @__PURE__ */ (0, z.jsxs)("div", { children: [
-							/* @__PURE__ */ (0, z.jsx)("span", { children: "Overall Agent consistency" }),
-							/* @__PURE__ */ (0, z.jsx)("strong", { children: u ? u.experiment.expectedRuns === 1 ? "1 response" : u.overall.consistency === null ? "-" : an(u.overall.consistency) : "-" }),
-							/* @__PURE__ */ (0, z.jsx)("small", { children: "Agreement with the most common answer per question" })
-						] }),
-						/* @__PURE__ */ (0, z.jsxs)("div", { children: [
-							/* @__PURE__ */ (0, z.jsx)("span", { children: "Human benchmarks" }),
-							/* @__PURE__ */ (0, z.jsxs)("strong", { children: [u?.overall.humanBenchmarkCount ?? 0, "/4"] }),
-							/* @__PURE__ */ (0, z.jsx)("small", { children: "Current completed benchmarks" })
-						] })
-					]
+					children: [/* @__PURE__ */ (0, z.jsxs)("div", { children: [
+						/* @__PURE__ */ (0, z.jsx)("span", { children: "Overall benchmark match" }),
+						/* @__PURE__ */ (0, z.jsx)("strong", { children: u?.overall.benchmarkSimilarity === null || !u ? "No benchmarks" : an(u.overall.benchmarkSimilarity) }),
+						/* @__PURE__ */ (0, z.jsx)("small", { children: u ? `${u.overall.benchmarkedSurveyCount} of 4 surveys compared` : "Complete Human benchmarks to compare" })
+					] }), /* @__PURE__ */ (0, z.jsxs)("div", { children: [
+						/* @__PURE__ */ (0, z.jsx)("span", { children: "Overall Agent consistency" }),
+						/* @__PURE__ */ (0, z.jsx)("strong", { children: u ? u.experiment.expectedRuns === 1 ? "1 response" : u.overall.consistency === null ? "-" : an(u.overall.consistency) : "-" }),
+						/* @__PURE__ */ (0, z.jsx)("small", { children: "Agreement with the most common answer per question" })
+					] })]
 				}),
 				/* @__PURE__ */ (0, z.jsx)("p", {
 					className: "validation-results-method",
