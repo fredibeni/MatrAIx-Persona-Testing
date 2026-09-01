@@ -533,12 +533,6 @@ function ResultsView({
           ) : (
             <span>No Agent experiments yet</span>
           )}
-          {aggregate && (
-            <small>
-              {aggregate.experiment.completedRuns} of{' '}
-              {aggregate.experiment.expectedRuns} responses saved
-            </small>
-          )}
         </div>
 
         <section className="validation-overall-results" aria-live="polite">

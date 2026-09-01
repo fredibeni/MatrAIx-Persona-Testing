@@ -13328,28 +13328,18 @@ function pi({ store: e, onHuman: t, onRunAll: n, onLicense: r, runningExperiment
 			children: [
 				/* @__PURE__ */ (0, z.jsxs)("div", {
 					className: "validation-results-toolbar",
-					children: [
-						/* @__PURE__ */ (0, z.jsx)("label", {
-							htmlFor: "validation-experiment-selector",
-							children: "Experiment"
-						}),
-						c.length ? /* @__PURE__ */ (0, z.jsx)("select", {
-							id: "validation-experiment-selector",
-							value: l ?? "",
-							onChange: (e) => s(e.target.value),
-							children: c.map((e) => /* @__PURE__ */ (0, z.jsx)("option", {
-								value: e.id,
-								children: e.label
-							}, e.id))
-						}) : /* @__PURE__ */ (0, z.jsx)("span", { children: "No Agent experiments yet" }),
-						u && /* @__PURE__ */ (0, z.jsxs)("small", { children: [
-							u.experiment.completedRuns,
-							" of",
-							" ",
-							u.experiment.expectedRuns,
-							" responses saved"
-						] })
-					]
+					children: [/* @__PURE__ */ (0, z.jsx)("label", {
+						htmlFor: "validation-experiment-selector",
+						children: "Experiment"
+					}), c.length ? /* @__PURE__ */ (0, z.jsx)("select", {
+						id: "validation-experiment-selector",
+						value: l ?? "",
+						onChange: (e) => s(e.target.value),
+						children: c.map((e) => /* @__PURE__ */ (0, z.jsx)("option", {
+							value: e.id,
+							children: e.label
+						}, e.id))
+					}) : /* @__PURE__ */ (0, z.jsx)("span", { children: "No Agent experiments yet" })]
 				}),
 				/* @__PURE__ */ (0, z.jsxs)("section", {
 					className: "validation-overall-results",

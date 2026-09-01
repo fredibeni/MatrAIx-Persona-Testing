@@ -1337,7 +1337,7 @@ button:disabled {
 .validation-embedded .validation-results-toolbar {
   display: grid;
   align-items: center;
-  grid-template-columns: auto minmax(180px, 280px) 1fr;
+  grid-template-columns: auto minmax(180px, 280px);
   gap: 10px;
   margin-bottom: 13px;
   border-radius: 15px;
@@ -1372,14 +1372,9 @@ button:disabled {
   background: var(--validation-hover);
 }
 
-.validation-embedded .validation-results-toolbar > span,
-.validation-embedded .validation-results-toolbar small {
+.validation-embedded .validation-results-toolbar > span {
   color: var(--validation-muted);
   font-size: 12px;
-}
-
-.validation-embedded .validation-results-toolbar small {
-  justify-self: end;
 }
 
 .validation-embedded .validation-overall-results {
@@ -2148,10 +2143,6 @@ button:disabled {
 
   .validation-embedded .validation-results-toolbar {
     grid-template-columns: 1fr;
-  }
-
-  .validation-embedded .validation-results-toolbar small {
-    justify-self: start;
   }
 
   .validation-embedded .scale-options {
