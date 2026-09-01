@@ -574,6 +574,7 @@ function ResultsView({
   );
 }
 
+/* oxlint-disable jsx-a11y/prefer-tag-over-role -- Shared markup matches the Update persona progress pattern. */
 function QuizView({
   survey,
   actor,
@@ -665,16 +666,23 @@ function QuizView({
               </span>
             </div>
           </div>
-          <p className="validation-question-count">
+        </div>
+        <div className="question-progress-copy">
+          <strong>
             Question {index + 1} of {survey.questions.length}
-          </p>
+          </strong>
         </div>
         <div
-          className="progress-track"
-          aria-label={`${Math.round(progress)} percent complete`}
+          className="question-progress-track"
+          role="progressbar"
+          aria-label="Question progress in this survey"
+          aria-valuemin={1}
+          aria-valuemax={survey.questions.length}
+          aria-valuenow={index + 1}
         >
           <div
-            style={{ width: `${progress}%`, backgroundColor: survey.color }}
+            className="question-progress-bar"
+            style={{ width: `${progress}%` }}
           />
         </div>
 
@@ -747,6 +755,7 @@ function QuizView({
     </Shell>
   );
 }
+/* oxlint-enable jsx-a11y/prefer-tag-over-role */
 
 function CategoryProfile({
   result,

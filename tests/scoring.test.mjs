@@ -115,6 +115,10 @@ const validationStylesSource = readFileSync(
   new URL('../app/globals.css', import.meta.url),
   'utf8',
 );
+const updatePersonaStylesSource = readFileSync(
+  new URL('../matraix/personal-persona/survey/styles.css', import.meta.url),
+  'utf8',
+);
 const surveyCardStart = validationPageSource.indexOf('function SurveyCard(');
 const surveyCardEnd = validationPageSource.indexOf(
   'function QuestionAggregateRow(',
@@ -174,6 +178,175 @@ assert.doesNotMatch(
   quizViewSource,
   /These answers become the fixed benchmark/,
   'survey question pages must not render the removed fixed-benchmark note',
+);
+assert.match(
+  quizViewSource,
+  /<div className="question-progress-copy">[\s\S]*?<strong>[\s\S]*?Question \{index \+ 1\} of \{survey\.questions\.length\}[\s\S]*?<\/strong>[\s\S]*?<\/div>/,
+  'validation question progress must reuse the Update persona progress label structure',
+);
+assert.match(
+  quizViewSource,
+  /className="question-progress-track"[\s\S]*?role="progressbar"[\s\S]*?aria-label="Question progress in this survey"[\s\S]*?aria-valuemin=\{1\}[\s\S]*?aria-valuemax=\{survey\.questions\.length\}[\s\S]*?aria-valuenow=\{index \+ 1\}/,
+  'validation question progress must expose the current question through a progressbar',
+);
+assert.match(
+  quizViewSource,
+  /className="question-progress-bar"[\s\S]*?style=\{\{ width: `\$\{progress\}%` \}\}/,
+  'validation question progress must reuse the Update persona progress bar structure',
+);
+assert.doesNotMatch(
+  quizViewSource,
+  /className="validation-question-count"/,
+  'validation question pages must not show the old right-aligned question counter',
+);
+assert.doesNotMatch(
+  quizViewSource,
+  /className="progress-track"/,
+  'validation question pages must not use the old progress track',
+);
+const quizToplineStart = quizViewSource.indexOf('className="quiz-topline"');
+const questionProgressStart = quizViewSource.indexOf(
+  'className="question-progress-copy"',
+);
+const questionCardStart = quizViewSource.indexOf('className="question-card"');
+function matchingDivClose(source, openingIndex) {
+  const tagPattern = /<div\b[^>]*\/?\s*>|<\/div>/g;
+  tagPattern.lastIndex = openingIndex;
+  let depth = 0;
+  for (const match of source.matchAll(tagPattern)) {
+    const tag = match[0];
+    if (tag.startsWith('</div')) depth -= 1;
+    else if (!tag.match(/\/\s*>$/)) depth += 1;
+    if (depth === 0) return match.index + tag.length;
+  }
+  return -1;
+}
+const quizToplineOpenStart = quizViewSource.lastIndexOf(
+  '<div',
+  quizToplineStart,
+);
+const quizToplineEnd = matchingDivClose(quizViewSource, quizToplineOpenStart);
+const questionProgressOpenStart = quizViewSource.lastIndexOf(
+  '<div',
+  questionProgressStart,
+);
+const questionProgressEnd = matchingDivClose(
+  quizViewSource,
+  questionProgressOpenStart,
+);
+const questionProgressTrackStart = quizViewSource.indexOf(
+  'className="question-progress-track"',
+);
+const questionProgressTrackOpenStart = quizViewSource.lastIndexOf(
+  '<div',
+  questionProgressTrackStart,
+);
+assert.ok(
+  quizToplineOpenStart >= 0 &&
+    quizToplineEnd > quizToplineOpenStart &&
+    questionProgressOpenStart > quizToplineEnd &&
+    quizViewSource.slice(quizToplineEnd, questionProgressOpenStart).trim() ===
+      '' &&
+    questionProgressEnd > questionProgressOpenStart &&
+    questionProgressTrackOpenStart > questionProgressEnd &&
+    quizViewSource
+      .slice(questionProgressEnd, questionProgressTrackOpenStart)
+      .trim() === '' &&
+    questionCardStart > questionProgressStart,
+  'validation question progress label and track must be direct quiz-stage children below the quiz context',
+);
+assert.match(
+  quizViewSource,
+  /const progress = \(\(index \+ 1\) \/ survey\.questions\.length\) \* 100;/,
+  'validation question progress must use the current one-based question ratio',
+);
+
+function cssDeclarations(source, selector) {
+  const escapedSelector = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const rule = source.match(
+    new RegExp(`(?:^|\\n)${escapedSelector}\\s*\\{([^}]*)\\}`),
+  );
+  assert.ok(rule, `${selector} must have a CSS rule`);
+  return Object.fromEntries(
+    rule[1]
+      .split(';')
+      .map((declaration) => declaration.trim())
+      .filter(Boolean)
+      .map((declaration) => {
+        const separator = declaration.indexOf(':');
+        return [
+          declaration.slice(0, separator).trim(),
+          declaration.slice(separator + 1).trim(),
+        ];
+      }),
+  );
+}
+for (const [selector, properties] of Object.entries({
+  '.question-progress-copy': [
+    'display',
+    'align-items',
+    'justify-content',
+    'margin-top',
+    'font-size',
+  ],
+  '.question-progress-copy strong': ['font-weight'],
+  '.question-progress-track': [
+    'height',
+    'margin-top',
+    'overflow',
+    'border-radius',
+  ],
+  '.question-progress-bar': ['height', 'border-radius', 'transition'],
+})) {
+  const validationDeclarations = cssDeclarations(
+    validationStylesSource,
+    selector,
+  );
+  const updatePersonaDeclarations = cssDeclarations(
+    updatePersonaStylesSource,
+    selector,
+  );
+  for (const property of properties) {
+    assert.equal(
+      validationDeclarations[property],
+      updatePersonaDeclarations[property],
+      `${selector} ${property} must match Update persona`,
+    );
+  }
+}
+assert.equal(
+  cssDeclarations(validationStylesSource, '.question-progress-copy')[
+    'line-height'
+  ],
+  'normal',
+  'the validation root reset must not change the reference label height',
+);
+assert.deepEqual(
+  {
+    copy: cssDeclarations(
+      validationStylesSource,
+      '.validation-embedded .question-progress-copy',
+    ).color,
+    strong: cssDeclarations(
+      validationStylesSource,
+      '.validation-embedded .question-progress-copy strong',
+    ).color,
+    track: cssDeclarations(
+      validationStylesSource,
+      '.validation-embedded .question-progress-track',
+    ).background,
+    bar: cssDeclarations(
+      validationStylesSource,
+      '.validation-embedded .question-progress-bar',
+    ).background,
+  },
+  {
+    copy: 'var(--validation-muted)',
+    strong: 'var(--validation-ink)',
+    track: 'var(--validation-hover)',
+    bar: 'var(--validation-gold)',
+  },
+  'embedded validation progress must map to the matching host theme colors',
 );
 assert.match(
   quizViewSource,

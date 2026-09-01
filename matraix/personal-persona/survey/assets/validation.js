@@ -13402,9 +13402,9 @@ function _i({ survey: e, actor: t, run: n, agentRun: r, onSaveAnswer: i, onCompl
 			className: "quiz-stage",
 			style: ai(e),
 			children: [
-				/* @__PURE__ */ (0, z.jsxs)("div", {
+				/* @__PURE__ */ (0, z.jsx)("div", {
 					className: "quiz-topline",
-					children: [/* @__PURE__ */ (0, z.jsxs)("div", { children: [/* @__PURE__ */ (0, z.jsx)("p", {
+					children: /* @__PURE__ */ (0, z.jsxs)("div", { children: [/* @__PURE__ */ (0, z.jsx)("p", {
 						className: "section-kicker",
 						style: { color: e.ink },
 						children: e.shortTitle
@@ -13422,23 +13422,28 @@ function _i({ survey: e, actor: t, run: n, agentRun: r, onSaveAnswer: i, onCompl
 								children: ["Persona agent: ", oi(n.personaAgent)]
 							})
 						]
-					})] }), /* @__PURE__ */ (0, z.jsxs)("p", {
-						className: "validation-question-count",
-						children: [
-							"Question ",
-							c + 1,
-							" of ",
-							e.questions.length
-						]
-					})]
+					})] })
 				}),
 				/* @__PURE__ */ (0, z.jsx)("div", {
-					className: "progress-track",
-					"aria-label": `${Math.round(m)} percent complete`,
-					children: /* @__PURE__ */ (0, z.jsx)("div", { style: {
-						width: `${m}%`,
-						backgroundColor: e.color
-					} })
+					className: "question-progress-copy",
+					children: /* @__PURE__ */ (0, z.jsxs)("strong", { children: [
+						"Question ",
+						c + 1,
+						" of ",
+						e.questions.length
+					] })
+				}),
+				/* @__PURE__ */ (0, z.jsx)("div", {
+					className: "question-progress-track",
+					role: "progressbar",
+					"aria-label": "Question progress in this survey",
+					"aria-valuemin": 1,
+					"aria-valuemax": e.questions.length,
+					"aria-valuenow": c + 1,
+					children: /* @__PURE__ */ (0, z.jsx)("div", {
+						className: "question-progress-bar",
+						style: { width: `${m}%` }
+					})
 				}),
 				/* @__PURE__ */ (0, z.jsxs)("section", {
 					className: "question-card",

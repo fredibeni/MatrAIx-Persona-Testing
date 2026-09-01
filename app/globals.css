@@ -425,17 +425,31 @@ button:disabled {
   gap: 1rem;
   padding: 0 0.25rem;
 }
-.progress-track {
-  height: 7px;
+.question-progress-copy {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 14px;
+  color: #64748b;
+  font-size: 11px;
+  line-height: normal;
+}
+.question-progress-copy strong {
+  color: #0f172a;
+  font-weight: 400;
+}
+.question-progress-track {
+  height: 5px;
+  margin-top: 7px;
   overflow: hidden;
-  margin-top: 1.25rem;
-  border-radius: 999px;
+  border-radius: 99px;
   background: #e3e7ed;
 }
-.progress-track div {
+.question-progress-bar {
   height: 100%;
   border-radius: inherit;
-  transition: width 260ms ease;
+  background: var(--survey);
+  transition: width 180ms ease;
 }
 .question-card {
   position: relative;
@@ -1721,14 +1735,20 @@ button:disabled {
   font-weight: 400;
 }
 
-.validation-embedded .progress-track {
-  height: 7px;
-  margin-top: 14px;
-  background: #27272a;
+.validation-embedded .question-progress-copy {
+  color: var(--validation-muted);
 }
 
-.validation-embedded .progress-track > div {
-  background: var(--validation-gold) !important;
+.validation-embedded .question-progress-copy strong {
+  color: var(--validation-ink);
+}
+
+.validation-embedded .question-progress-track {
+  background: var(--validation-hover);
+}
+
+.validation-embedded .question-progress-bar {
+  background: var(--validation-gold);
 }
 
 .validation-embedded .question-card {
