@@ -1268,7 +1268,7 @@ button:disabled {
 .validation-embedded .hero-grid h1 {
   margin-top: 0 !important;
   color: var(--validation-ink) !important;
-  font-size: clamp(32px, 5vw, 48px) !important;
+  font-size: 28px !important;
   font-weight: 500 !important;
   letter-spacing: -0.035em !important;
   line-height: 1.08 !important;
