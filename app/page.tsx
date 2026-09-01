@@ -92,6 +92,7 @@ import {
 import { appendValidationAgentBatch } from '@/lib/validation-batch-store';
 import {
   aggregateValidationExperiment,
+  validationExperimentWarning,
   validationExperimentOptions,
   type ValidationQuestionAggregate,
   type ValidationSurveyAggregate,
@@ -437,6 +438,9 @@ function ResultsView({
   const aggregate = resolvedExperimentId
     ? aggregateValidationExperiment(store, resolvedExperimentId)
     : null;
+  const experimentWarning = validationExperimentWarning(
+    aggregate?.experiment ?? null,
+  );
 
   return (
     <Shell simple>
@@ -493,6 +497,11 @@ function ResultsView({
           ) : (
             <span>No Agent experiments yet</span>
           )}
+          {experimentWarning ? (
+            <output className="validation-experiment-warning">
+              {experimentWarning}
+            </output>
+          ) : null}
         </div>
 
         <section className="validation-overall-results" aria-live="polite">
@@ -521,19 +530,6 @@ function ResultsView({
                     : percent(aggregate.overall.consistency)}
             </strong>
             <small>Agreement with the most common answer per question</small>
-          </div>
-          <div>
-            <span>Agent responses</span>
-            <strong>
-              {aggregate
-                ? `${aggregate.overall.completedRuns}/${aggregate.overall.expectedRuns}`
-                : '0/40'}
-            </strong>
-            <small>
-              {aggregate
-                ? `${aggregate.overall.surveysWithResults} of 4 surveys represented`
-                : 'One experiment produces 40 responses'}
-            </small>
           </div>
           <div>
             <span>Human benchmarks</span>

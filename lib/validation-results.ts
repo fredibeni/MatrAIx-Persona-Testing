@@ -84,6 +84,18 @@ export interface ValidationExperimentAggregate {
   surveys: ValidationSurveyAggregate[];
 }
 
+export function validationExperimentWarning(
+  experiment: Pick<
+    ValidationExperimentOption,
+    'completedRuns' | 'expectedRuns'
+  > | null,
+) {
+  if (!experiment || experiment.completedRuns >= experiment.expectedRuns) {
+    return null;
+  }
+  return `Only ${experiment.completedRuns} of ${experiment.expectedRuns} Agent responses finished successfully.`;
+}
+
 interface MutableExperiment {
   id: string;
   dimensionCount: number | null;

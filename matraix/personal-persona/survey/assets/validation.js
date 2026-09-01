@@ -12869,46 +12869,49 @@ function jr(e, t, n) {
 //#endregion
 //#region lib/validation-results.ts
 function Mr(e) {
-	return !!e.completedAt;
+	return !e || e.completedRuns >= e.expectedRuns ? null : `Only ${e.completedRuns} of ${e.expectedRuns} Agent responses finished successfully.`;
 }
 function Nr(e) {
-	return e.personaAgent?.contextId ?? "unknown-persona";
+	return !!e.completedAt;
 }
 function Pr(e) {
-	return [...e].sort((e, t) => (e.experiment?.responseIndex ?? e.sequence) - (t.experiment?.responseIndex ?? t.sequence) || Date.parse(e.completedAt ?? e.startedAt) - Date.parse(t.completedAt ?? t.startedAt) || e.id.localeCompare(t.id));
+	return e.personaAgent?.contextId ?? "unknown-persona";
 }
 function Fr(e) {
-	return `${Nr(e)}\u0000${e.dimensionCount ?? "unknown"}\u0000${e.experiment.id}`;
+	return [...e].sort((e, t) => (e.experiment?.responseIndex ?? e.sequence) - (t.experiment?.responseIndex ?? t.sequence) || Date.parse(e.completedAt ?? e.startedAt) - Date.parse(t.completedAt ?? t.startedAt) || e.id.localeCompare(t.id));
 }
-function Ir(e, t, n) {
+function Ir(e) {
+	return `${Pr(e)}\u0000${e.dimensionCount ?? "unknown"}\u0000${e.experiment.id}`;
+}
+function Lr(e, t, n) {
 	e[t] = [...e[t] ?? [], n];
 }
-function Lr(e) {
+function Rr(e) {
 	let t = /* @__PURE__ */ new Map();
 	return Wt.forEach((n) => {
-		(e[n.id]?.agentRuns ?? []).filter((e) => Mr(e) && !!e.experiment).forEach((e) => {
-			let r = e.experiment, i = Fr(e), a = t.get(i);
+		(e[n.id]?.agentRuns ?? []).filter((e) => Nr(e) && !!e.experiment).forEach((e) => {
+			let r = e.experiment, i = Ir(e), a = t.get(i);
 			a || (a = {
 				id: r.id,
 				dimensionCount: e.dimensionCount,
-				personaContextId: Nr(e),
+				personaContextId: Pr(e),
 				startedAt: r.startedAt,
 				expectedRuns: r.responsesPerSurvey * r.surveyIds.length,
 				runsBySurvey: {},
 				responsesPerSurvey: r.responsesPerSurvey,
 				surveyIds: r.surveyIds
-			}, t.set(i, a)), !(r.startedAt !== a.startedAt || r.responsesPerSurvey !== a.responsesPerSurvey || r.surveyIds.length !== a.surveyIds.length || r.surveyIds.some((e, t) => e !== a.surveyIds[t])) && ((a.runsBySurvey[n.id] ?? []).some((e) => e.experiment?.responseIndex === r.responseIndex) || Ir(a.runsBySurvey, n.id, e));
+			}, t.set(i, a)), !(r.startedAt !== a.startedAt || r.responsesPerSurvey !== a.responsesPerSurvey || r.surveyIds.length !== a.surveyIds.length || r.surveyIds.some((e, t) => e !== a.surveyIds[t])) && ((a.runsBySurvey[n.id] ?? []).some((e) => e.experiment?.responseIndex === r.responseIndex) || Lr(a.runsBySurvey, n.id, e));
 		});
 	}), [...t.values()];
 }
-function Rr(e) {
+function zr(e) {
 	let t = [];
 	return Wt.forEach((n) => {
-		(e[n.id]?.agentRuns ?? []).filter((e) => Mr(e) && !e.experiment).forEach((e) => {
+		(e[n.id]?.agentRuns ?? []).filter((e) => Nr(e) && !e.experiment).forEach((e) => {
 			t.push({
 				id: `legacy:${n.id}:${e.id}`,
 				dimensionCount: e.dimensionCount,
-				personaContextId: Nr(e),
+				personaContextId: Pr(e),
 				startedAt: e.completedAt ?? e.startedAt,
 				expectedRuns: 1,
 				runsBySurvey: { [n.id]: [e] },
@@ -12918,40 +12921,40 @@ function Rr(e) {
 		});
 	}), t;
 }
-function zr(e) {
+function Br(e) {
 	return Object.values(e.runsBySurvey).reduce((e, t) => e + (t?.length ?? 0), 0);
 }
-function Br(e, t) {
+function Vr(e, t) {
 	let n = e === null ? "Unknown dimensions" : `${e} dim`;
 	return t === 1 ? n : `${n}, #${t}`;
 }
-function Vr(e) {
-	let t = [...Lr(e), ...Rr(e)].sort((e, t) => Date.parse(e.startedAt) - Date.parse(t.startedAt) || e.id.localeCompare(t.id)), n = /* @__PURE__ */ new Map();
+function Hr(e) {
+	let t = [...Rr(e), ...zr(e)].sort((e, t) => Date.parse(e.startedAt) - Date.parse(t.startedAt) || e.id.localeCompare(t.id)), n = /* @__PURE__ */ new Map();
 	return t.map((e) => {
 		let t = `${e.personaContextId}\u0000${e.dimensionCount ?? "unknown"}`, r = (n.get(t) ?? 0) + 1;
 		n.set(t, r);
-		let i = zr(e);
+		let i = Br(e);
 		return {
 			id: e.id,
-			label: Br(e.dimensionCount, r),
+			label: Vr(e.dimensionCount, r),
 			dimensionCount: e.dimensionCount,
 			startedAt: e.startedAt,
 			completedRuns: i,
 			expectedRuns: e.expectedRuns,
 			status: i >= e.expectedRuns ? "complete" : "partial",
-			runsBySurvey: Object.fromEntries(Object.entries(e.runsBySurvey).map(([e, t]) => [e, Pr(t ?? [])]))
+			runsBySurvey: Object.fromEntries(Object.entries(e.runsBySurvey).map(([e, t]) => [e, Fr(t ?? [])]))
 		};
 	}).reverse();
 }
-function Hr(e, t) {
+function Ur(e, t) {
 	return e.options.find((e) => e.id === t)?.value;
 }
-function Ur(e, t, n, r) {
+function Wr(e, t, n, r) {
 	if (e.kind !== "scale") return +(n === r);
-	let i = Hr(t, n), a = Hr(t, r);
+	let i = Ur(t, n), a = Ur(t, r);
 	return i === void 0 || a === void 0 ? null : Math.max(0, 1 - Math.abs(i - a) / 4);
 }
-function Wr(e, t, n, r) {
+function Gr(e, t, n, r) {
 	let i = new Map(t.options.map((e, t) => [e.id, t])), a = /* @__PURE__ */ new Map();
 	n.forEach((e) => {
 		let n = e.answers[t.id];
@@ -12963,7 +12966,7 @@ function Wr(e, t, n, r) {
 		count: n,
 		share: n / o
 	})).sort((e, t) => t.count - e.count || (i.get(e.answerId) ?? 0) - (i.get(t.answerId) ?? 0)), c = s[0], l = !!r?.completedAt, u = l ? r?.answers[t.id] ?? null : null, d = u === null ? [] : n.map((e) => e.answers[t.id]).filter((e) => i.has(e)), f = d.flatMap((n) => {
-		let r = Ur(e, t, u, n);
+		let r = Wr(e, t, u, n);
 		return r === null ? [] : [r];
 	}), p = d.filter((e) => e === u).length;
 	return {
@@ -12983,19 +12986,19 @@ function Wr(e, t, n, r) {
 		exactBenchmarkMatchRate: d.length ? p / d.length : null
 	};
 }
-function Gr(e) {
+function Kr(e) {
 	let t = e.filter((e) => e.value !== null && e.weight > 0), n = t.reduce((e, t) => e + t.weight, 0);
 	return n ? t.reduce((e, t) => e + t.value * t.weight, 0) / n : null;
 }
-function Kr(e) {
+function qr(e) {
 	let t = new Set(Object.values(e).flatMap((e) => e ?? []).flatMap((e) => e.personaAgent?.contextId ? [e.personaAgent.contextId] : []));
 	return t.size === 1 ? [...t][0] : null;
 }
-function qr(e, t) {
+function Jr(e, t) {
 	return e?.completedAt && t !== null && e.personaAgent?.contextId === t ? e : void 0;
 }
-function Jr(e, t, n, r) {
-	let i = e.questions.map((r) => Wr(e, r, t, n)), a = i.reduce((e, t) => e + t.answerCount, 0), o = i.reduce((e, t) => e + (t.benchmarkSimilarity === null ? 0 : t.answerCount), 0);
+function Yr(e, t, n, r) {
+	let i = e.questions.map((r) => Gr(e, r, t, n)), a = i.reduce((e, t) => e + t.answerCount, 0), o = i.reduce((e, t) => e + (t.benchmarkSimilarity === null ? 0 : t.answerCount), 0);
 	return {
 		surveyId: e.id,
 		title: e.title,
@@ -13003,16 +13006,16 @@ function Jr(e, t, n, r) {
 		expectedRuns: r,
 		questionCount: e.questions.length,
 		answerCount: a,
-		consistency: Gr(i.map((e) => ({
+		consistency: Kr(i.map((e) => ({
 			value: e.consistency,
 			weight: e.answerCount
 		}))),
 		hasHumanBenchmark: !!n?.completedAt,
-		benchmarkSimilarity: Gr(i.map((e) => ({
+		benchmarkSimilarity: Kr(i.map((e) => ({
 			value: e.benchmarkSimilarity,
 			weight: e.answerCount
 		}))),
-		exactBenchmarkMatchRate: Gr(i.map((e) => ({
+		exactBenchmarkMatchRate: Kr(i.map((e) => ({
 			value: e.exactBenchmarkMatchRate,
 			weight: e.answerCount
 		}))),
@@ -13020,10 +13023,10 @@ function Jr(e, t, n, r) {
 		questions: i
 	};
 }
-function Yr(e, t) {
-	let n = Vr(e).find((e) => e.id === t);
+function Xr(e, t) {
+	let n = Hr(e).find((e) => e.id === t);
 	if (!n) return null;
-	let r = Object.values(n.runsBySurvey).flatMap((e) => e ?? []).find((e) => !!e.experiment), i = new Set(r?.experiment?.surveyIds ?? Object.keys(n.runsBySurvey)), a = r?.experiment?.responsesPerSurvey ?? 1, o = Kr(n.runsBySurvey), s = Wt.map((t) => Jr(t, n.runsBySurvey[t.id] ?? [], qr(e[t.id]?.human, o), i.has(t.id) ? a : 0)), c = s.reduce((e, t) => e + t.answerCount, 0), l = s.reduce((e, t) => e + t.benchmarkComparisons, 0);
+	let r = Object.values(n.runsBySurvey).flatMap((e) => e ?? []).find((e) => !!e.experiment), i = new Set(r?.experiment?.surveyIds ?? Object.keys(n.runsBySurvey)), a = r?.experiment?.responsesPerSurvey ?? 1, o = qr(n.runsBySurvey), s = Wt.map((t) => Yr(t, n.runsBySurvey[t.id] ?? [], Jr(e[t.id]?.human, o), i.has(t.id) ? a : 0)), c = s.reduce((e, t) => e + t.answerCount, 0), l = s.reduce((e, t) => e + t.benchmarkComparisons, 0);
 	return {
 		experiment: n,
 		overall: {
@@ -13033,17 +13036,17 @@ function Yr(e, t) {
 			surveyCount: Wt.length,
 			questionCount: s.reduce((e, t) => e + t.questionCount, 0),
 			answerCount: c,
-			consistency: Gr(s.map((e) => ({
+			consistency: Kr(s.map((e) => ({
 				value: e.consistency,
 				weight: e.answerCount
 			}))),
 			humanBenchmarkCount: s.filter((e) => e.hasHumanBenchmark).length,
 			benchmarkedSurveyCount: s.filter((e) => e.benchmarkComparisons > 0).length,
-			benchmarkSimilarity: Gr(s.map((e) => ({
+			benchmarkSimilarity: Kr(s.map((e) => ({
 				value: e.benchmarkSimilarity,
 				weight: e.benchmarkComparisons
 			}))),
-			exactBenchmarkMatchRate: Gr(s.map((e) => ({
+			exactBenchmarkMatchRate: Kr(s.map((e) => ({
 				value: e.exactBenchmarkMatchRate,
 				weight: e.benchmarkComparisons
 			}))),
@@ -13054,7 +13057,7 @@ function Yr(e, t) {
 }
 //#endregion
 //#region app/page.tsx
-var Xr = {
+var Zr = {
 	human: {
 		label: "Human benchmark",
 		shortLabel: "Human",
@@ -13065,57 +13068,57 @@ var Xr = {
 		shortLabel: "Agent",
 		Icon: te
 	}
-}, Zr = { name: "home" }, Qr = new Intl.DateTimeFormat(void 0, {
+}, Qr = { name: "home" }, $r = new Intl.DateTimeFormat(void 0, {
 	month: "short",
 	day: "numeric",
 	hour: "numeric",
 	minute: "2-digit"
-}), $r = new Intl.DateTimeFormat(void 0, {
+}), ei = new Intl.DateTimeFormat(void 0, {
 	hour: "2-digit",
 	minute: "2-digit"
 });
-function ei(e) {
+function ti(e) {
 	return `${e}-${typeof crypto < "u" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`}`;
 }
-function ti(e) {
+function ni(e) {
 	if (!e) return "";
 	let t = new Date(e);
-	return Number.isNaN(t.getTime()) ? "Date unavailable" : Qr.format(t);
-}
-function ni(e) {
-	return e ? $r.format(new Date(e)) : null;
+	return Number.isNaN(t.getTime()) ? "Date unavailable" : $r.format(t);
 }
 function ri(e) {
+	return e ? ei.format(new Date(e)) : null;
+}
+function ii(e) {
 	return {
 		"--survey": e.color,
 		"--pale": e.pale,
 		"--ink": e.ink
 	};
 }
-function ii(e) {
+function ai(e) {
 	return e ? `Digital ${e.displayName}` : "Persona not recorded";
 }
-function ai(e, t) {
+function oi(e, t) {
 	return !e || !t || e.contextId === t.contextId;
 }
-function oi(e, t) {
+function si(e, t) {
 	return Date.parse(e.completedAt ?? e.startedAt) - Date.parse(t.completedAt ?? t.startedAt) || e.sequence - t.sequence;
 }
-function si(e) {
+function ci(e) {
 	return e?.completedAt ? "complete" : e && Object.keys(e.answers).length > 0 ? "in-progress" : "not-started";
 }
-function ci(e, t) {
+function li(e, t) {
 	if (!("surveyId" in t)) return t;
 	let n = An(e, t.surveyId);
-	if (t.name === "quiz") return (t.actor === "human" ? n.human : Nn(n, t.runId)) ? t : Zr;
-	if (t.name === "result") return (t.actor === "human" ? n.human : Nn(n, t.runId))?.completedAt ? t : Zr;
+	if (t.name === "quiz") return (t.actor === "human" ? n.human : Nn(n, t.runId)) ? t : Qr;
+	if (t.name === "result") return (t.actor === "human" ? n.human : Nn(n, t.runId))?.completedAt ? t : Qr;
 	if (t.name === "comparison") {
 		let e = Nn(n, t.runId);
-		return n.human?.completedAt && e?.completedAt && e.benchmarkId === n.human.id && ai(n.human.personaAgent, e.personaAgent) ? t : Zr;
+		return n.human?.completedAt && e?.completedAt && e.benchmarkId === n.human.id && oi(n.human.personaAgent, e.personaAgent) ? t : Qr;
 	}
-	return n.human?.completedAt && jn(n, n.human.id).length > 0 ? t : Zr;
+	return n.human?.completedAt && jn(n, n.human.id).length > 0 ? t : Qr;
 }
-function li({ status: e, label: t }) {
+function ui({ status: e, label: t }) {
 	return e === "complete" ? /* @__PURE__ */ (0, z.jsxs)("span", {
 		className: "status-pill status-complete",
 		children: [
@@ -13134,7 +13137,7 @@ function li({ status: e, label: t }) {
 		children: t ?? "Not started"
 	});
 }
-function ui() {
+function di() {
 	return /* @__PURE__ */ (0, z.jsxs)("span", {
 		className: "flex items-center gap-3",
 		children: [/* @__PURE__ */ (0, z.jsxs)("span", {
@@ -13150,20 +13153,20 @@ function ui() {
 		})] })]
 	});
 }
-function di({ children: e, onHome: t, simple: n = !1 }) {
+function fi({ children: e, onHome: t, simple: n = !1 }) {
 	return /* @__PURE__ */ (0, z.jsxs)("main", {
 		className: "min-h-screen",
 		children: [/* @__PURE__ */ (0, z.jsxs)("header", {
 			className: "site-header",
 			children: [n ? /* @__PURE__ */ (0, z.jsx)("div", {
 				className: "brand-button rounded-xl",
-				children: /* @__PURE__ */ (0, z.jsx)(ui, {})
+				children: /* @__PURE__ */ (0, z.jsx)(di, {})
 			}) : /* @__PURE__ */ (0, z.jsx)("button", {
 				type: "button",
 				onClick: t,
 				"aria-label": "Go to Results",
 				className: "brand-button rounded-xl focus-ring",
-				children: /* @__PURE__ */ (0, z.jsx)(ui, {})
+				children: /* @__PURE__ */ (0, z.jsx)(di, {})
 			}), !n && /* @__PURE__ */ (0, z.jsxs)("button", {
 				type: "button",
 				onClick: t,
@@ -13173,11 +13176,11 @@ function di({ children: e, onHome: t, simple: n = !1 }) {
 		}), e]
 	});
 }
-function fi({ survey: e, history: t, onHuman: n, aggregate: r, interactionDisabled: i }) {
-	let a = t.human, o = si(a), s = !!r?.completedRuns;
+function pi({ survey: e, history: t, onHuman: n, aggregate: r, interactionDisabled: i }) {
+	let a = t.human, o = ci(a), s = !!r?.completedRuns;
 	return /* @__PURE__ */ (0, z.jsxs)("article", {
 		className: "survey-card",
-		style: ri(e),
+		style: ii(e),
 		children: [
 			/* @__PURE__ */ (0, z.jsx)("div", {
 				className: "flex items-center justify-between gap-4",
@@ -13216,7 +13219,7 @@ function fi({ survey: e, history: t, onHuman: n, aggregate: r, interactionDisabl
 								children: "Human benchmark"
 							})
 						}),
-						/* @__PURE__ */ (0, z.jsx)(li, { status: o }),
+						/* @__PURE__ */ (0, z.jsx)(ui, { status: o }),
 						/* @__PURE__ */ (0, z.jsx)(k, {
 							size: 17,
 							className: "text-slate-400"
@@ -13228,13 +13231,13 @@ function fi({ survey: e, history: t, onHuman: n, aggregate: r, interactionDisabl
 				className: "validation-question-details",
 				children: [/* @__PURE__ */ (0, z.jsxs)("summary", { children: ["Question results", /* @__PURE__ */ (0, z.jsx)("span", { children: r?.questions.length })] }), /* @__PURE__ */ (0, z.jsx)("div", {
 					className: "validation-question-list",
-					children: r?.questions.map((e) => /* @__PURE__ */ (0, z.jsx)(pi, { row: e }, e.questionId))
+					children: r?.questions.map((e) => /* @__PURE__ */ (0, z.jsx)(mi, { row: e }, e.questionId))
 				})]
 			})
 		]
 	});
 }
-function pi({ row: e }) {
+function mi({ row: e }) {
 	return /* @__PURE__ */ (0, z.jsxs)("article", {
 		className: "validation-question-result",
 		children: [
@@ -13258,9 +13261,9 @@ function pi({ row: e }) {
 		]
 	});
 }
-function mi({ store: e, onHuman: t, onRunAll: n, onLicense: r, runningExperiment: i, runDisabled: a, selectedExperimentId: o, onSelectExperiment: s }) {
-	let c = Vr(e), l = c.some((e) => e.id === o) ? o : c[0]?.id ?? null, u = l ? Yr(e, l) : null;
-	return /* @__PURE__ */ (0, z.jsxs)(di, {
+function hi({ store: e, onHuman: t, onRunAll: n, onLicense: r, runningExperiment: i, runDisabled: a, selectedExperimentId: o, onSelectExperiment: s }) {
+	let c = Hr(e), l = c.some((e) => e.id === o) ? o : c[0]?.id ?? null, u = l ? Xr(e, l) : null, d = Mr(u?.experiment ?? null);
+	return /* @__PURE__ */ (0, z.jsxs)(fi, {
 		simple: !0,
 		children: [/* @__PURE__ */ (0, z.jsxs)("section", {
 			className: "hero-wrap",
@@ -13308,18 +13311,25 @@ function mi({ store: e, onHuman: t, onRunAll: n, onLicense: r, runningExperiment
 			children: [
 				/* @__PURE__ */ (0, z.jsxs)("div", {
 					className: "validation-results-toolbar",
-					children: [/* @__PURE__ */ (0, z.jsx)("label", {
-						htmlFor: "validation-experiment-selector",
-						children: "Experiment"
-					}), c.length ? /* @__PURE__ */ (0, z.jsx)("select", {
-						id: "validation-experiment-selector",
-						value: l ?? "",
-						onChange: (e) => s(e.target.value),
-						children: c.map((e) => /* @__PURE__ */ (0, z.jsx)("option", {
-							value: e.id,
-							children: e.label
-						}, e.id))
-					}) : /* @__PURE__ */ (0, z.jsx)("span", { children: "No Agent experiments yet" })]
+					children: [
+						/* @__PURE__ */ (0, z.jsx)("label", {
+							htmlFor: "validation-experiment-selector",
+							children: "Experiment"
+						}),
+						c.length ? /* @__PURE__ */ (0, z.jsx)("select", {
+							id: "validation-experiment-selector",
+							value: l ?? "",
+							onChange: (e) => s(e.target.value),
+							children: c.map((e) => /* @__PURE__ */ (0, z.jsx)("option", {
+								value: e.id,
+								children: e.label
+							}, e.id))
+						}) : /* @__PURE__ */ (0, z.jsx)("span", { children: "No Agent experiments yet" }),
+						d ? /* @__PURE__ */ (0, z.jsx)("output", {
+							className: "validation-experiment-warning",
+							children: d
+						}) : null
+					]
 				}),
 				/* @__PURE__ */ (0, z.jsxs)("section", {
 					className: "validation-overall-results",
@@ -13336,11 +13346,6 @@ function mi({ store: e, onHuman: t, onRunAll: n, onLicense: r, runningExperiment
 							/* @__PURE__ */ (0, z.jsx)("small", { children: "Agreement with the most common answer per question" })
 						] }),
 						/* @__PURE__ */ (0, z.jsxs)("div", { children: [
-							/* @__PURE__ */ (0, z.jsx)("span", { children: "Agent responses" }),
-							/* @__PURE__ */ (0, z.jsx)("strong", { children: u ? `${u.overall.completedRuns}/${u.overall.expectedRuns}` : "0/40" }),
-							/* @__PURE__ */ (0, z.jsx)("small", { children: u ? `${u.overall.surveysWithResults} of 4 surveys represented` : "One experiment produces 40 responses" })
-						] }),
-						/* @__PURE__ */ (0, z.jsxs)("div", { children: [
 							/* @__PURE__ */ (0, z.jsx)("span", { children: "Human benchmarks" }),
 							/* @__PURE__ */ (0, z.jsxs)("strong", { children: [u?.overall.humanBenchmarkCount ?? 0, "/4"] }),
 							/* @__PURE__ */ (0, z.jsx)("small", { children: "Current completed benchmarks" })
@@ -13353,7 +13358,7 @@ function mi({ store: e, onHuman: t, onRunAll: n, onLicense: r, runningExperiment
 				}),
 				/* @__PURE__ */ (0, z.jsx)("div", {
 					className: "validation-survey-list flex flex-col gap-6",
-					children: Wt.map((n) => /* @__PURE__ */ (0, z.jsx)(fi, {
+					children: Wt.map((n) => /* @__PURE__ */ (0, z.jsx)(pi, {
 						survey: n,
 						history: An(e, n.id),
 						onHuman: () => t(n.id),
@@ -13374,8 +13379,8 @@ function mi({ store: e, onHuman: t, onRunAll: n, onLicense: r, runningExperiment
 		})]
 	});
 }
-function hi({ survey: e, actor: t, run: n, agentRun: r, onSaveAnswer: i, onComplete: a, onHome: o }) {
-	let s = e.questions.findIndex((e) => !n.answers[e.id]), [c, l] = (0, C.useState)(s === -1 ? e.questions.length - 1 : s), u = e.questions[c], d = n.answers[u.id], f = (c + 1) / e.questions.length * 100, p = Xr[t], m = c === e.questions.length - 1, h = (0, C.useRef)(null), g = (0, C.useRef)(!1);
+function gi({ survey: e, actor: t, run: n, agentRun: r, onSaveAnswer: i, onComplete: a, onHome: o }) {
+	let s = e.questions.findIndex((e) => !n.answers[e.id]), [c, l] = (0, C.useState)(s === -1 ? e.questions.length - 1 : s), u = e.questions[c], d = n.answers[u.id], f = (c + 1) / e.questions.length * 100, p = Zr[t], m = c === e.questions.length - 1, h = (0, C.useRef)(null), g = (0, C.useRef)(!1);
 	(0, C.useEffect)(() => {
 		g.current = !1, h.current?.focus({ preventScroll: !0 });
 	}, [c]);
@@ -13389,11 +13394,11 @@ function hi({ survey: e, actor: t, run: n, agentRun: r, onSaveAnswer: i, onCompl
 	function v() {
 		d && (m ? a() : l((e) => e + 1));
 	}
-	return /* @__PURE__ */ (0, z.jsx)(di, {
+	return /* @__PURE__ */ (0, z.jsx)(fi, {
 		onHome: o,
 		children: /* @__PURE__ */ (0, z.jsxs)("div", {
 			className: "quiz-stage",
-			style: ri(e),
+			style: ii(e),
 			children: [
 				/* @__PURE__ */ (0, z.jsxs)("div", {
 					className: "quiz-topline",
@@ -13412,7 +13417,7 @@ function hi({ survey: e, actor: t, run: n, agentRun: r, onSaveAnswer: i, onCompl
 							}),
 							/* @__PURE__ */ (0, z.jsxs)("span", {
 								className: "run-metadata-chip",
-								children: ["Persona agent: ", ii(n.personaAgent)]
+								children: ["Persona agent: ", ai(n.personaAgent)]
 							})
 						]
 					})] }), /* @__PURE__ */ (0, z.jsxs)("p", {
@@ -13460,7 +13465,7 @@ function hi({ survey: e, actor: t, run: n, agentRun: r, onSaveAnswer: i, onCompl
 									"aria-pressed": n,
 									onClick: () => _(t.id),
 									className: `answer-option focus-ring ${n ? "answer-selected" : ""} ${e.kind === "scale" ? "scale-option" : ""}`,
-									style: n ? ri(e) : void 0,
+									style: n ? ii(e) : void 0,
 									children: [e.kind === "scale" ? /* @__PURE__ */ (0, z.jsx)("span", {
 										className: "option-key",
 										children: t.id
@@ -13513,7 +13518,7 @@ function hi({ survey: e, actor: t, run: n, agentRun: r, onSaveAnswer: i, onCompl
 		})
 	});
 }
-function gi({ result: e, survey: t }) {
+function _i({ result: e, survey: t }) {
 	return /* @__PURE__ */ (0, z.jsx)("div", {
 		className: "mt-8 space-y-4",
 		children: Object.entries(e.scores).map(([e, n]) => /* @__PURE__ */ (0, z.jsxs)("div", { children: [/* @__PURE__ */ (0, z.jsxs)("div", {
@@ -13531,7 +13536,7 @@ function gi({ result: e, survey: t }) {
 		})] }, e))
 	});
 }
-function _i({ result: e, survey: t, compact: n = !1 }) {
+function vi({ result: e, survey: t, compact: n = !1 }) {
 	return /* @__PURE__ */ (0, z.jsx)("div", {
 		className: `mt-7 ${n ? "space-y-4" : "grid gap-4 sm:grid-cols-2"}`,
 		children: e.values.map((e) => /* @__PURE__ */ (0, z.jsxs)("div", {
@@ -13573,7 +13578,7 @@ function _i({ result: e, survey: t, compact: n = !1 }) {
 		}, e.id))
 	});
 }
-function vi({ result: e, survey: t, compact: n = !1 }) {
+function yi({ result: e, survey: t, compact: n = !1 }) {
 	return /* @__PURE__ */ (0, z.jsx)("div", {
 		className: "mt-7 space-y-5",
 		children: Jt.map((r, i) => /* @__PURE__ */ (0, z.jsxs)("div", { children: [
@@ -13603,27 +13608,27 @@ function vi({ result: e, survey: t, compact: n = !1 }) {
 		] }, r.key))
 	});
 }
-function yi({ result: e, survey: t, compact: n = !1 }) {
-	return e.kind === "categorical" ? /* @__PURE__ */ (0, z.jsx)(gi, {
+function bi({ result: e, survey: t, compact: n = !1 }) {
+	return e.kind === "categorical" ? /* @__PURE__ */ (0, z.jsx)(_i, {
 		result: e,
 		survey: t
-	}) : e.kind === "scale" ? /* @__PURE__ */ (0, z.jsx)(_i, {
+	}) : e.kind === "scale" ? /* @__PURE__ */ (0, z.jsx)(vi, {
 		result: e,
 		survey: t,
 		compact: n
-	}) : /* @__PURE__ */ (0, z.jsx)(vi, {
+	}) : /* @__PURE__ */ (0, z.jsx)(yi, {
 		result: e,
 		survey: t,
 		compact: n
 	});
 }
-function bi({ survey: e, actor: t, run: n, agentRun: r, hasCompletedHuman: i, completedAgentCount: a, onPrimary: o, onHistory: s, onHumanChange: c, onHome: l }) {
-	let u = tn(e, n.answers), d = t === "agent" && r, f = Xr[t], p = d ? i ? `Compare Agent run ${r.sequence}` : "Complete the Human benchmark" : a ? "View the aggregated validation Results" : "Go to validation Results", m = d ? i ? "The Human benchmark and this run are now ready for their own question-level comparison." : "This Agent run is saved. Complete the Human benchmark to unlock its question-level comparison." : a ? `There ${a === 1 ? "is" : "are"} ${a} saved Agent ${a === 1 ? "response" : "responses"} for this benchmark. Results keeps the aggregate comparison together.` : "The Human answers are saved locally. Start the next full Agent experiment from Results.";
-	return /* @__PURE__ */ (0, z.jsx)(di, {
+function xi({ survey: e, actor: t, run: n, agentRun: r, hasCompletedHuman: i, completedAgentCount: a, onPrimary: o, onHistory: s, onHumanChange: c, onHome: l }) {
+	let u = tn(e, n.answers), d = t === "agent" && r, f = Zr[t], p = d ? i ? `Compare Agent run ${r.sequence}` : "Complete the Human benchmark" : a ? "View the aggregated validation Results" : "Go to validation Results", m = d ? i ? "The Human benchmark and this run are now ready for their own question-level comparison." : "This Agent run is saved. Complete the Human benchmark to unlock its question-level comparison." : a ? `There ${a === 1 ? "is" : "are"} ${a} saved Agent ${a === 1 ? "response" : "responses"} for this benchmark. Results keeps the aggregate comparison together.` : "The Human answers are saved locally. Start the next full Agent experiment from Results.";
+	return /* @__PURE__ */ (0, z.jsx)(fi, {
 		onHome: l,
 		children: /* @__PURE__ */ (0, z.jsxs)("div", {
 			className: "result-stage",
-			style: ri(e),
+			style: ii(e),
 			children: [
 				/* @__PURE__ */ (0, z.jsxs)("section", {
 					className: "result-hero",
@@ -13654,7 +13659,7 @@ function bi({ survey: e, actor: t, run: n, agentRun: r, hasCompletedHuman: i, co
 								}),
 								/* @__PURE__ */ (0, z.jsxs)("div", {
 									className: "mx-auto mt-4 w-fit rounded-full bg-white/70 px-3 py-1.5 text-xs font-black text-slate-600 shadow-sm",
-									children: ["Persona agent: ", ii(n.personaAgent)]
+									children: ["Persona agent: ", ai(n.personaAgent)]
 								}),
 								d && /* @__PURE__ */ (0, z.jsxs)("div", {
 									className: "mx-auto mt-2 w-fit rounded-full px-3 py-1.5 text-xs font-black",
@@ -13699,7 +13704,7 @@ function bi({ survey: e, actor: t, run: n, agentRun: r, hasCompletedHuman: i, co
 							},
 							children: [e.questions.length, " answers"]
 						})]
-					}), /* @__PURE__ */ (0, z.jsx)(yi, {
+					}), /* @__PURE__ */ (0, z.jsx)(bi, {
 						result: u,
 						survey: e
 					})]
@@ -13756,8 +13761,8 @@ function bi({ survey: e, actor: t, run: n, agentRun: r, hasCompletedHuman: i, co
 		})
 	});
 }
-function xi({ survey: e, actor: t, result: n }) {
-	let r = Xr[t];
+function Si({ survey: e, actor: t, result: n }) {
+	let r = Zr[t];
 	return /* @__PURE__ */ (0, z.jsxs)("div", {
 		className: "comparison-result-card",
 		children: [
@@ -13782,7 +13787,7 @@ function xi({ survey: e, actor: t, result: n }) {
 				className: "mt-4 text-sm leading-6 text-slate-600",
 				children: n.description
 			}),
-			/* @__PURE__ */ (0, z.jsx)(yi, {
+			/* @__PURE__ */ (0, z.jsx)(bi, {
 				result: n,
 				survey: e,
 				compact: !0
@@ -13790,13 +13795,13 @@ function xi({ survey: e, actor: t, result: n }) {
 		]
 	});
 }
-function Si({ survey: e, human: t, agentRun: n, onResult: r, onHistory: i, onHome: a }) {
+function Ci({ survey: e, human: t, agentRun: n, onResult: r, onHistory: i, onHome: a }) {
 	let o = rn(e, t.answers, n.answers), s = tn(e, t.answers), c = tn(e, n.answers), l = o.exactMatches === e.questions.length ? "Every answer matched." : `${o.exactMatches} of ${e.questions.length} answers matched exactly.`;
-	return /* @__PURE__ */ (0, z.jsx)(di, {
+	return /* @__PURE__ */ (0, z.jsx)(fi, {
 		onHome: a,
 		children: /* @__PURE__ */ (0, z.jsxs)("div", {
 			className: "comparison-stage",
-			style: ri(e),
+			style: ii(e),
 			children: [
 				/* @__PURE__ */ (0, z.jsxs)("section", {
 					className: "comparison-hero",
@@ -13840,7 +13845,7 @@ function Si({ survey: e, human: t, agentRun: n, onResult: r, onHistory: i, onHom
 									children: [
 										"Persona agent:",
 										" ",
-										/* @__PURE__ */ (0, z.jsx)("strong", { children: ii(n.personaAgent) })
+										/* @__PURE__ */ (0, z.jsx)("strong", { children: ai(n.personaAgent) })
 									]
 								}),
 								/* @__PURE__ */ (0, z.jsxs)("span", {
@@ -13869,7 +13874,7 @@ function Si({ survey: e, human: t, agentRun: n, onResult: r, onHistory: i, onHom
 							className: "mt-4 text-xs font-bold text-slate-500",
 							children: [
 								"Completed ",
-								ti(n.completedAt),
+								ni(n.completedAt),
 								n.migrated ? " - imported from the earlier app version" : ""
 							]
 						})
@@ -13877,11 +13882,11 @@ function Si({ survey: e, human: t, agentRun: n, onResult: r, onHistory: i, onHom
 				}),
 				/* @__PURE__ */ (0, z.jsxs)("section", {
 					className: "mx-auto mt-10 grid max-w-[1080px] gap-5 lg:grid-cols-2",
-					children: [/* @__PURE__ */ (0, z.jsx)(xi, {
+					children: [/* @__PURE__ */ (0, z.jsx)(Si, {
 						survey: e,
 						actor: "human",
 						result: s
-					}), /* @__PURE__ */ (0, z.jsx)(xi, {
+					}), /* @__PURE__ */ (0, z.jsx)(Si, {
 						survey: e,
 						actor: "agent",
 						result: c
@@ -14005,7 +14010,7 @@ function Si({ survey: e, human: t, agentRun: n, onResult: r, onHistory: i, onHom
 		})
 	});
 }
-function Ci({ points: e, survey: t }) {
+function wi({ points: e, survey: t }) {
 	let n = (0, C.useRef)(null), r = Math.max(1, ...e.map((e) => e.dimensionCount)), i = (e) => 90 + e / r * 622, a = (e) => 22 + (1 - e) * 202, o = Array.from(new Set(Array.from({ length: 5 }, (e, t) => Math.round(r * t / 4)))), s = /* @__PURE__ */ new Map();
 	e.forEach((e) => {
 		let t = `${e.dimensionCount}:${e.similarity.toFixed(6)}`, n = s.get(t);
@@ -14157,16 +14162,16 @@ function Ci({ points: e, survey: t }) {
 		]
 	});
 }
-function wi({ survey: e, history: t, onComparison: n, onHumanResult: r, onHome: i }) {
-	let a = t.human, o = jn(t, a.id).sort(oi), s = jn(t).filter((e) => e.benchmarkId !== a.id).sort(oi), c = In(e.id, t), l = Rn(c), u = o.map((t) => ({
+function Ti({ survey: e, history: t, onComparison: n, onHumanResult: r, onHome: i }) {
+	let a = t.human, o = jn(t, a.id).sort(si), s = jn(t).filter((e) => e.benchmarkId !== a.id).sort(si), c = In(e.id, t), l = Rn(c), u = o.map((t) => ({
 		run: t,
 		comparison: rn(e, a.answers, t.answers)
 	})), d = u.at(-1), f = u.length ? u.reduce((e, t) => t.comparison.similarity > e.comparison.similarity ? t : e) : void 0, p = o.filter((e) => e.dimensionCount === null).length;
-	return /* @__PURE__ */ (0, z.jsx)(di, {
+	return /* @__PURE__ */ (0, z.jsx)(fi, {
 		onHome: i,
 		children: /* @__PURE__ */ (0, z.jsxs)("div", {
 			className: "history-stage",
-			style: ri(e),
+			style: ii(e),
 			children: [
 				/* @__PURE__ */ (0, z.jsxs)("section", {
 					className: "history-heading",
@@ -14193,7 +14198,7 @@ function wi({ survey: e, history: t, onComparison: n, onHumanResult: r, onHome: 
 							children: [
 								/* @__PURE__ */ (0, z.jsxs)("span", {
 									className: "history-stat",
-									children: [/* @__PURE__ */ (0, z.jsx)("small", { children: "Persona agent" }), /* @__PURE__ */ (0, z.jsx)("strong", { children: ii(a.personaAgent) })]
+									children: [/* @__PURE__ */ (0, z.jsx)("small", { children: "Persona agent" }), /* @__PURE__ */ (0, z.jsx)("strong", { children: ai(a.personaAgent) })]
 								}),
 								/* @__PURE__ */ (0, z.jsxs)("span", {
 									className: "history-stat",
@@ -14239,7 +14244,7 @@ function wi({ survey: e, history: t, onComparison: n, onHumanResult: r, onHome: 
 								})
 							] })
 						}),
-						c.length ? /* @__PURE__ */ (0, z.jsx)(Ci, {
+						c.length ? /* @__PURE__ */ (0, z.jsx)(wi, {
 							points: c,
 							survey: e
 						}) : /* @__PURE__ */ (0, z.jsxs)("div", {
@@ -14308,7 +14313,7 @@ function wi({ survey: e, history: t, onComparison: n, onHumanResult: r, onHome: 
 										className: "font-black text-slate-950",
 										children: ["Run ", t.sequence]
 									}),
-									/* @__PURE__ */ (0, z.jsx)(Vt, { children: ii(t.personaAgent) }),
+									/* @__PURE__ */ (0, z.jsx)(Vt, { children: ai(t.personaAgent) }),
 									/* @__PURE__ */ (0, z.jsx)(Vt, { children: t.dimensionCount ?? "Not recorded" }),
 									/* @__PURE__ */ (0, z.jsx)(Vt, { children: /* @__PURE__ */ (0, z.jsx)("span", {
 										className: "rounded-full px-2.5 py-1 text-xs font-black",
@@ -14323,7 +14328,7 @@ function wi({ survey: e, history: t, onComparison: n, onHumanResult: r, onHome: 
 										" / ",
 										e.questions.length
 									] }),
-									/* @__PURE__ */ (0, z.jsx)(Vt, { children: ti(t.completedAt) }),
+									/* @__PURE__ */ (0, z.jsx)(Vt, { children: ni(t.completedAt) }),
 									/* @__PURE__ */ (0, z.jsx)(Vt, {
 										className: "text-right",
 										children: /* @__PURE__ */ (0, z.jsx)("button", {
@@ -14380,10 +14385,10 @@ function wi({ survey: e, history: t, onComparison: n, onHumanResult: r, onHome: 
 											}), /* @__PURE__ */ (0, z.jsxs)("span", {
 												className: "text-xs font-bold text-slate-500",
 												children: [
-													ii(t.personaAgent),
+													ai(t.personaAgent),
 													" -",
 													" ",
-													ti(t.completedAt)
+													ni(t.completedAt)
 												]
 											})]
 										}, t.id);
@@ -14422,8 +14427,8 @@ function wi({ survey: e, history: t, onComparison: n, onHumanResult: r, onHome: 
 		})
 	});
 }
-function Ti({ onHome: e }) {
-	return /* @__PURE__ */ (0, z.jsx)(di, {
+function Ei({ onHome: e }) {
+	return /* @__PURE__ */ (0, z.jsx)(fi, {
 		onHome: e,
 		children: /* @__PURE__ */ (0, z.jsxs)("article", {
 			className: "prose-card",
@@ -14486,7 +14491,7 @@ function Ti({ onHome: e }) {
 		})
 	});
 }
-function Ei({ notice: e }) {
+function Di({ notice: e }) {
 	return /* @__PURE__ */ (0, z.jsxs)("output", {
 		className: "validation-save-status",
 		"aria-live": "polite",
@@ -14496,8 +14501,8 @@ function Ei({ notice: e }) {
 		}), /* @__PURE__ */ (0, z.jsx)("span", { children: e.message })]
 	});
 }
-function Di({ hosted: e = !1 }) {
-	let [t, n] = (0, C.useState)({}), [r, i] = (0, C.useState)(Zr), [a, o] = (0, C.useState)(!1), [s, c] = (0, C.useState)(e), [l, u] = (0, C.useState)(null), [d, f] = (0, C.useState)(!1), [p, m] = (0, C.useState)(!1), [h, g] = (0, C.useState)(null), [_, v] = (0, C.useState)(0), y = (0, C.useRef)({}), b = (0, C.useRef)(null), x = (0, C.useRef)({}), S = (0, C.useRef)(void 0), w = (0, C.useRef)(!1), T = (0, C.useRef)(!1), ee = (0, C.useRef)(null), E = (0, C.useRef)(!1), D = (0, C.useRef)(0), O = (0, C.useRef)(!0);
+function Oi({ hosted: e = !1 }) {
+	let [t, n] = (0, C.useState)({}), [r, i] = (0, C.useState)(Qr), [a, o] = (0, C.useState)(!1), [s, c] = (0, C.useState)(e), [l, u] = (0, C.useState)(null), [d, f] = (0, C.useState)(!1), [p, m] = (0, C.useState)(!1), [h, g] = (0, C.useState)(null), [_, v] = (0, C.useState)(0), y = (0, C.useRef)({}), b = (0, C.useRef)(null), x = (0, C.useRef)({}), S = (0, C.useRef)(void 0), w = (0, C.useRef)(!1), T = (0, C.useRef)(!1), ee = (0, C.useRef)(null), E = (0, C.useRef)(!1), D = (0, C.useRef)(0), O = (0, C.useRef)(!0);
 	(0, C.useEffect)(() => {
 		y.current = t;
 	}, [t]);
@@ -14522,7 +14527,7 @@ function Di({ hosted: e = !1 }) {
 				if (!(o instanceof rr) || o.status !== 409 || !o.currentState) throw o;
 				let s = o.currentState;
 				if (s.contextId !== e.contextId) {
-					b.current = s, x.current = s.store, y.current = s.store, ee.current = null, O.current && (n(s.store), i(Zr), u({
+					b.current = s, x.current = s.store, y.current = s.store, ee.current = null, O.current && (n(s.store), i(Qr), u({
 						kind: "saved",
 						message: "active persona changed - its results were loaded from disk."
 					}));
@@ -14533,7 +14538,7 @@ function Di({ hosted: e = !1 }) {
 			b.current = a, x.current = a.store, ee.current = null;
 			let o = kn(a.store, y.current);
 			if (ur(o) !== ur(y.current) && (y.current = o, O.current && n(o)), O.current) {
-				let e = ni(a.savedAt);
+				let e = ri(a.savedAt);
 				u({
 					kind: "saved",
 					message: e ? `saved to disk at ${e}` : "saved to disk"
@@ -14557,7 +14562,7 @@ function Di({ hosted: e = !1 }) {
 		}), r = !1;
 		async function i() {
 			try {
-				let e = await or(), t = ni(e.savedAt), i = t ? {
+				let e = await or(), t = ri(e.savedAt), i = t ? {
 					kind: "saved",
 					message: `saved to disk at ${t}`
 				} : {
@@ -14608,7 +14613,7 @@ function Di({ hosted: e = !1 }) {
 					s = jr(s, r, Wt), c = r.batchId, l += r.successes.length, d += r.failures.length;
 				}
 				if (t) return;
-				y.current = s, n(s), c && g(c), i(Zr), u({
+				y.current = s, n(s), c && g(c), i(Qr), u({
 					kind: d ? "error" : "saved",
 					message: d ? `${l} recovered Agent responses will be saved. ${d} runs did not finish.` : `${l} Agent responses recovered - saving them to disk.`
 				}), r = !0;
@@ -14638,7 +14643,7 @@ function Di({ hosted: e = !1 }) {
 		a,
 		_
 	]);
-	let ne = ci(t, r), k = "surveyId" in r ? Gt[r.surveyId] : void 0;
+	let ne = li(t, r), k = "surveyId" in r ? Gt[r.surveyId] : void 0;
 	function re(e, t) {
 		n((n) => ({
 			...n,
@@ -14646,7 +14651,7 @@ function Di({ hosted: e = !1 }) {
 		}));
 	}
 	function ie() {
-		i(Zr), window.scrollTo({
+		i(Qr), window.scrollTo({
 			top: 0,
 			behavior: "smooth"
 		});
@@ -14661,7 +14666,7 @@ function Di({ hosted: e = !1 }) {
 	async function A() {
 		try {
 			let e = await or(), r = b.current;
-			if (r && e.contextId !== r.contextId) return b.current = e, x.current = e.store, y.current = e.store, ee.current = null, n(e.store), i(Zr), u({
+			if (r && e.contextId !== r.contextId) return b.current = e, x.current = e.store, y.current = e.store, ee.current = null, n(e.store), i(Qr), u({
 				kind: "saved",
 				message: "active persona changed - its results were loaded from disk."
 			}), null;
@@ -14699,7 +14704,7 @@ function Di({ hosted: e = !1 }) {
 			let t = ae();
 			if (!t) return;
 			let n = {
-				id: ei("human"),
+				id: ti("human"),
 				answers: {},
 				startedAt: (/* @__PURE__ */ new Date()).toISOString(),
 				personaAgent: t
@@ -14733,7 +14738,7 @@ function Di({ hosted: e = !1 }) {
 				});
 				if (!O.current) return;
 				let a = jr(y.current, r, Wt);
-				y.current = a, n(a), g(r.batchId), e || i(Zr), u({
+				y.current = a, n(a), g(r.batchId), e || i(Qr), u({
 					kind: r.failures.length ? "error" : "saved",
 					message: r.failures.length ? `${r.successes.length} of 40 Agent responses completed and will be saved. ${r.failures.length} failed.` : "40 Agent responses complete - saving the experiment to disk."
 				}), e || window.scrollTo({
@@ -14805,7 +14810,7 @@ function Di({ hosted: e = !1 }) {
 		let a = ae();
 		if (!a) return;
 		let o = {
-			id: ei("human"),
+			id: ti("human"),
 			answers: {},
 			startedAt: (/* @__PURE__ */ new Date()).toISOString(),
 			personaAgent: a
@@ -14894,7 +14899,7 @@ function Di({ hosted: e = !1 }) {
 		t
 	]);
 	function le() {
-		return /* @__PURE__ */ (0, z.jsx)(mi, {
+		return /* @__PURE__ */ (0, z.jsx)(hi, {
 			store: t,
 			onHuman: j,
 			onRunAll: () => void oe(),
@@ -14908,12 +14913,12 @@ function Di({ hosted: e = !1 }) {
 	function F() {
 		if (!a) return /* @__PURE__ */ (0, z.jsx)("div", { className: "validation-loading min-h-screen" });
 		if (r.name === "home") return le();
-		if (r.name === "license") return /* @__PURE__ */ (0, z.jsx)(Ti, { onHome: ie });
+		if (r.name === "license") return /* @__PURE__ */ (0, z.jsx)(Ei, { onHome: ie });
 		if (!k) return null;
 		let e = An(t, k.id);
 		if (r.name === "quiz") {
 			let t = r.actor === "human" ? e.human : Nn(e, r.runId);
-			return t ? /* @__PURE__ */ (0, z.jsx)(hi, {
+			return t ? /* @__PURE__ */ (0, z.jsx)(gi, {
 				survey: k,
 				actor: r.actor,
 				run: t,
@@ -14926,8 +14931,8 @@ function Di({ hosted: e = !1 }) {
 		if (r.name === "result") {
 			let t = r.actor === "human" ? e.human : Nn(e, r.runId);
 			if (!t?.completedAt) return le();
-			let n = !!(e.human?.completedAt && (r.actor === "human" || ai(e.human.personaAgent, t.personaAgent))), a = n ? jn(e, e.human.id).length : 0;
-			return /* @__PURE__ */ (0, z.jsx)(bi, {
+			let n = !!(e.human?.completedAt && (r.actor === "human" || oi(e.human.personaAgent, t.personaAgent))), a = n ? jn(e, e.human.id).length : 0;
+			return /* @__PURE__ */ (0, z.jsx)(xi, {
 				survey: k,
 				actor: r.actor,
 				run: t,
@@ -14949,7 +14954,7 @@ function Di({ hosted: e = !1 }) {
 		}
 		if (r.name === "comparison") {
 			let t = Nn(e, r.runId);
-			return !e.human?.completedAt || !t?.completedAt || t.benchmarkId !== e.human.id || !ai(e.human.personaAgent, t.personaAgent) ? le() : /* @__PURE__ */ (0, z.jsx)(Si, {
+			return !e.human?.completedAt || !t?.completedAt || t.benchmarkId !== e.human.id || !oi(e.human.personaAgent, t.personaAgent) ? le() : /* @__PURE__ */ (0, z.jsx)(Ci, {
 				survey: k,
 				human: e.human,
 				agentRun: t,
@@ -14966,7 +14971,7 @@ function Di({ hosted: e = !1 }) {
 				onHome: ie
 			});
 		}
-		return !e.human?.completedAt || jn(e, e.human.id).length === 0 ? le() : /* @__PURE__ */ (0, z.jsx)(wi, {
+		return !e.human?.completedAt || jn(e, e.human.id).length === 0 ? le() : /* @__PURE__ */ (0, z.jsx)(Ti, {
 			survey: k,
 			history: e,
 			onComparison: (e) => i({
@@ -14986,18 +14991,18 @@ function Di({ hosted: e = !1 }) {
 	let ue = a && ne.name !== "license" && l !== null;
 	return /* @__PURE__ */ (0, z.jsxs)("div", {
 		className: [s ? "validation-embedded" : "", ue ? "validation-save-visible" : ""].filter(Boolean).join(" ") || void 0,
-		children: [F(), ue && /* @__PURE__ */ (0, z.jsx)(Ei, { notice: l })]
+		children: [F(), ue && /* @__PURE__ */ (0, z.jsx)(Di, { notice: l })]
 	});
 }
 //#endregion
 //#region app/validation-entry.tsx
-var Oi = document.getElementById("validation-root");
-if (!Oi) throw Error("The Validation mount point was not found.");
-var ki = (0, N.createRoot)(Oi), Ai = 0;
-function ji() {
-	ki.render(/* @__PURE__ */ (0, z.jsx)(Di, { hosted: !0 }, Ai));
+var ki = document.getElementById("validation-root");
+if (!ki) throw Error("The Validation mount point was not found.");
+var Ai = (0, N.createRoot)(ki), ji = 0;
+function Mi() {
+	Ai.render(/* @__PURE__ */ (0, z.jsx)(Oi, { hosted: !0 }, ji));
 }
 window.addEventListener("matraix-validation-reload", () => {
-	Ai += 1, ji();
-}), ji();
+	ji += 1, Mi();
+}), Mi();
 //#endregion

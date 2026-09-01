@@ -30,6 +30,7 @@ import {
 import {
   aggregateValidationExperiment,
   validationExperimentOptions,
+  validationExperimentWarning,
 } from '../lib/validation-results.ts';
 import {
   browserMigrationCandidate,
@@ -104,6 +105,69 @@ assert.deepEqual(
     ),
   },
   'the browser and isolated Agent endpoint must use the same survey manifest',
+);
+
+const validationPageSource = readFileSync(
+  new URL('../app/page.tsx', import.meta.url),
+  'utf8',
+);
+const resultsToolbarStart = validationPageSource.indexOf(
+  '<div className="validation-results-toolbar">',
+);
+const experimentWarningStart = validationPageSource.indexOf(
+  'className="validation-experiment-warning"',
+);
+const overallResultsStart = validationPageSource.indexOf(
+  '<section className="validation-overall-results"',
+);
+const overallResultsEnd = validationPageSource.indexOf(
+  '</section>',
+  overallResultsStart,
+);
+assert.ok(resultsToolbarStart >= 0, 'the experiment selector must be rendered');
+assert.ok(
+  experimentWarningStart > resultsToolbarStart &&
+    experimentWarningStart < overallResultsStart,
+  'the partial-run warning must appear directly under the selected experiment',
+);
+const overallResultsMarkup = validationPageSource.slice(
+  overallResultsStart,
+  overallResultsEnd,
+);
+assert.doesNotMatch(
+  overallResultsMarkup,
+  /<span>Agent responses<\/span>/,
+  'the overall Agent responses card must not be rendered',
+);
+assert.doesNotMatch(
+  overallResultsMarkup,
+  /surveys represented/,
+  'the removed Agent responses card copy must not remain',
+);
+
+const partialExperimentWarning = validationExperimentWarning({
+  completedRuns: 39,
+  expectedRuns: 40,
+});
+assert.equal(
+  partialExperimentWarning,
+  'Only 39 of 40 Agent responses finished successfully.',
+  'a partial experiment must report its successful run count out of 40',
+);
+assert.equal(
+  validationExperimentWarning({ completedRuns: 40, expectedRuns: 40 }),
+  null,
+  'a complete 40 of 40 experiment must not show a warning',
+);
+assert.equal(
+  validationExperimentWarning({ completedRuns: 41, expectedRuns: 40 }),
+  null,
+  'the warning condition must be strictly completedRuns < expectedRuns',
+);
+assert.equal(
+  validationExperimentWarning(null),
+  null,
+  'the empty experiment state must not show a partial-run warning',
 );
 
 const everyday = surveyById.everyday;
