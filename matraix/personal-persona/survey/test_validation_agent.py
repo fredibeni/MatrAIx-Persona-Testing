@@ -238,7 +238,7 @@ class ValidationAgentTests(unittest.TestCase):
                         {**payload, "runs_per_survey": invalid_count}
                     )
 
-    def test_batch_checks_persona_revision_before_and_after_workers(self) -> None:
+    def test_batch_captures_starting_revision_and_allows_later_changes(self) -> None:
         payload = self.batch_payload()
         with self.assertRaises(server.PersonaContextChangedError):
             server.generate_validation_agent_batch(
@@ -262,9 +262,24 @@ class ValidationAgentTests(unittest.TestCase):
             return first_option_reply_from_call(call)
 
         self.helpers.reply_factory = reply_and_change_persona
-        with self.assertRaises(server.PersonaContextChangedError):
-            server.generate_validation_agent_batch(payload)
+        result = server.generate_validation_agent_batch(payload)
+
+        self.assertTrue(mutated)
         self.assertEqual(len(self.helpers.calls), 40)
+        self.assertEqual(result["status"], "complete")
+        self.assertEqual(result["succeeded_runs"], 40)
+        self.assertEqual(result["failed_runs"], 0)
+        self.assertEqual(result["persona_revision"], payload["persona_revision"])
+        self.assertTrue(
+            all(
+                entry["persona_revision"] == payload["persona_revision"]
+                for entry in result["results"]
+            )
+        )
+        self.assertNotEqual(
+            server.sha256_path(server.ACTIVE_PERSONA_PATH),
+            payload["persona_revision"],
+        )
 
     def test_batch_runs_all_forty_agents_concurrently_in_stable_order(
         self,

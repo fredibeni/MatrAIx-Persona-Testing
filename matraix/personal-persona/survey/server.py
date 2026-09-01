@@ -1114,7 +1114,8 @@ def generate_validation_agent_batch_unlocked(
                     )
                 )
 
-    assert_validation_agent_context_unchanged(prepared)
+    # The batch runs against the immutable identity captured before workers start.
+    # The active persona may continue evolving while those background runs finish.
     results = [result for result in slots if result is not None]
     return validation_agent_batch_document(
         prepared,
@@ -1947,6 +1948,109 @@ def stored_validation_record_revisions(
     return revisions
 
 
+def verified_validation_agent_batch_record_revision(
+    context: PersonaContext,
+    survey_id: str,
+    record: dict[str, Any],
+    journal_cache: dict[str, dict[str, Any] | None],
+) -> str | None:
+    """Return a server-journaled batch revision for an exact persisted result."""
+    experiment = record.get("experiment")
+    if not isinstance(experiment, dict):
+        return None
+    batch_id = experiment.get("id")
+    if not isinstance(batch_id, str) or re.fullmatch(
+        r"validation-batch-[0-9a-f]{24}", batch_id
+    ) is None:
+        return None
+
+    if batch_id not in journal_cache:
+        journal_path = validation_agent_batch_journal_path(
+            context.responses_path.parent,
+            batch_id,
+        )
+        try:
+            journal_cache[batch_id] = load_validation_agent_batch_journal(
+                journal_path,
+                recover_interrupted=False,
+            )
+        except (OSError, ValueError, json.JSONDecodeError):
+            journal_cache[batch_id] = None
+    journal = journal_cache[batch_id]
+    if not isinstance(journal, dict):
+        return None
+
+    revision = journal.get("persona_revision")
+    dimension_count = journal.get("persona_dimension_count")
+    expected_runs = len(VALIDATION_SURVEY_ORDER) * VALIDATION_BATCH_RUNS_PER_SURVEY
+    results = journal.get("results")
+    if (
+        journal.get("ok") is not True
+        or journal.get("status") != "complete"
+        or journal.get("batch_id") != batch_id
+        or journal.get("context_id") != context.context_id
+        or journal.get("persona_id") != context.persona_id
+        or journal.get("baseline_sha256") != context.baseline_sha256
+        or not isinstance(revision, str)
+        or re.fullmatch(r"[0-9a-f]{64}", revision) is None
+        or not isinstance(dimension_count, int)
+        or isinstance(dimension_count, bool)
+        or dimension_count < 0
+        or journal.get("runs_per_survey") != VALIDATION_BATCH_RUNS_PER_SURVEY
+        or journal.get("survey_count") != len(VALIDATION_SURVEY_ORDER)
+        or journal.get("requested_runs") != expected_runs
+        or journal.get("completed_runs") != expected_runs
+        or not isinstance(results, list)
+        or len(results) != expected_runs
+        or experiment.get("startedAt") != journal.get("started_at")
+        or experiment.get("responsesPerSurvey")
+        != VALIDATION_BATCH_RUNS_PER_SURVEY
+        or experiment.get("surveyIds") != list(VALIDATION_SURVEY_ORDER)
+    ):
+        return None
+
+    response_index = experiment.get("responseIndex")
+    if (
+        not isinstance(response_index, int)
+        or isinstance(response_index, bool)
+        or not 1 <= response_index <= VALIDATION_BATCH_RUNS_PER_SURVEY
+    ):
+        return None
+    matching_results = [
+        result
+        for result in results
+        if isinstance(result, dict)
+        and result.get("survey_id") == survey_id
+        and result.get("response_index") == response_index
+    ]
+    if len(matching_results) != 1:
+        return None
+    result = matching_results[0]
+    base_record_id = f"agent-{batch_id}-{survey_id}-{response_index}"
+    record_id = record.get("id")
+    if (
+        result.get("ok") is not True
+        or result.get("context_id") != context.context_id
+        or result.get("persona_id") != context.persona_id
+        or result.get("baseline_sha256") != context.baseline_sha256
+        or result.get("persona_revision") != revision
+        or result.get("persona_dimension_count") != dimension_count
+        or not isinstance(record_id, str)
+        or re.fullmatch(
+            rf"{re.escape(base_record_id)}(?:-(?:[2-9]|[1-9][0-9]+))?",
+            record_id,
+        )
+        is None
+        or record.get("dimensionCount") != dimension_count
+        or record.get("answers") != result.get("answers")
+        or record.get("startedAt") != result.get("started_at")
+        or record.get("completedAt") != result.get("completed_at")
+        or record.get("freshSessionAttestedAt") != result.get("started_at")
+    ):
+        return None
+    return revision
+
+
 def stamp_validation_store_identity(
     store: dict[str, Any],
     context: PersonaContext,
@@ -1959,6 +2063,7 @@ def stamp_validation_store_identity(
         if existing_store is not None
         else None
     )
+    journal_cache: dict[str, dict[str, Any] | None] = {}
     surveys = store.get("surveys", {})
     for survey_id, history in surveys.items():
         if not isinstance(history, dict):
@@ -1984,7 +2089,17 @@ def stamp_validation_store_identity(
             if existing_revisions is not None and existing_key in existing_revisions:
                 revision = existing_revisions[existing_key]
             elif existing_revisions is not None:
-                revision = context.output_sha256
+                verified_revision = (
+                    verified_validation_agent_batch_record_revision(
+                        context,
+                        str(survey_id),
+                        record,
+                        journal_cache,
+                    )
+                    if actor == "agent"
+                    else None
+                )
+                revision = verified_revision or context.output_sha256
             else:
                 current_identity = record.get("personaAgent")
                 revision = (

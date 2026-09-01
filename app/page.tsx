@@ -70,6 +70,7 @@ import {
   isValidationHostLayoutMessage,
   isValidationNavigateMessage,
   isValidationRequestStateMessage,
+  isValidationRunAgentBatchMessage,
   VALIDATION_COMMAND_EVENT,
   VALIDATION_HOST_ORIGIN,
   VALIDATION_STATE_EVENT,
@@ -2271,7 +2272,9 @@ export function ValidationApp({ hosted = false }: { hosted?: boolean }) {
     window.scrollTo({ top: 0 });
   }
 
-  async function runAllAgentSurveys() {
+  async function runAllAgentSurveys({
+    background = false,
+  }: { background?: boolean } = {}) {
     if (!batchRecoveryComplete || agentRunInFlightRef.current) return;
     agentRunInFlightRef.current = true;
     setRunningExperiment(true);
@@ -2309,14 +2312,14 @@ export function ValidationApp({ hosted = false }: { hosted?: boolean }) {
       storeRef.current = nextStore;
       setStore(nextStore);
       setSelectedExperimentId(result.batchId);
-      setView(HOME_VIEW);
+      if (!background) setView(HOME_VIEW);
       setSaveNotice({
         kind: result.failures.length ? 'error' : 'saved',
         message: result.failures.length
           ? `${result.successes.length} of 40 Agent responses completed and will be saved. ${result.failures.length} failed.`
           : '40 Agent responses complete - saving the experiment to disk.',
       });
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      if (!background) window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (error) {
       if (!mountedRef.current) return;
       setSaveNotice({
@@ -2444,6 +2447,10 @@ export function ValidationApp({ hosted = false }: { hosted?: boolean }) {
     window.scrollTo({ top: 0 });
   }
 
+  const runAgentBatchFromValidationHost = useEffectEvent(() => {
+    void runAllAgentSurveys({ background: true });
+  });
+
   const navigateFromValidationHost = useEffectEvent(
     (target: {
       name: 'home' | 'human' | 'agent' | 'history';
@@ -2483,7 +2490,10 @@ export function ValidationApp({ hosted = false }: { hosted?: boolean }) {
     if (!embedded || !hydrated) return;
 
     function publishState() {
-      const message = validationStateMessage(store, resolvedView);
+      const message = validationStateMessage(store, resolvedView, {
+        active: runningExperiment,
+        ready: batchRecoveryComplete,
+      });
       if (hosted) {
         window.dispatchEvent(
           new CustomEvent(VALIDATION_STATE_EVENT, { detail: message }),
@@ -2504,6 +2514,10 @@ export function ValidationApp({ hosted = false }: { hosted?: boolean }) {
       }
       if (isValidationRequestStateMessage(message)) {
         publishState();
+        return;
+      }
+      if (isValidationRunAgentBatchMessage(message)) {
+        runAgentBatchFromValidationHost();
         return;
       }
       if (!isValidationNavigateMessage(message)) return;
@@ -2543,7 +2557,15 @@ export function ValidationApp({ hosted = false }: { hosted?: boolean }) {
         window.removeEventListener('message', receiveHostMessage);
       }
     };
-  }, [embedded, hosted, hydrated, store, resolvedView]);
+  }, [
+    batchRecoveryComplete,
+    embedded,
+    hosted,
+    hydrated,
+    resolvedView,
+    runningExperiment,
+    store,
+  ]);
 
   function homeScreen() {
     return (

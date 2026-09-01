@@ -12432,13 +12432,16 @@ function Gn(e) {
 	return Un(e) && e.channel === "matraix-validation" && e.version === 1 && e.type === "request-state";
 }
 function Kn(e) {
+	return Un(e) && e.channel === "matraix-validation" && e.version === 1 && e.type === "run-agent-batch";
+}
+function qn(e) {
 	return Un(e) && e.channel === "matraix-validation" && e.version === 1 && e.type === "host-layout" && [
 		"wide",
 		"medium",
 		"compact"
 	].includes(String(e.viewport));
 }
-function qn(e) {
+function Jn(e) {
 	if (!Un(e) || e.channel !== "matraix-validation" || e.version !== 1 || e.type !== "navigate" || !Un(e.target)) return !1;
 	let t = e.target.name;
 	return [
@@ -12448,8 +12451,11 @@ function qn(e) {
 		"history"
 	].includes(String(t)) ? t === "home" || Wn(e.target.surveyId) : !1;
 }
-function Jn(e, t) {
-	let n = Wt.map((t) => {
+function Yn(e, t, n = {
+	active: !1,
+	ready: !1
+}) {
+	let r = Wt.map((t) => {
 		let n = An(e, t.id), r = Object.keys(n.human?.answers ?? {}).length, i = Mn(n);
 		return {
 			id: t.id,
@@ -12460,11 +12466,11 @@ function Jn(e, t) {
 			agentDraftAnswered: i ? Object.keys(i.answers).length : null,
 			completedAgentRuns: jn(n).length
 		};
-	}), r;
+	}), i;
 	if (t.name === "quiz" && t.surveyId && t.runId) {
-		let n = An(e, t.surveyId), i = t.actor === "agent" ? Nn(n, t.runId) : n.human?.id === t.runId ? n.human : void 0;
-		i && (r = {
-			answered: Object.keys(i.answers).length,
+		let n = An(e, t.surveyId), r = t.actor === "agent" ? Nn(n, t.runId) : n.human?.id === t.runId ? n.human : void 0;
+		r && (i = {
+			answered: Object.keys(r.answers).length,
 			total: Gt[t.surveyId].questions.length
 		});
 	}
@@ -12472,35 +12478,37 @@ function Jn(e, t) {
 		view: t.name,
 		activeSurveyId: t.surveyId,
 		activeActor: t.actor,
-		activeProgress: r,
+		activeProgress: i,
+		agentBatchActive: n.active,
+		agentBatchControllerReady: n.ready,
 		totals: {
-			completedBenchmarks: n.filter((e) => e.humanStatus === "complete").length,
-			completedAgentRuns: n.reduce((e, t) => e + t.completedAgentRuns, 0)
+			completedBenchmarks: r.filter((e) => e.humanStatus === "complete").length,
+			completedAgentRuns: r.reduce((e, t) => e + t.completedAgentRuns, 0)
 		},
-		surveys: n
+		surveys: r
 	};
 }
-function Yn(e, t) {
+function Xn(e, t, n) {
 	return {
 		channel: zn,
 		version: 1,
 		type: "state",
-		state: Jn(e, t)
+		state: Yn(e, t, n)
 	};
 }
 //#endregion
 //#region lib/validation-persistence.ts
-var Xn = `${Bn}/api/validation/state`;
-function Zn(e) {
+var Zn = `${Bn}/api/validation/state`;
+function Qn(e) {
 	return !!(e && typeof e == "object" && !Array.isArray(e));
 }
-function Qn(e) {
-	return Zn(e) ? Zn(e.state) ? e.state : Zn(e.current) ? e.current : Zn(e.validation_state) ? e.validation_state : e : e;
-}
 function $n(e) {
-	let t = Qn(e);
-	if (!Zn(t)) throw Error("The Validation state response was not an object.");
-	let n = t.schema_version, r = t.context_id, i = t.persona_id, a = t.persona_display_name, o = t.baseline_sha256, s = t.persona_revision, c = t.persona_dimension_count, l = t.save_revision, u = t.saved_at, d = Sn(Zn(t.store) ? JSON.stringify(t.store) : null, null);
+	return Qn(e) ? Qn(e.state) ? e.state : Qn(e.current) ? e.current : Qn(e.validation_state) ? e.validation_state : e : e;
+}
+function er(e) {
+	let t = $n(e);
+	if (!Qn(t)) throw Error("The Validation state response was not an object.");
+	let n = t.schema_version, r = t.context_id, i = t.persona_id, a = t.persona_display_name, o = t.baseline_sha256, s = t.persona_revision, c = t.persona_dimension_count, l = t.save_revision, u = t.saved_at, d = Sn(Qn(t.store) ? JSON.stringify(t.store) : null, null);
 	if (n !== 1 || typeof r != "string" || !r.trim() || typeof i != "string" || !i.trim() || typeof a != "string" || !a.trim() || typeof o != "string" || !o.trim() || typeof s != "string" || !s.trim() || typeof c != "number" || !Number.isInteger(c) || c < 0 || c > 9999 || typeof l != "number" || !Number.isInteger(l) || l < 0 || !(u === null || typeof u == "string") || u !== null && !Number.isFinite(Date.parse(u)) || d.source !== "v2") throw Error("The Validation state response had an invalid shape.");
 	let f = {
 		contextId: r,
@@ -12526,45 +12534,45 @@ function $n(e) {
 		})
 	};
 }
-function er(e) {
-	if (Zn(e)) {
+function tr(e) {
+	if (Qn(e)) {
 		if (typeof e.code == "string") return e.code;
-		if (Zn(e.error) && typeof e.error.code == "string") return e.error.code;
+		if (Qn(e.error) && typeof e.error.code == "string") return e.error.code;
 		if (typeof e.error == "string") return e.error;
 	}
 }
-function tr(e, t) {
-	return Zn(e) ? typeof e.message == "string" && e.message.trim() ? e.message : typeof e.error == "string" && e.error.trim() ? e.error : Zn(e.error) && typeof e.error.message == "string" ? e.error.message : t : t;
+function nr(e, t) {
+	return Qn(e) ? typeof e.message == "string" && e.message.trim() ? e.message : typeof e.error == "string" && e.error.trim() ? e.error : Qn(e.error) && typeof e.error.message == "string" ? e.error.message : t : t;
 }
-var nr = class extends Error {
+var rr = class extends Error {
 	constructor(e, t, n, r) {
 		super(e), this.name = "ValidationPersistenceError", this.status = t, this.code = n, this.currentState = r;
 	}
 };
-async function rr(e) {
+async function ir(e) {
 	let t = await e.text();
 	if (!t) return null;
 	try {
 		return JSON.parse(t);
 	} catch {
-		throw new nr("The Validation persistence service returned invalid JSON.", e.status);
+		throw new rr("The Validation persistence service returned invalid JSON.", e.status);
 	}
 }
-function ir(e) {
+function ar(e) {
 	return JSON.parse(Cn(e));
 }
-async function ar(e = fetch) {
-	let t = await e(Xn, {
+async function or(e = fetch) {
+	let t = await e(Zn, {
 		method: "GET",
 		headers: { Accept: "application/json" },
 		cache: "no-store",
 		credentials: "omit"
-	}), n = await rr(t);
-	if (!t.ok) throw new nr(tr(n, "Validation results could not be loaded from disk."), t.status, er(n));
-	return $n(n);
+	}), n = await ir(t);
+	if (!t.ok) throw new rr(nr(n, "Validation results could not be loaded from disk."), t.status, tr(n));
+	return er(n);
 }
-async function or(e, t, n, r = fetch) {
-	let i = await r(Xn, {
+async function sr(e, t, n, r = fetch) {
+	let i = await r(Zn, {
 		method: "POST",
 		headers: {
 			Accept: "application/json",
@@ -12575,66 +12583,66 @@ async function or(e, t, n, r = fetch) {
 		body: JSON.stringify({
 			context_id: e,
 			expected_save_revision: t,
-			store: ir(n)
+			store: ar(n)
 		})
-	}), a = await rr(i);
+	}), a = await ir(i);
 	if (!i.ok) {
 		let e;
 		if (i.status === 409) try {
-			e = $n(a);
+			e = er(a);
 		} catch {}
-		throw new nr(tr(a, "Validation results could not be saved to disk."), i.status, er(a), e);
+		throw new rr(nr(a, "Validation results could not be saved to disk."), i.status, tr(a), e);
 	}
-	return $n(a);
+	return er(a);
 }
-function sr(e) {
-	return !(e instanceof nr) || e.status === 408 || e.status === 429 || e.status >= 500;
+function cr(e) {
+	return !(e instanceof rr) || e.status === 408 || e.status === 429 || e.status >= 500;
 }
-async function cr(e, t, n, r = fetch, i = (e) => new Promise((t) => setTimeout(t, e))) {
+async function lr(e, t, n, r = fetch, i = (e) => new Promise((t) => setTimeout(t, e))) {
 	try {
-		return await or(e, t, n, r);
+		return await sr(e, t, n, r);
 	} catch (a) {
-		if (!sr(a)) throw a;
-		return await i(650), or(e, t, n, r);
+		if (!cr(a)) throw a;
+		return await i(650), sr(e, t, n, r);
 	}
 }
-function lr(e) {
+function ur(e) {
 	return JSON.stringify(e);
 }
 `${Bn}`;
-var ur = `${Bn}/api/validation/agent-batch`;
-function dr(e) {
+var dr = `${Bn}/api/validation/agent-batch`;
+function fr(e) {
 	return !!(e && typeof e == "object" && !Array.isArray(e));
 }
-function fr(e) {
+function pr(e) {
 	return typeof e == "string" && e.trim() ? e : void 0;
 }
-function pr(e) {
+function mr(e) {
 	return typeof e == "string" && Number.isFinite(Date.parse(e)) ? e : void 0;
 }
-function mr(e) {
-	return dr(e) && typeof e.code == "string" ? e.code : void 0;
+function hr(e) {
+	return fr(e) && typeof e.code == "string" ? e.code : void 0;
 }
-function hr(e, t) {
-	return dr(e) ? typeof e.error == "string" && e.error.trim() ? e.error : typeof e.message == "string" && e.message.trim() ? e.message : t : t;
+function gr(e, t) {
+	return fr(e) ? typeof e.error == "string" && e.error.trim() ? e.error : typeof e.message == "string" && e.message.trim() ? e.message : t : t;
 }
-var gr = class extends Error {
+var _r = class extends Error {
 	constructor(e, t, n) {
 		super(e), this.name = "ValidationAgentError", this.status = t, this.code = n;
 	}
 };
-async function _r(e) {
+async function vr(e) {
 	let t = await e.text();
 	if (!t) return null;
 	try {
 		return JSON.parse(t);
 	} catch {
-		throw new gr("The Agent service returned invalid JSON.", e.status);
+		throw new _r("The Agent service returned invalid JSON.", e.status);
 	}
 }
-function vr(e, t, n, r) {
-	if (!dr(e) || e.ok !== !0 || e.survey_id !== t.id) throw Error("The Agent result had an invalid response shape.");
-	let i = fr(e.context_id), a = fr(e.persona_id), o = fr(e.persona_display_name), s = fr(e.baseline_sha256), c = fr(e.persona_revision), l = e.persona_dimension_count, u = fr(e.model), d = fr(e.reasoning_effort), f = pr(e.started_at), p = pr(e.completed_at), m = dr(e.execution) ? e.execution : null, h = dr(e.answers) ? e.answers : null;
+function yr(e, t, n, r) {
+	if (!fr(e) || e.ok !== !0 || e.survey_id !== t.id) throw Error("The Agent result had an invalid response shape.");
+	let i = pr(e.context_id), a = pr(e.persona_id), o = pr(e.persona_display_name), s = pr(e.baseline_sha256), c = pr(e.persona_revision), l = e.persona_dimension_count, u = pr(e.model), d = pr(e.reasoning_effort), f = mr(e.started_at), p = mr(e.completed_at), m = fr(e.execution) ? e.execution : null, h = fr(e.answers) ? e.answers : null;
 	if (i !== n || c !== r || !a || !o || !s || typeof l != "number" || !Number.isInteger(l) || l < 0 || l > 9999 || !u || !d || !f || !p || !m || m.mode !== "codex-ephemeral" || m.prior_conversation_messages !== 0 || m.memory !== "disabled" || m.tools !== "disabled" || !h) throw Error("The Agent result did not prove a clean persona run.");
 	let g = new Set(t.questions.map((e) => e.id));
 	if (Object.keys(h).length !== g.size || Object.keys(h).some((e) => !g.has(e))) throw Error("The Agent result did not answer every survey question.");
@@ -12661,23 +12669,23 @@ function vr(e, t, n, r) {
 		executionMode: "codex-ephemeral"
 	};
 }
-var yr = new Set([
+var br = new Set([
 	"agent_timeout",
 	"invalid_agent_output",
 	"agent_unavailable",
 	"agent_failed",
 	"agent_interrupted"
 ]);
-function br(e, t, n, r) {
-	if (!dr(e) || e.ok !== !0) throw Error("The Agent batch had an invalid response shape.");
-	let i = fr(e.batch_id), a = fr(e.context_id), o = fr(e.persona_revision), s = e.persona_dimension_count, c = e.runs_per_survey, l = e.survey_count, u = e.requested_runs, d = e.succeeded_runs, f = e.failed_runs, p = pr(e.started_at), m = pr(e.completed_at), h = Array.isArray(e.results) ? e.results : null, g = t.length * 10;
+function xr(e, t, n, r) {
+	if (!fr(e) || e.ok !== !0) throw Error("The Agent batch had an invalid response shape.");
+	let i = pr(e.batch_id), a = pr(e.context_id), o = pr(e.persona_revision), s = e.persona_dimension_count, c = e.runs_per_survey, l = e.survey_count, u = e.requested_runs, d = e.succeeded_runs, f = e.failed_runs, p = mr(e.started_at), m = mr(e.completed_at), h = Array.isArray(e.results) ? e.results : null, g = t.length * 10;
 	if (!i || a !== n || o !== r || typeof s != "number" || !Number.isInteger(s) || s < 0 || s > 9999 || c !== 10 || l !== t.length || u !== g || !p || !m || !h || h.length !== g) throw Error("The Agent batch did not match the requested experiment.");
 	let _ = h.map((e, i) => {
-		if (!dr(e)) throw Error("The Agent batch contained an invalid result entry.");
+		if (!fr(e)) throw Error("The Agent batch contained an invalid result entry.");
 		let a = t[Math.floor(i / 10)], o = i % 10 + 1;
 		if (!a || e.survey_id !== a.id || e.response_index !== o) throw Error("The Agent batch results were not in stable order.");
 		if (e.ok === !0) {
-			let t = vr(e, a, n, r);
+			let t = yr(e, a, n, r);
 			if (t.dimensionCount !== s) throw Error("The Agent batch mixed persona dimension counts.");
 			return {
 				...t,
@@ -12685,8 +12693,8 @@ function br(e, t, n, r) {
 				responseIndex: o
 			};
 		}
-		let c = fr(e.code), l = fr(e.error), u = pr(e.started_at), d = pr(e.completed_at);
-		if (e.ok !== !1 || !c || !yr.has(c) || !l || !u || !d) throw Error("The Agent batch contained an invalid failure entry.");
+		let c = pr(e.code), l = pr(e.error), u = mr(e.started_at), d = mr(e.completed_at);
+		if (e.ok !== !1 || !c || !br.has(c) || !l || !u || !d) throw Error("The Agent batch contained an invalid failure entry.");
 		return {
 			ok: !1,
 			surveyId: a.id,
@@ -12711,17 +12719,17 @@ function br(e, t, n, r) {
 		failures: y
 	};
 }
-function xr(e, t, n, r) {
-	if (!dr(e)) throw Error("The Agent batch status was not an object.");
-	let i = fr(e.batch_id), a = e.status, o = fr(e.context_id), s = fr(e.persona_revision), c = e.persona_dimension_count, l = e.runs_per_survey, u = e.requested_runs, d = e.completed_runs, f = e.succeeded_runs, p = e.failed_runs, m = pr(e.started_at), h = e.completed_at === null ? null : pr(e.completed_at), g = t.length * 10;
+function Sr(e, t, n, r) {
+	if (!fr(e)) throw Error("The Agent batch status was not an object.");
+	let i = pr(e.batch_id), a = e.status, o = pr(e.context_id), s = pr(e.persona_revision), c = e.persona_dimension_count, l = e.runs_per_survey, u = e.requested_runs, d = e.completed_runs, f = e.succeeded_runs, p = e.failed_runs, m = mr(e.started_at), h = e.completed_at === null ? null : mr(e.completed_at), g = t.length * 10;
 	if (!i || !/^validation-batch-[0-9a-f]{24}$/.test(i) || ![
 		"running",
 		"complete",
 		"failed"
 	].includes(String(a)) || o !== n || !s || r !== void 0 && s !== r || typeof c != "number" || !Number.isInteger(c) || c < 0 || c > 9999 || l !== 10 || u !== g || typeof d != "number" || !Number.isInteger(d) || d < 0 || d > g || typeof f != "number" || !Number.isInteger(f) || f < 0 || typeof p != "number" || !Number.isInteger(p) || p < 0 || f + p !== d || !m || a === "running" && h !== null || a !== "running" && !h) throw Error("The Agent batch status had an invalid shape.");
 	let _;
-	a === "complete" && Array.isArray(e.results) && (_ = br(e, t, n, s));
-	let v = fr(e.code), y = fr(e.error);
+	a === "complete" && Array.isArray(e.results) && (_ = xr(e, t, n, s));
+	let v = pr(e.code), y = pr(e.error);
 	if (a === "failed" && (!v || !y)) throw Error("The failed Agent batch did not include a safe error.");
 	return {
 		batchId: i,
@@ -12741,53 +12749,53 @@ function xr(e, t, n, r) {
 		result: _
 	};
 }
-function Sr(e) {
-	let t = new URL(ur);
+function Cr(e) {
+	let t = new URL(dr);
 	return t.searchParams.set("batch_id", e), t;
 }
-async function Cr(e, t, n, r, i = fetch) {
-	let a = await i(Sr(e), {
+async function wr(e, t, n, r, i = fetch) {
+	let a = await i(Cr(e), {
 		method: "GET",
 		headers: { Accept: "application/json" },
 		cache: "no-store",
 		credentials: "omit"
-	}), o = await _r(a);
-	if (!a.ok) throw new gr(hr(o, "The Agent batch status could not be loaded."), a.status, mr(o));
+	}), o = await vr(a);
+	if (!a.ok) throw new _r(gr(o, "The Agent batch status could not be loaded."), a.status, hr(o));
 	try {
-		return xr(o, t, n, r);
+		return Sr(o, t, n, r);
 	} catch (e) {
-		throw new gr(e instanceof Error ? e.message : "The Agent batch status could not be validated.", a.status, "invalid_agent_batch_status");
+		throw new _r(e instanceof Error ? e.message : "The Agent batch status could not be validated.", a.status, "invalid_agent_batch_status");
 	}
 }
-async function wr(e, t, n = fetch) {
-	let r = await n(ur, {
+async function Tr(e, t, n = fetch) {
+	let r = await n(dr, {
 		method: "GET",
 		headers: { Accept: "application/json" },
 		cache: "no-store",
 		credentials: "omit"
-	}), i = await _r(r);
-	if (!r.ok) throw new gr(hr(i, "Pending Agent batches could not be loaded."), r.status, mr(i));
-	if (!dr(i) || i.ok !== !0 || i.context_id !== t || !Array.isArray(i.batches)) throw new gr("The pending Agent batch list had an invalid shape.", r.status, "invalid_agent_batch_list");
+	}), i = await vr(r);
+	if (!r.ok) throw new _r(gr(i, "Pending Agent batches could not be loaded."), r.status, hr(i));
+	if (!fr(i) || i.ok !== !0 || i.context_id !== t || !Array.isArray(i.batches)) throw new _r("The pending Agent batch list had an invalid shape.", r.status, "invalid_agent_batch_list");
 	try {
-		return i.batches.map((n) => xr(n, e, t));
+		return i.batches.map((n) => Sr(n, e, t));
 	} catch (e) {
-		throw new gr(e instanceof Error ? e.message : "The pending Agent batches could not be validated.", r.status, "invalid_agent_batch_list");
+		throw new _r(e instanceof Error ? e.message : "The pending Agent batches could not be validated.", r.status, "invalid_agent_batch_list");
 	}
 }
-async function Tr(e, t, n = fetch, r = (e) => new Promise((t) => setTimeout(t, e)), i) {
+async function Er(e, t, n = fetch, r = (e) => new Promise((t) => setTimeout(t, e)), i) {
 	let a = e;
 	for (; a.status === "running" || !a.result;) {
-		if (a.status === "failed") throw new gr(a.message ?? "The Agent batch failed.", 409, a.code);
+		if (a.status === "failed") throw new _r(a.message ?? "The Agent batch failed.", 409, a.code);
 		if (i?.(a), a.status === "complete" && !a.result) {
-			a = await Cr(a.batchId, t, a.contextId, a.personaRevision, n);
+			a = await wr(a.batchId, t, a.contextId, a.personaRevision, n);
 			continue;
 		}
-		await r(1e3), a = await Cr(a.batchId, t, a.contextId, a.personaRevision, n);
+		await r(1e3), a = await wr(a.batchId, t, a.contextId, a.personaRevision, n);
 	}
 	return i?.(a), a.result;
 }
-async function Er(e, t, n, r = fetch, i = (e) => new Promise((t) => setTimeout(t, e)), a) {
-	let o = await r(ur, {
+async function Dr(e, t, n, r = fetch, i = (e) => new Promise((t) => setTimeout(t, e)), a) {
+	let o = await r(dr, {
 		method: "POST",
 		headers: {
 			Accept: "application/json",
@@ -12800,38 +12808,38 @@ async function Er(e, t, n, r = fetch, i = (e) => new Promise((t) => setTimeout(t
 			persona_revision: n,
 			runs_per_survey: 10
 		})
-	}), s = await _r(o);
-	if (!o.ok) throw new gr(hr(s, "The Agent batch could not be completed."), o.status, mr(s));
+	}), s = await vr(o);
+	if (!o.ok) throw new _r(gr(s, "The Agent batch could not be completed."), o.status, hr(s));
 	try {
-		return dr(s) && s.status === void 0 ? br(s, e, t, n) : Tr(xr(s, e, t, n), e, r, i, a);
+		return fr(s) && s.status === void 0 ? xr(s, e, t, n) : Er(Sr(s, e, t, n), e, r, i, a);
 	} catch (e) {
-		throw e instanceof gr ? e : new gr(e instanceof Error ? e.message : "The Agent batch could not be validated.", o.status, "invalid_agent_batch_result");
+		throw e instanceof _r ? e : new _r(e instanceof Error ? e.message : "The Agent batch could not be validated.", o.status, "invalid_agent_batch_result");
 	}
 }
 //#endregion
 //#region lib/validation-batch-store.ts
-function Dr(e, t, n) {
+function Or(e, t, n) {
 	return `agent-${e}-${t}-${n}`;
 }
-function Or(e, t) {
+function kr(e, t) {
 	if (!t.has(e)) return e;
 	let n = 2;
 	for (; t.has(`${e}-${n}`);) n += 1;
 	return `${e}-${n}`;
 }
-function kr(e, t) {
+function Ar(e, t) {
 	return e.surveyId === t;
 }
-function Ar(e, t, n) {
+function jr(e, t, n) {
 	let r = n.map((e) => e.id), i = e;
 	return n.forEach((n) => {
-		let a = An(e, n.id), o = t.successes.filter((e) => kr(e, n.id)).sort((e, t) => e.responseIndex - t.responseIndex);
+		let a = An(e, n.id), o = t.successes.filter((e) => Ar(e, n.id)).sort((e, t) => e.responseIndex - t.responseIndex);
 		if (!o.length) return;
 		let s = [...a.agentRuns], c = new Set(s.map((e) => e.id)), l = new Set((a.deletedAgentRuns ?? []).map((e) => e.id)), u = new Set(s.map((e) => e.sequence)), d = Math.max(0, ...u), f = a.human?.completedAt ? a.human.id : null, p = !1;
 		o.forEach((e) => {
-			let i = Dr(t.batchId, n.id, e.responseIndex);
+			let i = Or(t.batchId, n.id, e.responseIndex);
 			if (s.some((n) => n.experiment?.id === t.batchId && n.experiment.responseIndex === e.responseIndex) || l.has(i)) return;
-			let a = Or(i, c), o = d + e.responseIndex;
+			let a = kr(i, c), o = d + e.responseIndex;
 			for (; u.has(o);) o += 1;
 			let m = {
 				id: a,
@@ -12860,47 +12868,47 @@ function Ar(e, t, n) {
 }
 //#endregion
 //#region lib/validation-results.ts
-function jr(e) {
+function Mr(e) {
 	return !!e.completedAt;
 }
-function Mr(e) {
+function Nr(e) {
 	return e.personaAgent?.contextId ?? "unknown-persona";
 }
-function Nr(e) {
+function Pr(e) {
 	return [...e].sort((e, t) => (e.experiment?.responseIndex ?? e.sequence) - (t.experiment?.responseIndex ?? t.sequence) || Date.parse(e.completedAt ?? e.startedAt) - Date.parse(t.completedAt ?? t.startedAt) || e.id.localeCompare(t.id));
 }
-function Pr(e) {
-	return `${Mr(e)}\u0000${e.dimensionCount ?? "unknown"}\u0000${e.experiment.id}`;
+function Fr(e) {
+	return `${Nr(e)}\u0000${e.dimensionCount ?? "unknown"}\u0000${e.experiment.id}`;
 }
-function Fr(e, t, n) {
+function Ir(e, t, n) {
 	e[t] = [...e[t] ?? [], n];
 }
-function Ir(e) {
+function Lr(e) {
 	let t = /* @__PURE__ */ new Map();
 	return Wt.forEach((n) => {
-		(e[n.id]?.agentRuns ?? []).filter((e) => jr(e) && !!e.experiment).forEach((e) => {
-			let r = e.experiment, i = Pr(e), a = t.get(i);
+		(e[n.id]?.agentRuns ?? []).filter((e) => Mr(e) && !!e.experiment).forEach((e) => {
+			let r = e.experiment, i = Fr(e), a = t.get(i);
 			a || (a = {
 				id: r.id,
 				dimensionCount: e.dimensionCount,
-				personaContextId: Mr(e),
+				personaContextId: Nr(e),
 				startedAt: r.startedAt,
 				expectedRuns: r.responsesPerSurvey * r.surveyIds.length,
 				runsBySurvey: {},
 				responsesPerSurvey: r.responsesPerSurvey,
 				surveyIds: r.surveyIds
-			}, t.set(i, a)), !(r.startedAt !== a.startedAt || r.responsesPerSurvey !== a.responsesPerSurvey || r.surveyIds.length !== a.surveyIds.length || r.surveyIds.some((e, t) => e !== a.surveyIds[t])) && ((a.runsBySurvey[n.id] ?? []).some((e) => e.experiment?.responseIndex === r.responseIndex) || Fr(a.runsBySurvey, n.id, e));
+			}, t.set(i, a)), !(r.startedAt !== a.startedAt || r.responsesPerSurvey !== a.responsesPerSurvey || r.surveyIds.length !== a.surveyIds.length || r.surveyIds.some((e, t) => e !== a.surveyIds[t])) && ((a.runsBySurvey[n.id] ?? []).some((e) => e.experiment?.responseIndex === r.responseIndex) || Ir(a.runsBySurvey, n.id, e));
 		});
 	}), [...t.values()];
 }
-function Lr(e) {
+function Rr(e) {
 	let t = [];
 	return Wt.forEach((n) => {
-		(e[n.id]?.agentRuns ?? []).filter((e) => jr(e) && !e.experiment).forEach((e) => {
+		(e[n.id]?.agentRuns ?? []).filter((e) => Mr(e) && !e.experiment).forEach((e) => {
 			t.push({
 				id: `legacy:${n.id}:${e.id}`,
 				dimensionCount: e.dimensionCount,
-				personaContextId: Mr(e),
+				personaContextId: Nr(e),
 				startedAt: e.completedAt ?? e.startedAt,
 				expectedRuns: 1,
 				runsBySurvey: { [n.id]: [e] },
@@ -12910,40 +12918,40 @@ function Lr(e) {
 		});
 	}), t;
 }
-function Rr(e) {
+function zr(e) {
 	return Object.values(e.runsBySurvey).reduce((e, t) => e + (t?.length ?? 0), 0);
 }
-function zr(e, t) {
+function Br(e, t) {
 	let n = e === null ? "Unknown dimensions" : `${e} dim`;
 	return t === 1 ? n : `${n}, #${t}`;
 }
-function Br(e) {
-	let t = [...Ir(e), ...Lr(e)].sort((e, t) => Date.parse(e.startedAt) - Date.parse(t.startedAt) || e.id.localeCompare(t.id)), n = /* @__PURE__ */ new Map();
+function Vr(e) {
+	let t = [...Lr(e), ...Rr(e)].sort((e, t) => Date.parse(e.startedAt) - Date.parse(t.startedAt) || e.id.localeCompare(t.id)), n = /* @__PURE__ */ new Map();
 	return t.map((e) => {
 		let t = `${e.personaContextId}\u0000${e.dimensionCount ?? "unknown"}`, r = (n.get(t) ?? 0) + 1;
 		n.set(t, r);
-		let i = Rr(e);
+		let i = zr(e);
 		return {
 			id: e.id,
-			label: zr(e.dimensionCount, r),
+			label: Br(e.dimensionCount, r),
 			dimensionCount: e.dimensionCount,
 			startedAt: e.startedAt,
 			completedRuns: i,
 			expectedRuns: e.expectedRuns,
 			status: i >= e.expectedRuns ? "complete" : "partial",
-			runsBySurvey: Object.fromEntries(Object.entries(e.runsBySurvey).map(([e, t]) => [e, Nr(t ?? [])]))
+			runsBySurvey: Object.fromEntries(Object.entries(e.runsBySurvey).map(([e, t]) => [e, Pr(t ?? [])]))
 		};
 	}).reverse();
 }
-function Vr(e, t) {
+function Hr(e, t) {
 	return e.options.find((e) => e.id === t)?.value;
 }
-function Hr(e, t, n, r) {
+function Ur(e, t, n, r) {
 	if (e.kind !== "scale") return +(n === r);
-	let i = Vr(t, n), a = Vr(t, r);
+	let i = Hr(t, n), a = Hr(t, r);
 	return i === void 0 || a === void 0 ? null : Math.max(0, 1 - Math.abs(i - a) / 4);
 }
-function Ur(e, t, n, r) {
+function Wr(e, t, n, r) {
 	let i = new Map(t.options.map((e, t) => [e.id, t])), a = /* @__PURE__ */ new Map();
 	n.forEach((e) => {
 		let n = e.answers[t.id];
@@ -12955,7 +12963,7 @@ function Ur(e, t, n, r) {
 		count: n,
 		share: n / o
 	})).sort((e, t) => t.count - e.count || (i.get(e.answerId) ?? 0) - (i.get(t.answerId) ?? 0)), c = s[0], l = !!r?.completedAt, u = l ? r?.answers[t.id] ?? null : null, d = u === null ? [] : n.map((e) => e.answers[t.id]).filter((e) => i.has(e)), f = d.flatMap((n) => {
-		let r = Hr(e, t, u, n);
+		let r = Ur(e, t, u, n);
 		return r === null ? [] : [r];
 	}), p = d.filter((e) => e === u).length;
 	return {
@@ -12975,19 +12983,19 @@ function Ur(e, t, n, r) {
 		exactBenchmarkMatchRate: d.length ? p / d.length : null
 	};
 }
-function Wr(e) {
+function Gr(e) {
 	let t = e.filter((e) => e.value !== null && e.weight > 0), n = t.reduce((e, t) => e + t.weight, 0);
 	return n ? t.reduce((e, t) => e + t.value * t.weight, 0) / n : null;
 }
-function Gr(e) {
+function Kr(e) {
 	let t = new Set(Object.values(e).flatMap((e) => e ?? []).flatMap((e) => e.personaAgent?.contextId ? [e.personaAgent.contextId] : []));
 	return t.size === 1 ? [...t][0] : null;
 }
-function Kr(e, t) {
+function qr(e, t) {
 	return e?.completedAt && t !== null && e.personaAgent?.contextId === t ? e : void 0;
 }
-function qr(e, t, n, r) {
-	let i = e.questions.map((r) => Ur(e, r, t, n)), a = i.reduce((e, t) => e + t.answerCount, 0), o = i.reduce((e, t) => e + (t.benchmarkSimilarity === null ? 0 : t.answerCount), 0);
+function Jr(e, t, n, r) {
+	let i = e.questions.map((r) => Wr(e, r, t, n)), a = i.reduce((e, t) => e + t.answerCount, 0), o = i.reduce((e, t) => e + (t.benchmarkSimilarity === null ? 0 : t.answerCount), 0);
 	return {
 		surveyId: e.id,
 		title: e.title,
@@ -12995,16 +13003,16 @@ function qr(e, t, n, r) {
 		expectedRuns: r,
 		questionCount: e.questions.length,
 		answerCount: a,
-		consistency: Wr(i.map((e) => ({
+		consistency: Gr(i.map((e) => ({
 			value: e.consistency,
 			weight: e.answerCount
 		}))),
 		hasHumanBenchmark: !!n?.completedAt,
-		benchmarkSimilarity: Wr(i.map((e) => ({
+		benchmarkSimilarity: Gr(i.map((e) => ({
 			value: e.benchmarkSimilarity,
 			weight: e.answerCount
 		}))),
-		exactBenchmarkMatchRate: Wr(i.map((e) => ({
+		exactBenchmarkMatchRate: Gr(i.map((e) => ({
 			value: e.exactBenchmarkMatchRate,
 			weight: e.answerCount
 		}))),
@@ -13012,10 +13020,10 @@ function qr(e, t, n, r) {
 		questions: i
 	};
 }
-function Jr(e, t) {
-	let n = Br(e).find((e) => e.id === t);
+function Yr(e, t) {
+	let n = Vr(e).find((e) => e.id === t);
 	if (!n) return null;
-	let r = Object.values(n.runsBySurvey).flatMap((e) => e ?? []).find((e) => !!e.experiment), i = new Set(r?.experiment?.surveyIds ?? Object.keys(n.runsBySurvey)), a = r?.experiment?.responsesPerSurvey ?? 1, o = Gr(n.runsBySurvey), s = Wt.map((t) => qr(t, n.runsBySurvey[t.id] ?? [], Kr(e[t.id]?.human, o), i.has(t.id) ? a : 0)), c = s.reduce((e, t) => e + t.answerCount, 0), l = s.reduce((e, t) => e + t.benchmarkComparisons, 0);
+	let r = Object.values(n.runsBySurvey).flatMap((e) => e ?? []).find((e) => !!e.experiment), i = new Set(r?.experiment?.surveyIds ?? Object.keys(n.runsBySurvey)), a = r?.experiment?.responsesPerSurvey ?? 1, o = Kr(n.runsBySurvey), s = Wt.map((t) => Jr(t, n.runsBySurvey[t.id] ?? [], qr(e[t.id]?.human, o), i.has(t.id) ? a : 0)), c = s.reduce((e, t) => e + t.answerCount, 0), l = s.reduce((e, t) => e + t.benchmarkComparisons, 0);
 	return {
 		experiment: n,
 		overall: {
@@ -13025,17 +13033,17 @@ function Jr(e, t) {
 			surveyCount: Wt.length,
 			questionCount: s.reduce((e, t) => e + t.questionCount, 0),
 			answerCount: c,
-			consistency: Wr(s.map((e) => ({
+			consistency: Gr(s.map((e) => ({
 				value: e.consistency,
 				weight: e.answerCount
 			}))),
 			humanBenchmarkCount: s.filter((e) => e.hasHumanBenchmark).length,
 			benchmarkedSurveyCount: s.filter((e) => e.benchmarkComparisons > 0).length,
-			benchmarkSimilarity: Wr(s.map((e) => ({
+			benchmarkSimilarity: Gr(s.map((e) => ({
 				value: e.benchmarkSimilarity,
 				weight: e.benchmarkComparisons
 			}))),
-			exactBenchmarkMatchRate: Wr(s.map((e) => ({
+			exactBenchmarkMatchRate: Gr(s.map((e) => ({
 				value: e.exactBenchmarkMatchRate,
 				weight: e.benchmarkComparisons
 			}))),
@@ -13046,7 +13054,7 @@ function Jr(e, t) {
 }
 //#endregion
 //#region app/page.tsx
-var Yr = {
+var Xr = {
 	human: {
 		label: "Human benchmark",
 		shortLabel: "Human",
@@ -13057,57 +13065,57 @@ var Yr = {
 		shortLabel: "Agent",
 		Icon: te
 	}
-}, Xr = { name: "home" }, Zr = new Intl.DateTimeFormat(void 0, {
+}, Zr = { name: "home" }, Qr = new Intl.DateTimeFormat(void 0, {
 	month: "short",
 	day: "numeric",
 	hour: "numeric",
 	minute: "2-digit"
-}), Qr = new Intl.DateTimeFormat(void 0, {
+}), $r = new Intl.DateTimeFormat(void 0, {
 	hour: "2-digit",
 	minute: "2-digit"
 });
-function $r(e) {
+function ei(e) {
 	return `${e}-${typeof crypto < "u" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`}`;
 }
-function ei(e) {
+function ti(e) {
 	if (!e) return "";
 	let t = new Date(e);
-	return Number.isNaN(t.getTime()) ? "Date unavailable" : Zr.format(t);
-}
-function ti(e) {
-	return e ? Qr.format(new Date(e)) : null;
+	return Number.isNaN(t.getTime()) ? "Date unavailable" : Qr.format(t);
 }
 function ni(e) {
+	return e ? $r.format(new Date(e)) : null;
+}
+function ri(e) {
 	return {
 		"--survey": e.color,
 		"--pale": e.pale,
 		"--ink": e.ink
 	};
 }
-function ri(e) {
+function ii(e) {
 	return e ? `Digital ${e.displayName}` : "Persona not recorded";
 }
-function ii(e, t) {
+function ai(e, t) {
 	return !e || !t || e.contextId === t.contextId;
 }
-function ai(e, t) {
+function oi(e, t) {
 	return Date.parse(e.completedAt ?? e.startedAt) - Date.parse(t.completedAt ?? t.startedAt) || e.sequence - t.sequence;
 }
-function oi(e) {
+function si(e) {
 	return e?.completedAt ? "complete" : e && Object.keys(e.answers).length > 0 ? "in-progress" : "not-started";
 }
-function si(e, t) {
+function ci(e, t) {
 	if (!("surveyId" in t)) return t;
 	let n = An(e, t.surveyId);
-	if (t.name === "quiz") return (t.actor === "human" ? n.human : Nn(n, t.runId)) ? t : Xr;
-	if (t.name === "result") return (t.actor === "human" ? n.human : Nn(n, t.runId))?.completedAt ? t : Xr;
+	if (t.name === "quiz") return (t.actor === "human" ? n.human : Nn(n, t.runId)) ? t : Zr;
+	if (t.name === "result") return (t.actor === "human" ? n.human : Nn(n, t.runId))?.completedAt ? t : Zr;
 	if (t.name === "comparison") {
 		let e = Nn(n, t.runId);
-		return n.human?.completedAt && e?.completedAt && e.benchmarkId === n.human.id && ii(n.human.personaAgent, e.personaAgent) ? t : Xr;
+		return n.human?.completedAt && e?.completedAt && e.benchmarkId === n.human.id && ai(n.human.personaAgent, e.personaAgent) ? t : Zr;
 	}
-	return n.human?.completedAt && jn(n, n.human.id).length > 0 ? t : Xr;
+	return n.human?.completedAt && jn(n, n.human.id).length > 0 ? t : Zr;
 }
-function ci({ status: e, label: t }) {
+function li({ status: e, label: t }) {
 	return e === "complete" ? /* @__PURE__ */ (0, z.jsxs)("span", {
 		className: "status-pill status-complete",
 		children: [
@@ -13126,7 +13134,7 @@ function ci({ status: e, label: t }) {
 		children: t ?? "Not started"
 	});
 }
-function li() {
+function ui() {
 	return /* @__PURE__ */ (0, z.jsxs)("span", {
 		className: "flex items-center gap-3",
 		children: [/* @__PURE__ */ (0, z.jsxs)("span", {
@@ -13142,20 +13150,20 @@ function li() {
 		})] })]
 	});
 }
-function ui({ children: e, onHome: t, simple: n = !1 }) {
+function di({ children: e, onHome: t, simple: n = !1 }) {
 	return /* @__PURE__ */ (0, z.jsxs)("main", {
 		className: "min-h-screen",
 		children: [/* @__PURE__ */ (0, z.jsxs)("header", {
 			className: "site-header",
 			children: [n ? /* @__PURE__ */ (0, z.jsx)("div", {
 				className: "brand-button rounded-xl",
-				children: /* @__PURE__ */ (0, z.jsx)(li, {})
+				children: /* @__PURE__ */ (0, z.jsx)(ui, {})
 			}) : /* @__PURE__ */ (0, z.jsx)("button", {
 				type: "button",
 				onClick: t,
 				"aria-label": "Go to Results",
 				className: "brand-button rounded-xl focus-ring",
-				children: /* @__PURE__ */ (0, z.jsx)(li, {})
+				children: /* @__PURE__ */ (0, z.jsx)(ui, {})
 			}), !n && /* @__PURE__ */ (0, z.jsxs)("button", {
 				type: "button",
 				onClick: t,
@@ -13165,11 +13173,11 @@ function ui({ children: e, onHome: t, simple: n = !1 }) {
 		}), e]
 	});
 }
-function di({ survey: e, history: t, onHuman: n, aggregate: r, interactionDisabled: i }) {
-	let a = t.human, o = oi(a), s = !!r?.completedRuns;
+function fi({ survey: e, history: t, onHuman: n, aggregate: r, interactionDisabled: i }) {
+	let a = t.human, o = si(a), s = !!r?.completedRuns;
 	return /* @__PURE__ */ (0, z.jsxs)("article", {
 		className: "survey-card",
-		style: ni(e),
+		style: ri(e),
 		children: [
 			/* @__PURE__ */ (0, z.jsx)("div", {
 				className: "flex items-center justify-between gap-4",
@@ -13208,7 +13216,7 @@ function di({ survey: e, history: t, onHuman: n, aggregate: r, interactionDisabl
 								children: "Human benchmark"
 							})
 						}),
-						/* @__PURE__ */ (0, z.jsx)(ci, { status: o }),
+						/* @__PURE__ */ (0, z.jsx)(li, { status: o }),
 						/* @__PURE__ */ (0, z.jsx)(k, {
 							size: 17,
 							className: "text-slate-400"
@@ -13220,13 +13228,13 @@ function di({ survey: e, history: t, onHuman: n, aggregate: r, interactionDisabl
 				className: "validation-question-details",
 				children: [/* @__PURE__ */ (0, z.jsxs)("summary", { children: ["Question results", /* @__PURE__ */ (0, z.jsx)("span", { children: r?.questions.length })] }), /* @__PURE__ */ (0, z.jsx)("div", {
 					className: "validation-question-list",
-					children: r?.questions.map((e) => /* @__PURE__ */ (0, z.jsx)(fi, { row: e }, e.questionId))
+					children: r?.questions.map((e) => /* @__PURE__ */ (0, z.jsx)(pi, { row: e }, e.questionId))
 				})]
 			})
 		]
 	});
 }
-function fi({ row: e }) {
+function pi({ row: e }) {
 	return /* @__PURE__ */ (0, z.jsxs)("article", {
 		className: "validation-question-result",
 		children: [
@@ -13250,9 +13258,9 @@ function fi({ row: e }) {
 		]
 	});
 }
-function pi({ store: e, onHuman: t, onRunAll: n, onLicense: r, runningExperiment: i, runDisabled: a, selectedExperimentId: o, onSelectExperiment: s }) {
-	let c = Br(e), l = c.some((e) => e.id === o) ? o : c[0]?.id ?? null, u = l ? Jr(e, l) : null;
-	return /* @__PURE__ */ (0, z.jsxs)(ui, {
+function mi({ store: e, onHuman: t, onRunAll: n, onLicense: r, runningExperiment: i, runDisabled: a, selectedExperimentId: o, onSelectExperiment: s }) {
+	let c = Vr(e), l = c.some((e) => e.id === o) ? o : c[0]?.id ?? null, u = l ? Yr(e, l) : null;
+	return /* @__PURE__ */ (0, z.jsxs)(di, {
 		simple: !0,
 		children: [/* @__PURE__ */ (0, z.jsxs)("section", {
 			className: "hero-wrap",
@@ -13345,7 +13353,7 @@ function pi({ store: e, onHuman: t, onRunAll: n, onLicense: r, runningExperiment
 				}),
 				/* @__PURE__ */ (0, z.jsx)("div", {
 					className: "validation-survey-list flex flex-col gap-6",
-					children: Wt.map((n) => /* @__PURE__ */ (0, z.jsx)(di, {
+					children: Wt.map((n) => /* @__PURE__ */ (0, z.jsx)(fi, {
 						survey: n,
 						history: An(e, n.id),
 						onHuman: () => t(n.id),
@@ -13366,8 +13374,8 @@ function pi({ store: e, onHuman: t, onRunAll: n, onLicense: r, runningExperiment
 		})]
 	});
 }
-function mi({ survey: e, actor: t, run: n, agentRun: r, onSaveAnswer: i, onComplete: a, onHome: o }) {
-	let s = e.questions.findIndex((e) => !n.answers[e.id]), [c, l] = (0, C.useState)(s === -1 ? e.questions.length - 1 : s), u = e.questions[c], d = n.answers[u.id], f = (c + 1) / e.questions.length * 100, p = Yr[t], m = c === e.questions.length - 1, h = (0, C.useRef)(null), g = (0, C.useRef)(!1);
+function hi({ survey: e, actor: t, run: n, agentRun: r, onSaveAnswer: i, onComplete: a, onHome: o }) {
+	let s = e.questions.findIndex((e) => !n.answers[e.id]), [c, l] = (0, C.useState)(s === -1 ? e.questions.length - 1 : s), u = e.questions[c], d = n.answers[u.id], f = (c + 1) / e.questions.length * 100, p = Xr[t], m = c === e.questions.length - 1, h = (0, C.useRef)(null), g = (0, C.useRef)(!1);
 	(0, C.useEffect)(() => {
 		g.current = !1, h.current?.focus({ preventScroll: !0 });
 	}, [c]);
@@ -13381,11 +13389,11 @@ function mi({ survey: e, actor: t, run: n, agentRun: r, onSaveAnswer: i, onCompl
 	function v() {
 		d && (m ? a() : l((e) => e + 1));
 	}
-	return /* @__PURE__ */ (0, z.jsx)(ui, {
+	return /* @__PURE__ */ (0, z.jsx)(di, {
 		onHome: o,
 		children: /* @__PURE__ */ (0, z.jsxs)("div", {
 			className: "quiz-stage",
-			style: ni(e),
+			style: ri(e),
 			children: [
 				/* @__PURE__ */ (0, z.jsxs)("div", {
 					className: "quiz-topline",
@@ -13404,7 +13412,7 @@ function mi({ survey: e, actor: t, run: n, agentRun: r, onSaveAnswer: i, onCompl
 							}),
 							/* @__PURE__ */ (0, z.jsxs)("span", {
 								className: "run-metadata-chip",
-								children: ["Persona agent: ", ri(n.personaAgent)]
+								children: ["Persona agent: ", ii(n.personaAgent)]
 							})
 						]
 					})] }), /* @__PURE__ */ (0, z.jsxs)("p", {
@@ -13452,7 +13460,7 @@ function mi({ survey: e, actor: t, run: n, agentRun: r, onSaveAnswer: i, onCompl
 									"aria-pressed": n,
 									onClick: () => _(t.id),
 									className: `answer-option focus-ring ${n ? "answer-selected" : ""} ${e.kind === "scale" ? "scale-option" : ""}`,
-									style: n ? ni(e) : void 0,
+									style: n ? ri(e) : void 0,
 									children: [e.kind === "scale" ? /* @__PURE__ */ (0, z.jsx)("span", {
 										className: "option-key",
 										children: t.id
@@ -13505,7 +13513,7 @@ function mi({ survey: e, actor: t, run: n, agentRun: r, onSaveAnswer: i, onCompl
 		})
 	});
 }
-function hi({ result: e, survey: t }) {
+function gi({ result: e, survey: t }) {
 	return /* @__PURE__ */ (0, z.jsx)("div", {
 		className: "mt-8 space-y-4",
 		children: Object.entries(e.scores).map(([e, n]) => /* @__PURE__ */ (0, z.jsxs)("div", { children: [/* @__PURE__ */ (0, z.jsxs)("div", {
@@ -13523,7 +13531,7 @@ function hi({ result: e, survey: t }) {
 		})] }, e))
 	});
 }
-function gi({ result: e, survey: t, compact: n = !1 }) {
+function _i({ result: e, survey: t, compact: n = !1 }) {
 	return /* @__PURE__ */ (0, z.jsx)("div", {
 		className: `mt-7 ${n ? "space-y-4" : "grid gap-4 sm:grid-cols-2"}`,
 		children: e.values.map((e) => /* @__PURE__ */ (0, z.jsxs)("div", {
@@ -13565,7 +13573,7 @@ function gi({ result: e, survey: t, compact: n = !1 }) {
 		}, e.id))
 	});
 }
-function _i({ result: e, survey: t, compact: n = !1 }) {
+function vi({ result: e, survey: t, compact: n = !1 }) {
 	return /* @__PURE__ */ (0, z.jsx)("div", {
 		className: "mt-7 space-y-5",
 		children: Jt.map((r, i) => /* @__PURE__ */ (0, z.jsxs)("div", { children: [
@@ -13595,27 +13603,27 @@ function _i({ result: e, survey: t, compact: n = !1 }) {
 		] }, r.key))
 	});
 }
-function vi({ result: e, survey: t, compact: n = !1 }) {
-	return e.kind === "categorical" ? /* @__PURE__ */ (0, z.jsx)(hi, {
+function yi({ result: e, survey: t, compact: n = !1 }) {
+	return e.kind === "categorical" ? /* @__PURE__ */ (0, z.jsx)(gi, {
 		result: e,
 		survey: t
-	}) : e.kind === "scale" ? /* @__PURE__ */ (0, z.jsx)(gi, {
+	}) : e.kind === "scale" ? /* @__PURE__ */ (0, z.jsx)(_i, {
 		result: e,
 		survey: t,
 		compact: n
-	}) : /* @__PURE__ */ (0, z.jsx)(_i, {
+	}) : /* @__PURE__ */ (0, z.jsx)(vi, {
 		result: e,
 		survey: t,
 		compact: n
 	});
 }
-function yi({ survey: e, actor: t, run: n, agentRun: r, hasCompletedHuman: i, completedAgentCount: a, onPrimary: o, onHistory: s, onHumanChange: c, onHome: l }) {
-	let u = tn(e, n.answers), d = t === "agent" && r, f = Yr[t], p = d ? i ? `Compare Agent run ${r.sequence}` : "Complete the Human benchmark" : a ? "View the aggregated validation Results" : "Go to validation Results", m = d ? i ? "The Human benchmark and this run are now ready for their own question-level comparison." : "This Agent run is saved. Complete the Human benchmark to unlock its question-level comparison." : a ? `There ${a === 1 ? "is" : "are"} ${a} saved Agent ${a === 1 ? "response" : "responses"} for this benchmark. Results keeps the aggregate comparison together.` : "The Human answers are saved locally. Start the next full Agent experiment from Results.";
-	return /* @__PURE__ */ (0, z.jsx)(ui, {
+function bi({ survey: e, actor: t, run: n, agentRun: r, hasCompletedHuman: i, completedAgentCount: a, onPrimary: o, onHistory: s, onHumanChange: c, onHome: l }) {
+	let u = tn(e, n.answers), d = t === "agent" && r, f = Xr[t], p = d ? i ? `Compare Agent run ${r.sequence}` : "Complete the Human benchmark" : a ? "View the aggregated validation Results" : "Go to validation Results", m = d ? i ? "The Human benchmark and this run are now ready for their own question-level comparison." : "This Agent run is saved. Complete the Human benchmark to unlock its question-level comparison." : a ? `There ${a === 1 ? "is" : "are"} ${a} saved Agent ${a === 1 ? "response" : "responses"} for this benchmark. Results keeps the aggregate comparison together.` : "The Human answers are saved locally. Start the next full Agent experiment from Results.";
+	return /* @__PURE__ */ (0, z.jsx)(di, {
 		onHome: l,
 		children: /* @__PURE__ */ (0, z.jsxs)("div", {
 			className: "result-stage",
-			style: ni(e),
+			style: ri(e),
 			children: [
 				/* @__PURE__ */ (0, z.jsxs)("section", {
 					className: "result-hero",
@@ -13646,7 +13654,7 @@ function yi({ survey: e, actor: t, run: n, agentRun: r, hasCompletedHuman: i, co
 								}),
 								/* @__PURE__ */ (0, z.jsxs)("div", {
 									className: "mx-auto mt-4 w-fit rounded-full bg-white/70 px-3 py-1.5 text-xs font-black text-slate-600 shadow-sm",
-									children: ["Persona agent: ", ri(n.personaAgent)]
+									children: ["Persona agent: ", ii(n.personaAgent)]
 								}),
 								d && /* @__PURE__ */ (0, z.jsxs)("div", {
 									className: "mx-auto mt-2 w-fit rounded-full px-3 py-1.5 text-xs font-black",
@@ -13691,7 +13699,7 @@ function yi({ survey: e, actor: t, run: n, agentRun: r, hasCompletedHuman: i, co
 							},
 							children: [e.questions.length, " answers"]
 						})]
-					}), /* @__PURE__ */ (0, z.jsx)(vi, {
+					}), /* @__PURE__ */ (0, z.jsx)(yi, {
 						result: u,
 						survey: e
 					})]
@@ -13748,8 +13756,8 @@ function yi({ survey: e, actor: t, run: n, agentRun: r, hasCompletedHuman: i, co
 		})
 	});
 }
-function bi({ survey: e, actor: t, result: n }) {
-	let r = Yr[t];
+function xi({ survey: e, actor: t, result: n }) {
+	let r = Xr[t];
 	return /* @__PURE__ */ (0, z.jsxs)("div", {
 		className: "comparison-result-card",
 		children: [
@@ -13774,7 +13782,7 @@ function bi({ survey: e, actor: t, result: n }) {
 				className: "mt-4 text-sm leading-6 text-slate-600",
 				children: n.description
 			}),
-			/* @__PURE__ */ (0, z.jsx)(vi, {
+			/* @__PURE__ */ (0, z.jsx)(yi, {
 				result: n,
 				survey: e,
 				compact: !0
@@ -13782,13 +13790,13 @@ function bi({ survey: e, actor: t, result: n }) {
 		]
 	});
 }
-function xi({ survey: e, human: t, agentRun: n, onResult: r, onHistory: i, onHome: a }) {
+function Si({ survey: e, human: t, agentRun: n, onResult: r, onHistory: i, onHome: a }) {
 	let o = rn(e, t.answers, n.answers), s = tn(e, t.answers), c = tn(e, n.answers), l = o.exactMatches === e.questions.length ? "Every answer matched." : `${o.exactMatches} of ${e.questions.length} answers matched exactly.`;
-	return /* @__PURE__ */ (0, z.jsx)(ui, {
+	return /* @__PURE__ */ (0, z.jsx)(di, {
 		onHome: a,
 		children: /* @__PURE__ */ (0, z.jsxs)("div", {
 			className: "comparison-stage",
-			style: ni(e),
+			style: ri(e),
 			children: [
 				/* @__PURE__ */ (0, z.jsxs)("section", {
 					className: "comparison-hero",
@@ -13832,7 +13840,7 @@ function xi({ survey: e, human: t, agentRun: n, onResult: r, onHistory: i, onHom
 									children: [
 										"Persona agent:",
 										" ",
-										/* @__PURE__ */ (0, z.jsx)("strong", { children: ri(n.personaAgent) })
+										/* @__PURE__ */ (0, z.jsx)("strong", { children: ii(n.personaAgent) })
 									]
 								}),
 								/* @__PURE__ */ (0, z.jsxs)("span", {
@@ -13861,7 +13869,7 @@ function xi({ survey: e, human: t, agentRun: n, onResult: r, onHistory: i, onHom
 							className: "mt-4 text-xs font-bold text-slate-500",
 							children: [
 								"Completed ",
-								ei(n.completedAt),
+								ti(n.completedAt),
 								n.migrated ? " - imported from the earlier app version" : ""
 							]
 						})
@@ -13869,11 +13877,11 @@ function xi({ survey: e, human: t, agentRun: n, onResult: r, onHistory: i, onHom
 				}),
 				/* @__PURE__ */ (0, z.jsxs)("section", {
 					className: "mx-auto mt-10 grid max-w-[1080px] gap-5 lg:grid-cols-2",
-					children: [/* @__PURE__ */ (0, z.jsx)(bi, {
+					children: [/* @__PURE__ */ (0, z.jsx)(xi, {
 						survey: e,
 						actor: "human",
 						result: s
-					}), /* @__PURE__ */ (0, z.jsx)(bi, {
+					}), /* @__PURE__ */ (0, z.jsx)(xi, {
 						survey: e,
 						actor: "agent",
 						result: c
@@ -13997,7 +14005,7 @@ function xi({ survey: e, human: t, agentRun: n, onResult: r, onHistory: i, onHom
 		})
 	});
 }
-function Si({ points: e, survey: t }) {
+function Ci({ points: e, survey: t }) {
 	let n = (0, C.useRef)(null), r = Math.max(1, ...e.map((e) => e.dimensionCount)), i = (e) => 90 + e / r * 622, a = (e) => 22 + (1 - e) * 202, o = Array.from(new Set(Array.from({ length: 5 }, (e, t) => Math.round(r * t / 4)))), s = /* @__PURE__ */ new Map();
 	e.forEach((e) => {
 		let t = `${e.dimensionCount}:${e.similarity.toFixed(6)}`, n = s.get(t);
@@ -14149,16 +14157,16 @@ function Si({ points: e, survey: t }) {
 		]
 	});
 }
-function Ci({ survey: e, history: t, onComparison: n, onHumanResult: r, onHome: i }) {
-	let a = t.human, o = jn(t, a.id).sort(ai), s = jn(t).filter((e) => e.benchmarkId !== a.id).sort(ai), c = In(e.id, t), l = Rn(c), u = o.map((t) => ({
+function wi({ survey: e, history: t, onComparison: n, onHumanResult: r, onHome: i }) {
+	let a = t.human, o = jn(t, a.id).sort(oi), s = jn(t).filter((e) => e.benchmarkId !== a.id).sort(oi), c = In(e.id, t), l = Rn(c), u = o.map((t) => ({
 		run: t,
 		comparison: rn(e, a.answers, t.answers)
 	})), d = u.at(-1), f = u.length ? u.reduce((e, t) => t.comparison.similarity > e.comparison.similarity ? t : e) : void 0, p = o.filter((e) => e.dimensionCount === null).length;
-	return /* @__PURE__ */ (0, z.jsx)(ui, {
+	return /* @__PURE__ */ (0, z.jsx)(di, {
 		onHome: i,
 		children: /* @__PURE__ */ (0, z.jsxs)("div", {
 			className: "history-stage",
-			style: ni(e),
+			style: ri(e),
 			children: [
 				/* @__PURE__ */ (0, z.jsxs)("section", {
 					className: "history-heading",
@@ -14185,7 +14193,7 @@ function Ci({ survey: e, history: t, onComparison: n, onHumanResult: r, onHome: 
 							children: [
 								/* @__PURE__ */ (0, z.jsxs)("span", {
 									className: "history-stat",
-									children: [/* @__PURE__ */ (0, z.jsx)("small", { children: "Persona agent" }), /* @__PURE__ */ (0, z.jsx)("strong", { children: ri(a.personaAgent) })]
+									children: [/* @__PURE__ */ (0, z.jsx)("small", { children: "Persona agent" }), /* @__PURE__ */ (0, z.jsx)("strong", { children: ii(a.personaAgent) })]
 								}),
 								/* @__PURE__ */ (0, z.jsxs)("span", {
 									className: "history-stat",
@@ -14231,7 +14239,7 @@ function Ci({ survey: e, history: t, onComparison: n, onHumanResult: r, onHome: 
 								})
 							] })
 						}),
-						c.length ? /* @__PURE__ */ (0, z.jsx)(Si, {
+						c.length ? /* @__PURE__ */ (0, z.jsx)(Ci, {
 							points: c,
 							survey: e
 						}) : /* @__PURE__ */ (0, z.jsxs)("div", {
@@ -14300,7 +14308,7 @@ function Ci({ survey: e, history: t, onComparison: n, onHumanResult: r, onHome: 
 										className: "font-black text-slate-950",
 										children: ["Run ", t.sequence]
 									}),
-									/* @__PURE__ */ (0, z.jsx)(Vt, { children: ri(t.personaAgent) }),
+									/* @__PURE__ */ (0, z.jsx)(Vt, { children: ii(t.personaAgent) }),
 									/* @__PURE__ */ (0, z.jsx)(Vt, { children: t.dimensionCount ?? "Not recorded" }),
 									/* @__PURE__ */ (0, z.jsx)(Vt, { children: /* @__PURE__ */ (0, z.jsx)("span", {
 										className: "rounded-full px-2.5 py-1 text-xs font-black",
@@ -14315,7 +14323,7 @@ function Ci({ survey: e, history: t, onComparison: n, onHumanResult: r, onHome: 
 										" / ",
 										e.questions.length
 									] }),
-									/* @__PURE__ */ (0, z.jsx)(Vt, { children: ei(t.completedAt) }),
+									/* @__PURE__ */ (0, z.jsx)(Vt, { children: ti(t.completedAt) }),
 									/* @__PURE__ */ (0, z.jsx)(Vt, {
 										className: "text-right",
 										children: /* @__PURE__ */ (0, z.jsx)("button", {
@@ -14372,10 +14380,10 @@ function Ci({ survey: e, history: t, onComparison: n, onHumanResult: r, onHome: 
 											}), /* @__PURE__ */ (0, z.jsxs)("span", {
 												className: "text-xs font-bold text-slate-500",
 												children: [
-													ri(t.personaAgent),
+													ii(t.personaAgent),
 													" -",
 													" ",
-													ei(t.completedAt)
+													ti(t.completedAt)
 												]
 											})]
 										}, t.id);
@@ -14414,8 +14422,8 @@ function Ci({ survey: e, history: t, onComparison: n, onHumanResult: r, onHome: 
 		})
 	});
 }
-function wi({ onHome: e }) {
-	return /* @__PURE__ */ (0, z.jsx)(ui, {
+function Ti({ onHome: e }) {
+	return /* @__PURE__ */ (0, z.jsx)(di, {
 		onHome: e,
 		children: /* @__PURE__ */ (0, z.jsxs)("article", {
 			className: "prose-card",
@@ -14478,7 +14486,7 @@ function wi({ onHome: e }) {
 		})
 	});
 }
-function Ti({ notice: e }) {
+function Ei({ notice: e }) {
 	return /* @__PURE__ */ (0, z.jsxs)("output", {
 		className: "validation-save-status",
 		"aria-live": "polite",
@@ -14488,8 +14496,8 @@ function Ti({ notice: e }) {
 		}), /* @__PURE__ */ (0, z.jsx)("span", { children: e.message })]
 	});
 }
-function Ei({ hosted: e = !1 }) {
-	let [t, n] = (0, C.useState)({}), [r, i] = (0, C.useState)(Xr), [a, o] = (0, C.useState)(!1), [s, c] = (0, C.useState)(e), [l, u] = (0, C.useState)(null), [d, f] = (0, C.useState)(!1), [p, m] = (0, C.useState)(!1), [h, g] = (0, C.useState)(null), [_, v] = (0, C.useState)(0), y = (0, C.useRef)({}), b = (0, C.useRef)(null), x = (0, C.useRef)({}), S = (0, C.useRef)(void 0), w = (0, C.useRef)(!1), T = (0, C.useRef)(!1), ee = (0, C.useRef)(null), E = (0, C.useRef)(!1), D = (0, C.useRef)(0), O = (0, C.useRef)(!0);
+function Di({ hosted: e = !1 }) {
+	let [t, n] = (0, C.useState)({}), [r, i] = (0, C.useState)(Zr), [a, o] = (0, C.useState)(!1), [s, c] = (0, C.useState)(e), [l, u] = (0, C.useState)(null), [d, f] = (0, C.useState)(!1), [p, m] = (0, C.useState)(!1), [h, g] = (0, C.useState)(null), [_, v] = (0, C.useState)(0), y = (0, C.useRef)({}), b = (0, C.useRef)(null), x = (0, C.useRef)({}), S = (0, C.useRef)(void 0), w = (0, C.useRef)(!1), T = (0, C.useRef)(!1), ee = (0, C.useRef)(null), E = (0, C.useRef)(!1), D = (0, C.useRef)(0), O = (0, C.useRef)(!0);
 	(0, C.useEffect)(() => {
 		y.current = t;
 	}, [t]);
@@ -14500,8 +14508,8 @@ function Ei({ hosted: e = !1 }) {
 			T.current = !0;
 			return;
 		}
-		let t = kn(x.current, y.current), r = lr(t);
-		if (r === lr(x.current) || r === ee.current) return;
+		let t = kn(x.current, y.current), r = ur(t);
+		if (r === ur(x.current) || r === ee.current) return;
 		w.current = !0, u({
 			kind: "saving",
 			message: "saving to disk..."
@@ -14509,23 +14517,23 @@ function Ei({ hosted: e = !1 }) {
 		let a = null;
 		try {
 			try {
-				a = await cr(e.contextId, e.saveRevision, t);
+				a = await lr(e.contextId, e.saveRevision, t);
 			} catch (o) {
-				if (!(o instanceof nr) || o.status !== 409 || !o.currentState) throw o;
+				if (!(o instanceof rr) || o.status !== 409 || !o.currentState) throw o;
 				let s = o.currentState;
 				if (s.contextId !== e.contextId) {
-					b.current = s, x.current = s.store, y.current = s.store, ee.current = null, O.current && (n(s.store), i(Xr), u({
+					b.current = s, x.current = s.store, y.current = s.store, ee.current = null, O.current && (n(s.store), i(Zr), u({
 						kind: "saved",
 						message: "active persona changed - its results were loaded from disk."
 					}));
 					return;
 				}
-				t = kn(s.store, y.current), r = lr(t), a = r === lr(s.store) ? s : await cr(s.contextId, s.saveRevision, t);
+				t = kn(s.store, y.current), r = ur(t), a = r === ur(s.store) ? s : await lr(s.contextId, s.saveRevision, t);
 			}
 			b.current = a, x.current = a.store, ee.current = null;
 			let o = kn(a.store, y.current);
-			if (lr(o) !== lr(y.current) && (y.current = o, O.current && n(o)), O.current) {
-				let e = ti(a.savedAt);
+			if (ur(o) !== ur(y.current) && (y.current = o, O.current && n(o)), O.current) {
+				let e = ni(a.savedAt);
 				u({
 					kind: "saved",
 					message: e ? `saved to disk at ${e}` : "saved to disk"
@@ -14538,7 +14546,7 @@ function Ei({ hosted: e = !1 }) {
 			});
 		} finally {
 			w.current = !1;
-			let e = lr(y.current), t = e !== lr(x.current) && e !== ee.current;
+			let e = ur(y.current), t = e !== ur(x.current) && e !== ee.current;
 			O.current && (T.current || t) && (T.current = !1, v((e) => e + 1));
 		}
 	});
@@ -14549,7 +14557,7 @@ function Ei({ hosted: e = !1 }) {
 		}), r = !1;
 		async function i() {
 			try {
-				let e = await ar(), t = ti(e.savedAt), i = t ? {
+				let e = await or(), t = ni(e.savedAt), i = t ? {
 					kind: "saved",
 					message: `saved to disk at ${t}`
 				} : {
@@ -14579,7 +14587,7 @@ function Ei({ hosted: e = !1 }) {
 		async function o() {
 			let a = b.current;
 			if (a) try {
-				let o = await wr(Wt, a.contextId);
+				let o = await Tr(Wt, a.contextId);
 				if (t) return;
 				if (!o.length) {
 					r = !0;
@@ -14591,16 +14599,16 @@ function Ei({ hosted: e = !1 }) {
 				});
 				let s = y.current, c = null, l = 0, d = 0;
 				for (let n of o) {
-					let r = await Tr(n, Wt, void 0, void 0, (n) => {
+					let r = await Er(n, Wt, void 0, void 0, (n) => {
 						!t && D.current === e && u({
 							kind: "saving",
 							message: `recovering Agent experiment - ${n.completedRuns} of ${n.requestedRuns} responses complete...`
 						});
 					});
-					s = Ar(s, r, Wt), c = r.batchId, l += r.successes.length, d += r.failures.length;
+					s = jr(s, r, Wt), c = r.batchId, l += r.successes.length, d += r.failures.length;
 				}
 				if (t) return;
-				y.current = s, n(s), c && g(c), i(Xr), u({
+				y.current = s, n(s), c && g(c), i(Zr), u({
 					kind: d ? "error" : "saved",
 					message: d ? `${l} recovered Agent responses will be saved. ${d} runs did not finish.` : `${l} Agent responses recovered - saving them to disk.`
 				}), r = !0;
@@ -14608,7 +14616,7 @@ function Ei({ hosted: e = !1 }) {
 				if (t) return;
 				u({
 					kind: "error",
-					message: e instanceof gr ? `${e.message} Reload Validation to recover the saved experiment before starting another.` : "The saved Agent experiment could not be recovered. Reload Validation before starting another."
+					message: e instanceof _r ? `${e.message} Reload Validation to recover the saved experiment before starting another.` : "The saved Agent experiment could not be recovered. Reload Validation before starting another."
 				});
 			} finally {
 				!t && D.current === e && (E.current = !1, f(!1), r && m(!0));
@@ -14619,8 +14627,8 @@ function Ei({ hosted: e = !1 }) {
 		};
 	}, [a]), (0, C.useEffect)(() => {
 		if (!a || !b.current) return;
-		let e = lr(t);
-		if (!(e === lr(x.current) || e === ee.current)) return S.current !== void 0 && window.clearTimeout(S.current), S.current = window.setTimeout(() => {
+		let e = ur(t);
+		if (!(e === ur(x.current) || e === ee.current)) return S.current !== void 0 && window.clearTimeout(S.current), S.current = window.setTimeout(() => {
 			S.current = void 0, te();
 		}, 300), () => {
 			S.current !== void 0 && (window.clearTimeout(S.current), S.current = void 0);
@@ -14630,7 +14638,7 @@ function Ei({ hosted: e = !1 }) {
 		a,
 		_
 	]);
-	let ne = si(t, r), k = "surveyId" in r ? Gt[r.surveyId] : void 0;
+	let ne = ci(t, r), k = "surveyId" in r ? Gt[r.surveyId] : void 0;
 	function re(e, t) {
 		n((n) => ({
 			...n,
@@ -14638,7 +14646,7 @@ function Ei({ hosted: e = !1 }) {
 		}));
 	}
 	function ie() {
-		i(Xr), window.scrollTo({
+		i(Zr), window.scrollTo({
 			top: 0,
 			behavior: "smooth"
 		});
@@ -14652,13 +14660,13 @@ function Ei({ hosted: e = !1 }) {
 	}
 	async function A() {
 		try {
-			let e = await ar(), r = b.current;
-			if (r && e.contextId !== r.contextId) return b.current = e, x.current = e.store, y.current = e.store, ee.current = null, n(e.store), i(Xr), u({
+			let e = await or(), r = b.current;
+			if (r && e.contextId !== r.contextId) return b.current = e, x.current = e.store, y.current = e.store, ee.current = null, n(e.store), i(Zr), u({
 				kind: "saved",
 				message: "active persona changed - its results were loaded from disk."
 			}), null;
 			let a = kn(e.store, y.current);
-			return b.current = e, x.current = e.store, y.current = a, ee.current = null, lr(a) !== lr(t) && n(a), e;
+			return b.current = e, x.current = e.store, y.current = a, ee.current = null, ur(a) !== ur(t) && n(a), e;
 		} catch {
 			return u({
 				kind: "error",
@@ -14691,7 +14699,7 @@ function Ei({ hosted: e = !1 }) {
 			let t = ae();
 			if (!t) return;
 			let n = {
-				id: $r("human"),
+				id: ei("human"),
 				answers: {},
 				startedAt: (/* @__PURE__ */ new Date()).toISOString(),
 				personaAgent: t
@@ -14708,27 +14716,27 @@ function Ei({ hosted: e = !1 }) {
 		}
 		window.scrollTo({ top: 0 });
 	}
-	async function oe() {
+	async function oe({ background: e = !1 } = {}) {
 		if (!(!p || E.current)) {
 			E.current = !0, f(!0), u({
 				kind: "saving",
 				message: "running 40 clean Agent responses - 10 concurrent runs for each survey..."
 			});
 			try {
-				let e = await A();
-				if (!e) return;
-				let t = await Er(Wt, e.contextId, e.personaRevision, void 0, void 0, (e) => {
+				let t = await A();
+				if (!t) return;
+				let r = await Dr(Wt, t.contextId, t.personaRevision, void 0, void 0, (e) => {
 					O.current && u({
 						kind: "saving",
 						message: `running Agent experiment - ${e.completedRuns} of ${e.requestedRuns} responses complete...`
 					});
 				});
 				if (!O.current) return;
-				let r = Ar(y.current, t, Wt);
-				y.current = r, n(r), g(t.batchId), i(Xr), u({
-					kind: t.failures.length ? "error" : "saved",
-					message: t.failures.length ? `${t.successes.length} of 40 Agent responses completed and will be saved. ${t.failures.length} failed.` : "40 Agent responses complete - saving the experiment to disk."
-				}), window.scrollTo({
+				let a = jr(y.current, r, Wt);
+				y.current = a, n(a), g(r.batchId), e || i(Zr), u({
+					kind: r.failures.length ? "error" : "saved",
+					message: r.failures.length ? `${r.successes.length} of 40 Agent responses completed and will be saved. ${r.failures.length} failed.` : "40 Agent responses complete - saving the experiment to disk."
+				}), e || window.scrollTo({
 					top: 0,
 					behavior: "smooth"
 				});
@@ -14736,7 +14744,7 @@ function Ei({ hosted: e = !1 }) {
 				if (!O.current) return;
 				u({
 					kind: "error",
-					message: e instanceof gr ? `${e.message} Reload Validation to recover any responses already saved by the experiment.` : "The Agent experiment could not be loaded yet. Reload Validation to recover any saved responses."
+					message: e instanceof _r ? `${e.message} Reload Validation to recover any responses already saved by the experiment.` : "The Agent experiment could not be loaded yet. Reload Validation to recover any saved responses."
 				});
 			} finally {
 				E.current = !1, O.current && f(!1);
@@ -14797,7 +14805,7 @@ function Ei({ hosted: e = !1 }) {
 		let a = ae();
 		if (!a) return;
 		let o = {
-			id: $r("human"),
+			id: ei("human"),
 			answers: {},
 			startedAt: (/* @__PURE__ */ new Date()).toISOString(),
 			personaAgent: a
@@ -14815,7 +14823,9 @@ function Ei({ hosted: e = !1 }) {
 			runId: o.id
 		}), window.scrollTo({ top: 0 });
 	}
-	let N = (0, C.useEffectEvent)((e) => {
+	let N = (0, C.useEffectEvent)(() => {
+		oe({ background: !0 });
+	}), P = (0, C.useEffectEvent)((e) => {
 		if (e.name === "home") {
 			ie();
 			return;
@@ -14838,7 +14848,10 @@ function Ei({ hosted: e = !1 }) {
 	(0, C.useEffect)(() => {
 		if (!s || !a) return;
 		function n() {
-			let n = Yn(t, ne);
+			let n = Xn(t, ne, {
+				active: d,
+				ready: p
+			});
 			if (e) {
 				window.dispatchEvent(new CustomEvent(Hn, { detail: n }));
 				return;
@@ -14846,7 +14859,7 @@ function Ei({ hosted: e = !1 }) {
 			window.parent.postMessage(n, Bn);
 		}
 		function r(e) {
-			if (Kn(e)) {
+			if (qn(e)) {
 				document.documentElement.dataset.validationHostViewport = e.viewport, document.getElementById("validation-root")?.setAttribute("data-validation-host-viewport", e.viewport);
 				return;
 			}
@@ -14854,9 +14867,13 @@ function Ei({ hosted: e = !1 }) {
 				n();
 				return;
 			}
-			if (!qn(e)) return;
+			if (Kn(e)) {
+				N();
+				return;
+			}
+			if (!Jn(e)) return;
 			let t = e.target;
-			N(t);
+			P(t);
 		}
 		function i(e) {
 			e instanceof CustomEvent && r(e.detail);
@@ -14868,14 +14885,16 @@ function Ei({ hosted: e = !1 }) {
 			e ? window.removeEventListener(Vn, i) : window.removeEventListener("message", o);
 		};
 	}, [
+		p,
 		s,
 		e,
 		a,
-		t,
-		ne
+		ne,
+		d,
+		t
 	]);
-	function P() {
-		return /* @__PURE__ */ (0, z.jsx)(pi, {
+	function le() {
+		return /* @__PURE__ */ (0, z.jsx)(mi, {
 			store: t,
 			onHuman: j,
 			onRunAll: () => void oe(),
@@ -14886,15 +14905,15 @@ function Ei({ hosted: e = !1 }) {
 			onSelectExperiment: g
 		});
 	}
-	function le() {
+	function F() {
 		if (!a) return /* @__PURE__ */ (0, z.jsx)("div", { className: "validation-loading min-h-screen" });
-		if (r.name === "home") return P();
-		if (r.name === "license") return /* @__PURE__ */ (0, z.jsx)(wi, { onHome: ie });
+		if (r.name === "home") return le();
+		if (r.name === "license") return /* @__PURE__ */ (0, z.jsx)(Ti, { onHome: ie });
 		if (!k) return null;
 		let e = An(t, k.id);
 		if (r.name === "quiz") {
 			let t = r.actor === "human" ? e.human : Nn(e, r.runId);
-			return t ? /* @__PURE__ */ (0, z.jsx)(mi, {
+			return t ? /* @__PURE__ */ (0, z.jsx)(hi, {
 				survey: k,
 				actor: r.actor,
 				run: t,
@@ -14902,13 +14921,13 @@ function Ei({ hosted: e = !1 }) {
 				onSaveAnswer: (e, t) => se(r.surveyId, r.actor, r.runId, e, t),
 				onComplete: () => ce(r.surveyId, r.actor, r.runId),
 				onHome: ie
-			}, r.runId) : P();
+			}, r.runId) : le();
 		}
 		if (r.name === "result") {
 			let t = r.actor === "human" ? e.human : Nn(e, r.runId);
-			if (!t?.completedAt) return P();
-			let n = !!(e.human?.completedAt && (r.actor === "human" || ii(e.human.personaAgent, t.personaAgent))), a = n ? jn(e, e.human.id).length : 0;
-			return /* @__PURE__ */ (0, z.jsx)(yi, {
+			if (!t?.completedAt) return le();
+			let n = !!(e.human?.completedAt && (r.actor === "human" || ai(e.human.personaAgent, t.personaAgent))), a = n ? jn(e, e.human.id).length : 0;
+			return /* @__PURE__ */ (0, z.jsx)(bi, {
 				survey: k,
 				actor: r.actor,
 				run: t,
@@ -14930,7 +14949,7 @@ function Ei({ hosted: e = !1 }) {
 		}
 		if (r.name === "comparison") {
 			let t = Nn(e, r.runId);
-			return !e.human?.completedAt || !t?.completedAt || t.benchmarkId !== e.human.id || !ii(e.human.personaAgent, t.personaAgent) ? P() : /* @__PURE__ */ (0, z.jsx)(xi, {
+			return !e.human?.completedAt || !t?.completedAt || t.benchmarkId !== e.human.id || !ai(e.human.personaAgent, t.personaAgent) ? le() : /* @__PURE__ */ (0, z.jsx)(Si, {
 				survey: k,
 				human: e.human,
 				agentRun: t,
@@ -14947,7 +14966,7 @@ function Ei({ hosted: e = !1 }) {
 				onHome: ie
 			});
 		}
-		return !e.human?.completedAt || jn(e, e.human.id).length === 0 ? P() : /* @__PURE__ */ (0, z.jsx)(Ci, {
+		return !e.human?.completedAt || jn(e, e.human.id).length === 0 ? le() : /* @__PURE__ */ (0, z.jsx)(wi, {
 			survey: k,
 			history: e,
 			onComparison: (e) => i({
@@ -14964,21 +14983,21 @@ function Ei({ hosted: e = !1 }) {
 			onHome: ie
 		});
 	}
-	let F = a && ne.name !== "license" && l !== null;
+	let ue = a && ne.name !== "license" && l !== null;
 	return /* @__PURE__ */ (0, z.jsxs)("div", {
-		className: [s ? "validation-embedded" : "", F ? "validation-save-visible" : ""].filter(Boolean).join(" ") || void 0,
-		children: [le(), F && /* @__PURE__ */ (0, z.jsx)(Ti, { notice: l })]
+		className: [s ? "validation-embedded" : "", ue ? "validation-save-visible" : ""].filter(Boolean).join(" ") || void 0,
+		children: [F(), ue && /* @__PURE__ */ (0, z.jsx)(Ei, { notice: l })]
 	});
 }
 //#endregion
 //#region app/validation-entry.tsx
-var Di = document.getElementById("validation-root");
-if (!Di) throw Error("The Validation mount point was not found.");
-var Oi = (0, N.createRoot)(Di), ki = 0;
-function Ai() {
-	Oi.render(/* @__PURE__ */ (0, z.jsx)(Ei, { hosted: !0 }, ki));
+var Oi = document.getElementById("validation-root");
+if (!Oi) throw Error("The Validation mount point was not found.");
+var ki = (0, N.createRoot)(Oi), Ai = 0;
+function ji() {
+	ki.render(/* @__PURE__ */ (0, z.jsx)(Di, { hosted: !0 }, Ai));
 }
 window.addEventListener("matraix-validation-reload", () => {
-	ki += 1, Ai();
-}), Ai();
+	Ai += 1, ji();
+}), ji();
 //#endregion

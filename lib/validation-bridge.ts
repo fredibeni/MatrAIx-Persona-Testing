@@ -49,6 +49,8 @@ export interface ValidationSidebarState {
   activeSurveyId?: SurveyId;
   activeActor?: 'human' | 'agent';
   activeProgress?: { answered: number; total: number };
+  agentBatchActive: boolean;
+  agentBatchControllerReady: boolean;
   totals: {
     completedBenchmarks: number;
     completedAgentRuns: number;
@@ -69,6 +71,12 @@ export interface ValidationRequestStateMessage {
   type: 'request-state';
 }
 
+export interface ValidationRunAgentBatchMessage {
+  channel: typeof VALIDATION_CHANNEL;
+  version: typeof VALIDATION_MESSAGE_VERSION;
+  type: 'run-agent-batch';
+}
+
 export interface ValidationNavigateMessage {
   channel: typeof VALIDATION_CHANNEL;
   version: typeof VALIDATION_MESSAGE_VERSION;
@@ -84,6 +92,11 @@ export interface ValidationHostLayoutMessage {
   version: typeof VALIDATION_MESSAGE_VERSION;
   type: 'host-layout';
   viewport: ValidationHostViewport;
+}
+
+export interface ValidationAgentBatchControllerState {
+  active: boolean;
+  ready: boolean;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -102,6 +115,17 @@ export function isValidationRequestStateMessage(
     value.channel === VALIDATION_CHANNEL &&
     value.version === VALIDATION_MESSAGE_VERSION &&
     value.type === 'request-state'
+  );
+}
+
+export function isValidationRunAgentBatchMessage(
+  value: unknown,
+): value is ValidationRunAgentBatchMessage {
+  return (
+    isRecord(value) &&
+    value.channel === VALIDATION_CHANNEL &&
+    value.version === VALIDATION_MESSAGE_VERSION &&
+    value.type === 'run-agent-batch'
   );
 }
 
@@ -140,6 +164,10 @@ export function isValidationNavigateMessage(
 export function buildValidationSidebarState(
   store: SurveyStore,
   view: ValidationViewDescriptor,
+  agentBatchController: ValidationAgentBatchControllerState = {
+    active: false,
+    ready: false,
+  },
 ): ValidationSidebarState {
   const surveyStates = surveys.map((survey): ValidationSidebarSurvey => {
     const history = surveyHistory(store, survey.id);
@@ -182,6 +210,8 @@ export function buildValidationSidebarState(
     activeSurveyId: view.surveyId,
     activeActor: view.actor,
     activeProgress,
+    agentBatchActive: agentBatchController.active,
+    agentBatchControllerReady: agentBatchController.ready,
     totals: {
       completedBenchmarks: surveyStates.filter(
         (survey) => survey.humanStatus === 'complete',
@@ -198,11 +228,12 @@ export function buildValidationSidebarState(
 export function validationStateMessage(
   store: SurveyStore,
   view: ValidationViewDescriptor,
+  agentBatchController?: ValidationAgentBatchControllerState,
 ): ValidationStateMessage {
   return {
     channel: VALIDATION_CHANNEL,
     version: VALIDATION_MESSAGE_VERSION,
     type: 'state',
-    state: buildValidationSidebarState(store, view),
+    state: buildValidationSidebarState(store, view, agentBatchController),
   };
 }

@@ -6,6 +6,7 @@ const selectorElements = new Map();
 
 function elementStub() {
   return {
+    attributes: new Map(),
     appendChild() {},
     listeners: new Map(),
     addEventListener(type, listener) {
@@ -34,7 +35,12 @@ function elementStub() {
     querySelectorAll() {
       return [];
     },
-    setAttribute() {},
+    getAttribute(name) {
+      return this.attributes.get(name) ?? null;
+    },
+    setAttribute(name, value) {
+      this.attributes.set(name, String(value));
+    },
     style: {},
     textContent: '',
   };
@@ -323,11 +329,182 @@ assert.match(
   />Next survey</,
   'The completion view must offer Next survey',
 );
+assert.match(
+  document.getElementById('questions').innerHTML,
+  /data-finished-back[\s\S]*data-finished-validation[\s\S]*data-finished-next/,
+  'Run validation must be the middle completion action',
+);
+assert.match(
+  document.getElementById('questions').innerHTML,
+  /<span class="section-finished-validation-title">Run validation<\/span>\s*<span class="section-finished-validation-subtitle">in background<\/span>/,
+  'The background Validation action must use the exact two-line label',
+);
 assert.equal(
   document.getElementById('survey-footer').hidden,
   true,
   'The regular question footer must be hidden on Finished',
 );
+
+const finishedValidationButton = document
+  .getElementById('questions')
+  .querySelector('[data-finished-validation]');
+const finishedNextButton = document
+  .getElementById('questions')
+  .querySelector('[data-finished-next]');
+assert.equal(
+  finishedValidationButton.disabled,
+  true,
+  'Run validation must stay disabled until its controller is ready',
+);
+
+window.updatePersonaValidationAgentBatchState({
+  agentBatchActive: false,
+  agentBatchControllerReady: true,
+});
+assert.equal(
+  finishedValidationButton.disabled,
+  false,
+  'Run validation must enable when its controller is ready and idle',
+);
+
+let releasePersonaSave;
+const pendingPersonaSave = new Promise((resolve) => {
+  releasePersonaSave = resolve;
+});
+context.pendingPersonaSave = pendingPersonaSave;
+vm.runInContext('app.saveInFlight = pendingPersonaSave', context);
+let validationBatchRequests = 0;
+window.requestValidationAgentBatch = () => {
+  validationBatchRequests += 1;
+  return true;
+};
+
+finishedValidationButton.click();
+finishedValidationButton.click();
+assert.equal(
+  finishedValidationButton.disabled,
+  true,
+  'Run validation must disable synchronously when a start is requested',
+);
+assert.equal(
+  finishedValidationButton.getAttribute('aria-busy'),
+  'true',
+  'A pending background Validation request must be exposed as busy',
+);
+await Promise.resolve();
+assert.equal(
+  validationBatchRequests,
+  0,
+  'The Agent batch command must wait for the persona save to finish',
+);
+
+releasePersonaSave();
+await new Promise((resolve) => setTimeout(resolve, 0));
+vm.runInContext('app.saveInFlight = null', context);
+assert.equal(
+  validationBatchRequests,
+  1,
+  'Repeated clicks during the pending save must dispatch only one Agent batch',
+);
+
+window.updatePersonaValidationAgentBatchState({
+  agentBatchActive: true,
+  agentBatchControllerReady: true,
+});
+assert.equal(
+  finishedValidationButton.disabled,
+  true,
+  'Run validation must remain disabled throughout the active batch',
+);
+assert.equal(
+  finishedNextButton.disabled,
+  false,
+  'Starting background Validation must not disable Next survey',
+);
+finishedNextButton.click();
+assert.deepEqual(
+  JSON.parse(
+    vm.runInContext(
+      'JSON.stringify([app.currentIndex, app.currentQuestionIndex, app.viewMode])',
+      context,
+    ),
+  ),
+  [1, 0, 'question'],
+  'Next survey must remain independent while Validation runs in the background',
+);
+
+window.updatePersonaValidationAgentBatchState({
+  agentBatchActive: false,
+  agentBatchControllerReady: true,
+});
+vm.runInContext(
+  `
+    app.currentIndex = 0;
+    app.currentQuestionIndex = 1;
+    app.viewMode = 'module-complete';
+    renderCurrentModule();
+  `,
+  context,
+);
+const reenabledValidationButton = document
+  .getElementById('questions')
+  .querySelector('[data-finished-validation]');
+assert.equal(
+  reenabledValidationButton.disabled,
+  false,
+  'Run validation must re-enable after the active batch finishes',
+);
+
+let validationBatchStateRequests = 0;
+window.requestValidationAgentBatch = () => {
+  validationBatchRequests += 1;
+  return true;
+};
+window.requestValidationAgentBatchState = () => {
+  validationBatchStateRequests += 1;
+};
+reenabledValidationButton.click();
+await Promise.resolve();
+await Promise.resolve();
+vm.runInContext('checkPendingValidationBatchAcknowledgement()', context);
+assert.equal(
+  validationBatchStateRequests,
+  1,
+  'A start without an active acknowledgement must request fresh controller state',
+);
+assert.equal(
+  reenabledValidationButton.disabled,
+  true,
+  'The acknowledgement check must keep the start latched until state responds',
+);
+window.updatePersonaValidationAgentBatchState({
+  agentBatchActive: false,
+  agentBatchControllerReady: true,
+});
+assert.equal(
+  reenabledValidationButton.disabled,
+  false,
+  'A ready and inactive acknowledgement must release a rejected start',
+);
+
+window.requestValidationAgentBatch = () => {
+  validationBatchRequests += 1;
+  return false;
+};
+reenabledValidationButton.click();
+assert.equal(
+  reenabledValidationButton.disabled,
+  true,
+  'A rejected start must still disable immediately while it is checked',
+);
+await Promise.resolve();
+await Promise.resolve();
+assert.equal(
+  reenabledValidationButton.disabled,
+  false,
+  'A rejected start must clear the pending latch',
+);
+vm.runInContext('clearTimeout(app.toastTimer); app.toastTimer = null', context);
 
 document
   .getElementById('questions')

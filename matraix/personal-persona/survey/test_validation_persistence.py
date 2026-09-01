@@ -367,6 +367,185 @@ class ValidationPersistenceTests(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertEqual(reloaded, saved)
 
+    def test_batch_records_keep_journal_revision_after_persona_advances(self) -> None:
+        _, initial, _ = self.request("GET", "/api/validation/state")
+        revision_a = initial["persona_revision"]
+        dimension_count = initial["persona_dimension_count"]
+        with server.STATE_LOCK:
+            context = server.synchronize_active_persona_context_unlocked()
+        self.assertIsNotNone(context)
+        assert context is not None
+
+        batch_id = f"validation-batch-{'a' * 24}"
+        batch_started_at = "2026-09-01T09:00:00Z"
+        batch_completed_at = "2026-09-01T09:02:00Z"
+        prepared = server.ValidationAgentContext(
+            backend=server.ChatBackend(
+                codex="codex",
+                model="gpt-5.6-luna",
+                reasoning_effort="low",
+                timeout=30,
+            ),
+            helpers=None,
+            identity="server-captured-persona-a",
+            persona_display_name=context.display_name,
+            snapshot={
+                "context_id": context.context_id,
+                "persona_id": context.persona_id,
+                "persona_display_name": context.display_name,
+                "baseline_sha256": context.baseline_sha256,
+                "persona_revision": revision_a,
+                "persona_dimension_count": dimension_count,
+            },
+            results_directory=context.responses_path.parent,
+        )
+        results = []
+        for survey_id in server.VALIDATION_SURVEY_ORDER:
+            survey = server.load_validation_survey(survey_id)
+            answers = {
+                question["id"]: question["options"][0]["id"]
+                for question in survey["questions"]
+            }
+            for response_index in range(
+                1, server.VALIDATION_BATCH_RUNS_PER_SURVEY + 1
+            ):
+                started_at = f"2026-09-01T09:00:{response_index:02d}Z"
+                completed_at = f"2026-09-01T09:01:{response_index:02d}Z"
+                results.append(
+                    {
+                        "ok": True,
+                        "survey_id": survey_id,
+                        "response_index": response_index,
+                        "answers": deepcopy(answers),
+                        **prepared.snapshot,
+                        "persona_display_name": context.display_name,
+                        "model": prepared.backend.model,
+                        "reasoning_effort": prepared.backend.reasoning_effort,
+                        "started_at": started_at,
+                        "completed_at": completed_at,
+                        "execution": {
+                            "mode": "codex-ephemeral",
+                            "prior_conversation_messages": 0,
+                            "memory": "disabled",
+                            "tools": "disabled",
+                        },
+                    }
+                )
+        journal = server.validation_agent_batch_document(
+            prepared,
+            batch_id,
+            server.VALIDATION_BATCH_RUNS_PER_SURVEY,
+            batch_started_at,
+            results,
+            status="complete",
+            completed_at=batch_completed_at,
+        )
+        server.write_validation_agent_batch_journal(
+            server.validation_agent_batch_journal_path(
+                context.responses_path.parent,
+                batch_id,
+            ),
+            journal,
+        )
+
+        server.save_answers_and_rebuild(
+            {"direct_cog_verbosity": "Wordy"},
+            ["conversation_fingerprint"],
+        )
+        revision_b = server.sha256_path(self.active_persona)
+        self.assertNotEqual(revision_b, revision_a)
+
+        results_by_slot = {
+            (result["survey_id"], result["response_index"]): result
+            for result in results
+        }
+        surveys = {}
+        for survey_id in server.VALIDATION_SURVEY_ORDER:
+            agent_runs = []
+            for response_index in range(
+                1, server.VALIDATION_BATCH_RUNS_PER_SURVEY + 1
+            ):
+                result = results_by_slot[(survey_id, response_index)]
+                agent_runs.append(
+                    {
+                        "id": (
+                            f"agent-{batch_id}-{survey_id}-{response_index}"
+                        ),
+                        "sequence": response_index,
+                        "dimensionCount": dimension_count,
+                        "answers": deepcopy(result["answers"]),
+                        "startedAt": result["started_at"],
+                        "completedAt": result["completed_at"],
+                        "freshSessionAttestedAt": result["started_at"],
+                        "benchmarkId": None,
+                        "personaAgent": {
+                            "contextId": "browser-controlled-context",
+                            "personaId": "browser-controlled-persona",
+                            "displayName": "Browser Controlled",
+                            "baselineSha256": "f" * 64,
+                            "revisionSha256": "f" * 64,
+                        },
+                        "experiment": {
+                            "id": batch_id,
+                            "startedAt": batch_started_at,
+                            "responseIndex": response_index,
+                            "responsesPerSurvey": (
+                                server.VALIDATION_BATCH_RUNS_PER_SURVEY
+                            ),
+                            "surveyIds": list(server.VALIDATION_SURVEY_ORDER),
+                        },
+                    }
+                )
+            surveys[survey_id] = {"agentRuns": agent_runs}
+        store = {
+            "version": server.VALIDATION_STORE_VERSION,
+            "surveys": surveys,
+            "updatedAt": batch_completed_at,
+        }
+
+        status, saved, _ = self.request(
+            "POST",
+            "/api/validation/state",
+            {
+                "context_id": initial["context_id"],
+                "expected_save_revision": 0,
+                "store": store,
+            },
+            origin=VALIDATION_ORIGIN,
+        )
+
+        self.assertEqual(status, 200)
+        self.assertEqual(saved["persona_revision"], revision_b)
+        saved_runs = [
+            run
+            for history in saved["store"]["surveys"].values()
+            for run in history["agentRuns"]
+        ]
+        self.assertEqual(len(saved_runs), 40)
+        self.assertEqual(
+            {run["personaAgent"]["revisionSha256"] for run in saved_runs},
+            {revision_a},
+        )
+        self.assertTrue(
+            all(
+                run["personaAgent"]
+                == server.validation_persona_agent(context, revision_a)
+                for run in saved_runs
+            )
+        )
+
+        status, reloaded, _ = self.request("GET", "/api/validation/state")
+        self.assertEqual(status, 200)
+        reloaded_runs = [
+            run
+            for history in reloaded["store"]["surveys"].values()
+            for run in history["agentRuns"]
+        ]
+        self.assertEqual(
+            {run["personaAgent"]["revisionSha256"] for run in reloaded_runs},
+            {revision_a},
+        )
+
     def test_each_persona_context_uses_a_separate_results_file(self) -> None:
         _, first, _ = self.request("GET", "/api/validation/state")
         first_store = example_store(answer="short-plan")

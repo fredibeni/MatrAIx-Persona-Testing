@@ -45,6 +45,8 @@ const validationBridge = {
   snapshot: null,
   contextId: null,
   contextCheckInFlight: null,
+  agentBatchRequestPending: false,
+  agentBatchAcknowledgementCheck: false,
 };
 const validationCommandEvent = 'matraix-validation-command';
 const validationStateEvent = 'matraix-validation-state';
@@ -96,6 +98,8 @@ function validationSnapshotFromMessage(message) {
     !isNonNegativeInteger(state.totals.completedBenchmarks) ||
     state.totals.completedBenchmarks > validationSurveyIdsInOrder.length ||
     !isNonNegativeInteger(state.totals.completedAgentRuns) ||
+    typeof state.agentBatchActive !== 'boolean' ||
+    typeof state.agentBatchControllerReady !== 'boolean' ||
     !Array.isArray(state.surveys) ||
     state.surveys.length !== validationSurveyIdsInOrder.length
   ) {
@@ -170,6 +174,8 @@ function validationSnapshotFromMessage(message) {
     activeSurveyId: state.activeSurveyId,
     activeActor: state.activeActor,
     activeProgress,
+    agentBatchActive: state.agentBatchActive,
+    agentBatchControllerReady: state.agentBatchControllerReady,
     totals: {
       completedBenchmarks: state.totals.completedBenchmarks,
       completedAgentRuns: state.totals.completedAgentRuns,
@@ -194,6 +200,40 @@ function requestValidationState() {
   postValidationMessage({ type: 'request-state' });
 }
 
+function notifyPersonaValidationAgentBatchState(snapshot) {
+  if (typeof window.updatePersonaValidationAgentBatchState !== 'function') {
+    return;
+  }
+  window.updatePersonaValidationAgentBatchState({
+    agentBatchActive: snapshot?.agentBatchActive === true,
+    agentBatchControllerReady: snapshot?.agentBatchControllerReady === true,
+  });
+}
+
+function requestValidationAgentBatch() {
+  const snapshot = validationBridge.snapshot;
+  if (
+    !snapshot?.agentBatchControllerReady ||
+    snapshot.agentBatchActive ||
+    validationBridge.agentBatchRequestPending
+  ) {
+    return false;
+  }
+  validationBridge.agentBatchRequestPending = true;
+  validationBridge.agentBatchAcknowledgementCheck = false;
+  postValidationMessage({ type: 'run-agent-batch' });
+  return true;
+}
+
+function requestValidationAgentBatchState() {
+  validationBridge.agentBatchAcknowledgementCheck =
+    validationBridge.agentBatchRequestPending;
+  requestValidationState();
+}
+
+window.requestValidationAgentBatch = requestValidationAgentBatch;
+window.requestValidationAgentBatchState = requestValidationAgentBatchState;
+
 function validationHostViewport() {
   if (window.innerWidth <= 650) return 'compact';
   if (window.innerWidth <= 920) return 'medium';
@@ -209,7 +249,10 @@ function syncValidationHostLayout() {
 
 function reloadValidationForPersonaChange() {
   validationBridge.snapshot = null;
+  validationBridge.agentBatchRequestPending = false;
+  validationBridge.agentBatchAcknowledgementCheck = false;
   renderValidationSidebar(null);
+  notifyPersonaValidationAgentBatchState(null);
   window.dispatchEvent(new Event(validationReloadEvent));
   if (typeof showToast === 'function') {
     showToast('Persona changed - its Validation history was loaded.');
@@ -325,8 +368,22 @@ function renderValidationSidebar(snapshot) {
 function handleValidationMessage(event) {
   const snapshot = validationSnapshotFromMessage(event.detail);
   if (!snapshot) return;
+  const wasActive = validationBridge.snapshot?.agentBatchActive === true;
   validationBridge.snapshot = snapshot;
+  if (
+    snapshot.agentBatchActive ||
+    (wasActive && !snapshot.agentBatchActive) ||
+    !snapshot.agentBatchControllerReady ||
+    (validationBridge.agentBatchRequestPending &&
+      validationBridge.agentBatchAcknowledgementCheck &&
+      snapshot.agentBatchControllerReady &&
+      !snapshot.agentBatchActive)
+  ) {
+    validationBridge.agentBatchRequestPending = false;
+    validationBridge.agentBatchAcknowledgementCheck = false;
+  }
   renderValidationSidebar(snapshot);
+  notifyPersonaValidationAgentBatchState(snapshot);
   syncValidationHostLayout();
 }
 

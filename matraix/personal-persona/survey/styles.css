@@ -953,6 +953,32 @@ h1 {
   font-weight: 400;
 }
 
+.section-finished-validation {
+  display: inline-flex;
+  min-width: 124px;
+  padding-block: 7px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  line-height: 1.15;
+}
+
+.section-finished-validation-title,
+.section-finished-validation-subtitle {
+  display: block;
+  white-space: nowrap;
+}
+
+.section-finished-validation-subtitle {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.section-finished-validation:disabled .section-finished-validation-subtitle {
+  color: inherit;
+}
+
 .question-card {
   padding: 20px;
   border: 0;

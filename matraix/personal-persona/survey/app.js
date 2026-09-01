@@ -11,6 +11,11 @@ const app = {
   refreshInFlight: null,
   toastTimer: null,
   advanceTimer: null,
+  agentBatchActive: false,
+  agentBatchControllerReady: false,
+  agentBatchRequestPending: false,
+  agentBatchAcknowledgementTimer: null,
+  agentBatchAcknowledgementCheck: false,
 };
 
 const elements = {
@@ -1107,6 +1112,104 @@ function navigateToNextSurvey() {
   navigateTo(nextIndex);
 }
 
+function validationBatchControlDisabled() {
+  return (
+    !app.agentBatchControllerReady ||
+    app.agentBatchActive ||
+    app.agentBatchRequestPending
+  );
+}
+
+function syncSectionFinishedValidationControl() {
+  const button = elements.questions.querySelector('[data-finished-validation]');
+  if (!button) return;
+  button.disabled = validationBatchControlDisabled();
+  button.setAttribute(
+    'aria-busy',
+    String(app.agentBatchActive || app.agentBatchRequestPending),
+  );
+}
+
+function clearValidationBatchRequestPending() {
+  clearTimeout(app.agentBatchAcknowledgementTimer);
+  app.agentBatchAcknowledgementTimer = null;
+  app.agentBatchAcknowledgementCheck = false;
+  app.agentBatchRequestPending = false;
+}
+
+function checkPendingValidationBatchAcknowledgement() {
+  clearTimeout(app.agentBatchAcknowledgementTimer);
+  app.agentBatchAcknowledgementTimer = null;
+  if (!app.agentBatchRequestPending || app.agentBatchActive) return;
+  app.agentBatchAcknowledgementCheck = true;
+  if (typeof window.requestValidationAgentBatchState === 'function') {
+    window.requestValidationAgentBatchState();
+    return;
+  }
+  clearValidationBatchRequestPending();
+  syncSectionFinishedValidationControl();
+}
+
+function scheduleValidationBatchAcknowledgementCheck() {
+  clearTimeout(app.agentBatchAcknowledgementTimer);
+  app.agentBatchAcknowledgementCheck = false;
+  app.agentBatchAcknowledgementTimer = setTimeout(
+    checkPendingValidationBatchAcknowledgement,
+    5_000,
+  );
+}
+
+function updatePersonaValidationAgentBatchState(state) {
+  if (
+    !state ||
+    typeof state.agentBatchActive !== 'boolean' ||
+    typeof state.agentBatchControllerReady !== 'boolean'
+  ) {
+    return;
+  }
+  const wasActive = app.agentBatchActive;
+  app.agentBatchActive = state.agentBatchActive;
+  app.agentBatchControllerReady = state.agentBatchControllerReady;
+  const rejectedStartConfirmed =
+    app.agentBatchRequestPending &&
+    app.agentBatchAcknowledgementCheck &&
+    app.agentBatchControllerReady &&
+    !app.agentBatchActive;
+  if (
+    app.agentBatchActive ||
+    (wasActive && !app.agentBatchActive) ||
+    rejectedStartConfirmed ||
+    !app.agentBatchControllerReady
+  ) {
+    clearValidationBatchRequestPending();
+  }
+  syncSectionFinishedValidationControl();
+}
+
+async function runValidationInBackground() {
+  if (validationBatchControlDisabled()) return;
+  app.agentBatchRequestPending = true;
+  syncSectionFinishedValidationControl();
+
+  try {
+    await flushPersonaSurveySave();
+    if (
+      typeof window.requestValidationAgentBatch !== 'function' ||
+      window.requestValidationAgentBatch() !== true
+    ) {
+      clearValidationBatchRequestPending();
+      syncSectionFinishedValidationControl();
+      showToast('Validation is not ready yet. Try again in a moment.');
+      return;
+    }
+    scheduleValidationBatchAcknowledgementCheck();
+  } catch (error) {
+    clearValidationBatchRequestPending();
+    syncSectionFinishedValidationControl();
+    showToast(`Could not start validation: ${error.message}`);
+  }
+}
+
 function renderSectionFinished() {
   const nextIndex = nextReviewableModuleIndex();
   setSectionFinishedLayout(true);
@@ -1115,6 +1218,10 @@ function renderSectionFinished() {
       <h2 id="section-finished-title" class="section-finished-title" tabindex="-1">Finished</h2>
       <div class="section-finished-actions">
         <button class="secondary-button" type="button" data-finished-back>Back</button>
+        <button class="secondary-button section-finished-validation" type="button" data-finished-validation>
+          <span class="section-finished-validation-title">Run validation</span>
+          <span class="section-finished-validation-subtitle">in background</span>
+        </button>
         <button class="primary-button" type="button" data-finished-next ${nextIndex < 0 ? 'disabled' : ''}>Next survey</button>
       </div>
     </section>
@@ -1125,6 +1232,10 @@ function renderSectionFinished() {
   elements.questions
     .querySelector('[data-finished-next]')
     ?.addEventListener('click', navigateToNextSurvey);
+  elements.questions
+    .querySelector('[data-finished-validation]')
+    ?.addEventListener('click', () => void runValidationInBackground());
+  syncSectionFinishedValidationControl();
   elements.previous.disabled = true;
   elements.next.disabled = true;
   renderNav();
@@ -1311,6 +1422,8 @@ async function flushPersonaSurveySave() {
 }
 
 window.flushPersonaSurveySave = flushPersonaSurveySave;
+window.updatePersonaValidationAgentBatchState =
+  updatePersonaValidationAgentBatchState;
 
 function applySurveySnapshot(snapshot) {
   const previousContextId = app.state?.context_id;

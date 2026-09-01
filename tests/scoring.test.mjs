@@ -19,6 +19,8 @@ import {
   isValidationHostLayoutMessage,
   isValidationNavigateMessage,
   isValidationRequestStateMessage,
+  isValidationRunAgentBatchMessage,
+  validationStateMessage,
 } from '../lib/validation-bridge.ts';
 import {
   parseValidationAgentResult,
@@ -978,12 +980,22 @@ const sidebarState = buildValidationSidebarState(
     actor: 'agent',
     runId: 'run-2',
   },
+  { active: true, ready: false },
 );
 assert.equal(sidebarState.totals.completedBenchmarks, 1);
 assert.equal(sidebarState.totals.completedAgentRuns, 5);
 assert.deepEqual(sidebarState.activeProgress, { answered: 5, total: 5 });
 assert.equal(sidebarState.surveys[0].humanStatus, 'complete');
 assert.equal(sidebarState.surveys[0].completedAgentRuns, 5);
+assert.equal(sidebarState.agentBatchActive, true);
+assert.equal(sidebarState.agentBatchControllerReady, false);
+const readyStateMessage = validationStateMessage(
+  { everyday: convergenceHistory },
+  { name: 'home' },
+  { active: false, ready: true },
+);
+assert.equal(readyStateMessage.state.agentBatchActive, false);
+assert.equal(readyStateMessage.state.agentBatchControllerReady, true);
 assert.equal(
   isValidationNavigateMessage({
     channel: 'matraix-validation',
@@ -1009,6 +1021,22 @@ assert.equal(
     type: 'request-state',
   }),
   true,
+);
+assert.equal(
+  isValidationRunAgentBatchMessage({
+    channel: 'matraix-validation',
+    version: 1,
+    type: 'run-agent-batch',
+  }),
+  true,
+);
+assert.equal(
+  isValidationRunAgentBatchMessage({
+    channel: 'matraix-validation',
+    version: 2,
+    type: 'run-agent-batch',
+  }),
+  false,
 );
 assert.equal(
   isValidationHostLayoutMessage({
