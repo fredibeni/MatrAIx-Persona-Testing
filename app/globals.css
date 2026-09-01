@@ -1423,16 +1423,6 @@ button:disabled {
   line-height: 1.55;
 }
 
-.validation-embedded .validation-result-note {
-  margin: 12px 0 0;
-  border-radius: 11px;
-  color: var(--validation-muted);
-  background: var(--validation-paper-soft);
-  padding: 11px 12px;
-  font-size: 12px;
-  line-height: 1.5;
-}
-
 .validation-embedded .validation-question-details {
   margin-top: 12px;
   color: var(--validation-ink);

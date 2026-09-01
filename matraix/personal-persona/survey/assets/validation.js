@@ -13223,10 +13223,6 @@ function di({ survey: e, history: t, onHuman: n, aggregate: r, interactionDisabl
 					]
 				})
 			}),
-			s && !r?.hasHumanBenchmark && /* @__PURE__ */ (0, z.jsx)("p", {
-				className: "validation-result-note",
-				children: "No Human benchmark yet. Agent agreement is still shown from this experiment."
-			}),
 			s && /* @__PURE__ */ (0, z.jsxs)("details", {
 				className: "validation-question-details",
 				children: [/* @__PURE__ */ (0, z.jsxs)("summary", { children: ["Question results", /* @__PURE__ */ (0, z.jsx)("span", { children: r?.questions.length })] }), /* @__PURE__ */ (0, z.jsx)("div", {

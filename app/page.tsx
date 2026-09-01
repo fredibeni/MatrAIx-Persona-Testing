@@ -351,13 +351,6 @@ function SurveyCard({
         </button>
       </div>
 
-      {hasResults && !aggregate?.hasHumanBenchmark && (
-        <p className="validation-result-note">
-          No Human benchmark yet. Agent agreement is still shown from this
-          experiment.
-        </p>
-      )}
-
       {hasResults && (
         <details className="validation-question-details">
           <summary>
