@@ -1453,9 +1453,7 @@ button:disabled {
 
 .validation-embedded .validation-question-details {
   margin-top: 12px;
-  border-radius: 11px;
   color: var(--validation-ink);
-  background: var(--validation-paper-soft);
 }
 
 .validation-embedded .validation-question-details summary {
@@ -1465,7 +1463,7 @@ button:disabled {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 11px 13px;
+  padding: 11px 0;
   font-size: 13px;
   font-weight: 650;
   list-style: none;
@@ -1491,7 +1489,11 @@ button:disabled {
 .validation-embedded .validation-question-list {
   display: grid;
   gap: 8px;
-  padding: 0 8px 8px;
+  padding: 0;
+}
+
+.validation-embedded .validation-question-details[open] summary {
+  margin-bottom: 8px;
 }
 
 .validation-embedded .validation-question-result {
