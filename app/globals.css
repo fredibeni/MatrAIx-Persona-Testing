@@ -1536,7 +1536,7 @@ button:disabled {
 
 .validation-embedded .survey-title {
   color: var(--validation-ink) !important;
-  font-size: 24px !important;
+  font-size: 20px !important;
   line-height: 1.12 !important;
 }
 
