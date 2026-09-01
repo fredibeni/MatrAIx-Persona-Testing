@@ -1447,7 +1447,20 @@ button:disabled {
   display: none;
 }
 
-.validation-embedded .validation-question-details summary span {
+.validation-embedded .validation-question-summary-label {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 6px;
+}
+
+.validation-embedded .validation-question-chevron {
+  flex: 0 0 auto;
+  color: var(--validation-muted);
+  transition: transform 150ms ease;
+}
+
+.validation-embedded .validation-question-count {
   display: grid;
   min-width: 28px;
   min-height: 28px;
@@ -1466,6 +1479,12 @@ button:disabled {
 
 .validation-embedded .validation-question-details[open] summary {
   margin-bottom: 8px;
+}
+
+.validation-embedded
+  .validation-question-details[open]
+  .validation-question-chevron {
+  transform: rotate(180deg);
 }
 
 .validation-embedded .validation-question-result {

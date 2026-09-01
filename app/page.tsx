@@ -14,6 +14,7 @@ import {
   Bot,
   Check,
   CheckCircle2,
+  ChevronDown,
   ChevronRight,
   ClipboardCheck,
   History,
@@ -355,8 +356,17 @@ function SurveyCard({
       {hasResults && (
         <details className="validation-question-details">
           <summary>
-            Question results
-            <span>{aggregate?.questions.length}</span>
+            <span className="validation-question-summary-label">
+              <ChevronDown
+                size={15}
+                className="validation-question-chevron"
+                aria-hidden="true"
+              />
+              Question results
+            </span>
+            <span className="validation-question-count">
+              {aggregate?.questions.length}
+            </span>
           </summary>
           <div className="validation-question-list">
             {aggregate?.questions.map((question) => (

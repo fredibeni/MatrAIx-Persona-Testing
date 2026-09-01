@@ -111,6 +111,53 @@ const validationPageSource = readFileSync(
   new URL('../app/page.tsx', import.meta.url),
   'utf8',
 );
+const validationStylesSource = readFileSync(
+  new URL('../app/globals.css', import.meta.url),
+  'utf8',
+);
+const questionDetailsStart = validationPageSource.indexOf(
+  '<details className="validation-question-details">',
+);
+const questionSummaryEnd = validationPageSource.indexOf(
+  '</summary>',
+  questionDetailsStart,
+);
+assert.ok(
+  questionDetailsStart >= 0 && questionSummaryEnd > questionDetailsStart,
+  'each survey result must render its Question results disclosure summary',
+);
+const questionSummaryMarkup = validationPageSource.slice(
+  questionDetailsStart,
+  questionSummaryEnd,
+);
+const questionSummaryLabelStart = questionSummaryMarkup.indexOf(
+  'className="validation-question-summary-label"',
+);
+const questionChevronStart = questionSummaryMarkup.indexOf('<ChevronDown');
+const questionResultsTextStart = questionSummaryMarkup.indexOf(
+  'Question results',
+);
+assert.ok(
+  questionSummaryLabelStart >= 0 &&
+    questionChevronStart > questionSummaryLabelStart &&
+    questionResultsTextStart > questionChevronStart,
+  'the disclosure chevron must appear inside the summary label before Question results',
+);
+assert.match(
+  questionSummaryMarkup,
+  /<ChevronDown[\s\S]*?className="validation-question-chevron"[\s\S]*?aria-hidden="true"[\s\S]*?\/>/,
+  'the Question results chevron must be decorative and expose its styling hook',
+);
+assert.match(
+  questionSummaryMarkup,
+  /className="validation-question-count"/,
+  'the result count must remain a separate trailing badge',
+);
+assert.match(
+  validationStylesSource,
+  /\.validation-question-details\[open\][\s\S]*?\.validation-question-chevron\s*\{\s*transform:\s*rotate\(180deg\);\s*\}/,
+  'opening Question results must rotate its chevron',
+);
 const resultsToolbarStart = validationPageSource.indexOf(
   '<div className="validation-results-toolbar">',
 );
