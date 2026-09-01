@@ -13385,19 +13385,23 @@ function gi({ store: e, onHuman: t, onRunAll: n, onLicense: r, runningExperiment
 	});
 }
 function _i({ survey: e, actor: t, run: n, agentRun: r, onSaveAnswer: i, onComplete: a, onHome: o }) {
-	let s = e.questions.findIndex((e) => !n.answers[e.id]), [c, l] = (0, C.useState)(s === -1 ? e.questions.length - 1 : s), u = e.questions[c], d = n.answers[u.id], f = (c + 1) / e.questions.length * 100, p = Qr[t], m = c === e.questions.length - 1, h = (0, C.useRef)(null), g = (0, C.useRef)(!1);
-	(0, C.useEffect)(() => {
-		g.current = !1, h.current?.focus({ preventScroll: !0 });
-	}, [c]);
-	function _(t) {
-		if (d === t) {
-			g.current = !1, i(u.id, null);
-			return;
+	let s = e.questions.findIndex((e) => !n.answers[e.id]), [c, l] = (0, C.useState)(s === -1 ? e.questions.length - 1 : s), [u, d] = (0, C.useState)(!1), f = e.questions[c], p = n.answers[f.id], m = (c + 1) / e.questions.length * 100, h = Qr[t], g = c === e.questions.length - 1, _ = (0, C.useRef)(null), v = (0, C.useRef)(!1), y = (0, C.useRef)(void 0);
+	(0, C.useEffect)(() => (v.current = !1, _.current?.focus({ preventScroll: !0 }), () => {
+		y.current !== void 0 && (window.clearTimeout(y.current), y.current = void 0);
+	}), [c]);
+	function b(t) {
+		if (!v.current) {
+			if (p === t) {
+				i(f.id, null);
+				return;
+			}
+			i(f.id, t), !(g || v.current) && (v.current = !0, d(!0), y.current = window.setTimeout(() => {
+				y.current = void 0, v.current = !1, d(!1), l((t) => Math.min(t + 1, e.questions.length - 1));
+			}, 300));
 		}
-		i(u.id, t), !(m || g.current) && (g.current = !0, l((t) => Math.min(t + 1, e.questions.length - 1)));
 	}
-	function v() {
-		d && (m ? a() : l((e) => e + 1));
+	function x() {
+		!p || v.current || (g ? a() : l((e) => e + 1));
 	}
 	return /* @__PURE__ */ (0, z.jsx)(pi, {
 		onHome: o,
@@ -13414,7 +13418,7 @@ function _i({ survey: e, actor: t, run: n, agentRun: r, onSaveAnswer: i, onCompl
 					}), /* @__PURE__ */ (0, z.jsxs)("div", {
 						className: "validation-quiz-context",
 						children: [
-							/* @__PURE__ */ (0, z.jsx)(p.Icon, { size: 17 }),
+							/* @__PURE__ */ (0, z.jsx)(h.Icon, { size: 17 }),
 							t === "agent" && r ? `Agent run ${r.sequence}` : "Human benchmark",
 							t === "agent" && r && /* @__PURE__ */ (0, z.jsxs)("span", {
 								className: "run-metadata-chip",
@@ -13437,38 +13441,38 @@ function _i({ survey: e, actor: t, run: n, agentRun: r, onSaveAnswer: i, onCompl
 				}),
 				/* @__PURE__ */ (0, z.jsx)("div", {
 					className: "progress-track",
-					"aria-label": `${Math.round(f)} percent complete`,
+					"aria-label": `${Math.round(m)} percent complete`,
 					children: /* @__PURE__ */ (0, z.jsx)("div", { style: {
-						width: `${f}%`,
+						width: `${m}%`,
 						backgroundColor: e.color
 					} })
 				}),
 				/* @__PURE__ */ (0, z.jsxs)("section", {
 					className: "question-card",
-					"data-question-id": u.id,
+					"data-question-id": f.id,
 					children: [
-						u.dimension && /* @__PURE__ */ (0, z.jsx)("p", {
+						f.dimension && /* @__PURE__ */ (0, z.jsx)("p", {
 							className: "validation-question-dimension",
 							style: { color: e.ink },
-							children: u.dimension
+							children: f.dimension
 						}),
 						/* @__PURE__ */ (0, z.jsx)("h1", {
-							ref: h,
+							ref: _,
 							tabIndex: -1,
 							className: "validation-question-title outline-none",
-							children: u.prompt
+							children: f.prompt
 						}),
 						/* @__PURE__ */ (0, z.jsxs)("fieldset", {
 							className: `mt-8 ${e.kind === "scale" ? "scale-options" : "space-y-3"}`,
 							children: [/* @__PURE__ */ (0, z.jsx)("legend", {
 								className: "sr-only",
-								children: u.prompt
-							}), u.options.map((t) => {
-								let n = d === t.id;
+								children: f.prompt
+							}), f.options.map((t) => {
+								let n = p === t.id;
 								return /* @__PURE__ */ (0, z.jsxs)("button", {
 									type: "button",
 									"aria-pressed": n,
-									onClick: () => _(t.id),
+									onClick: () => b(t.id),
 									className: `answer-option focus-ring ${n ? "answer-selected" : ""} ${e.kind === "scale" ? "scale-option" : ""}`,
 									style: n ? ai(e) : void 0,
 									children: [e.kind === "scale" ? /* @__PURE__ */ (0, z.jsx)("span", {
@@ -13493,18 +13497,18 @@ function _i({ survey: e, actor: t, run: n, agentRun: r, onSaveAnswer: i, onCompl
 						children: /* @__PURE__ */ (0, z.jsxs)("button", {
 							type: "button",
 							onClick: () => l((e) => Math.max(0, e - 1)),
-							disabled: c === 0,
+							disabled: c === 0 || u,
 							className: "secondary-button focus-ring",
 							children: [/* @__PURE__ */ (0, z.jsx)(D, { size: 17 }), " Previous"]
 						})
 					}), /* @__PURE__ */ (0, z.jsxs)("button", {
 						type: "button",
-						onClick: v,
-						disabled: !d,
+						onClick: x,
+						disabled: !p || u,
 						className: "primary-button focus-ring",
 						style: { backgroundColor: e.color },
 						children: [
-							m ? "Finish this run" : "Next",
+							g ? "Finish this run" : "Next",
 							" ",
 							/* @__PURE__ */ (0, z.jsx)(O, { size: 17 })
 						]

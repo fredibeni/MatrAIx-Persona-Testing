@@ -602,6 +602,7 @@ function QuizView({
   const [index, setIndex] = useState(
     firstMissing === -1 ? survey.questions.length - 1 : firstMissing,
   );
+  const [advancePending, setAdvancePending] = useState(false);
   const question = survey.questions[index];
   const selected = run.answers[question.id];
   const progress = ((index + 1) / survey.questions.length) * 100;
@@ -609,26 +610,39 @@ function QuizView({
   const isLast = index === survey.questions.length - 1;
   const questionHeadingRef = useRef<HTMLHeadingElement>(null);
   const advancingRef = useRef(false);
+  const advanceTimerRef = useRef<number | undefined>(undefined);
 
   useEffect(() => {
     advancingRef.current = false;
     questionHeadingRef.current?.focus({ preventScroll: true });
+    return () => {
+      if (advanceTimerRef.current !== undefined) {
+        window.clearTimeout(advanceTimerRef.current);
+        advanceTimerRef.current = undefined;
+      }
+    };
   }, [index]);
 
   function selectOption(optionId: string) {
+    if (advancingRef.current) return;
     if (selected === optionId) {
-      advancingRef.current = false;
       onSaveAnswer(question.id, null);
       return;
     }
     onSaveAnswer(question.id, optionId);
     if (isLast || advancingRef.current) return;
     advancingRef.current = true;
-    setIndex((value) => Math.min(value + 1, survey.questions.length - 1));
+    setAdvancePending(true);
+    advanceTimerRef.current = window.setTimeout(() => {
+      advanceTimerRef.current = undefined;
+      advancingRef.current = false;
+      setAdvancePending(false);
+      setIndex((value) => Math.min(value + 1, survey.questions.length - 1));
+    }, 300);
   }
 
   function next() {
-    if (!selected) return;
+    if (!selected || advancingRef.current) return;
     if (isLast) onComplete();
     else setIndex((value) => value + 1);
   }
@@ -718,7 +732,7 @@ function QuizView({
             <button
               type="button"
               onClick={() => setIndex((value) => Math.max(0, value - 1))}
-              disabled={index === 0}
+              disabled={index === 0 || advancePending}
               className="secondary-button focus-ring"
             >
               <ArrowLeft size={17} /> Previous
@@ -727,7 +741,7 @@ function QuizView({
           <button
             type="button"
             onClick={next}
-            disabled={!selected}
+            disabled={!selected || advancePending}
             className="primary-button focus-ring"
             style={{ backgroundColor: survey.color }}
           >

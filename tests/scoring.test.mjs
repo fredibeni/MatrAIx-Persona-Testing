@@ -141,6 +141,99 @@ assert.match(
   'mid-survey question pages must retain Next and final-question completion navigation',
 );
 
+const selectOptionStart = quizViewSource.indexOf('function selectOption(');
+const selectOptionEnd = quizViewSource.indexOf(
+  'function next()',
+  selectOptionStart,
+);
+assert.ok(
+  selectOptionStart >= 0 && selectOptionEnd > selectOptionStart,
+  'the answer-selection handler must remain discoverable',
+);
+const selectOptionSource = quizViewSource.slice(
+  selectOptionStart,
+  selectOptionEnd,
+);
+const saveAnswerStart = selectOptionSource.indexOf(
+  'onSaveAnswer(question.id, optionId);',
+);
+const finalOrDuplicateGuardStart = selectOptionSource.search(
+  /if\s*\(\s*(?:isLast\s*\|\|\s*advancingRef\.current|advancingRef\.current\s*\|\|\s*isLast)\s*\)\s*return;/,
+);
+const advanceLatchStart = selectOptionSource.indexOf(
+  'advancingRef.current = true;',
+);
+const delayedAdvanceStart = selectOptionSource.search(
+  /(?:window\.)?setTimeout\(/,
+);
+const delayedSetIndexStart = selectOptionSource.indexOf(
+  'setIndex(',
+  delayedAdvanceStart,
+);
+assert.ok(
+  saveAnswerStart >= 0 &&
+    finalOrDuplicateGuardStart > saveAnswerStart &&
+    advanceLatchStart > finalOrDuplicateGuardStart &&
+    delayedAdvanceStart > advanceLatchStart &&
+    delayedSetIndexStart > delayedAdvanceStart,
+  'saving an answer must guard final and duplicate advances, latch the interaction, and only then schedule the next question',
+);
+assert.doesNotMatch(
+  selectOptionSource.slice(advanceLatchStart, delayedAdvanceStart),
+  /setIndex\(/,
+  'answer selection must not advance synchronously before the delay',
+);
+assert.ok(
+  finalOrDuplicateGuardStart > saveAnswerStart &&
+    finalOrDuplicateGuardStart < delayedAdvanceStart,
+  'the final question must save its answer without scheduling an automatic advance',
+);
+assert.ok(
+  finalOrDuplicateGuardStart < advanceLatchStart &&
+    advanceLatchStart < delayedAdvanceStart,
+  'the advance latch must prevent repeated selections from scheduling duplicate advances',
+);
+const answerAdvanceDelayMatch = selectOptionSource.match(
+  /(?:window\.)?setTimeout\([\s\S]*?,\s*(\d+|[A-Z][A-Z0-9_]*)\s*\);/,
+);
+assert.ok(
+  answerAdvanceDelayMatch,
+  'answer selection must schedule its next-question advance with an explicit delay',
+);
+const answerAdvanceDelayToken = answerAdvanceDelayMatch?.[1] ?? '';
+const answerAdvanceDelayConstantMatch = answerAdvanceDelayToken.match(/^\d+$/)
+  ? null
+  : validationPageSource.match(
+      new RegExp(`const\\s+${answerAdvanceDelayToken}\\s*=\\s*(\\d+)`),
+    );
+const answerAdvanceDelayMs = Number(
+  answerAdvanceDelayConstantMatch?.[1] ?? answerAdvanceDelayToken,
+);
+assert.ok(
+  answerAdvanceDelayMs >= 100 && answerAdvanceDelayMs <= 1000,
+  'the answer-selection delay must be a short 100 to 1000 millisecond pause',
+);
+assert.match(
+  quizViewSource,
+  /const advanceTimerRef = useRef<[^>]+>\([^)]*\);/,
+  'the pending answer advance must keep a timer reference for cleanup',
+);
+assert.match(
+  quizViewSource,
+  /useEffect\(\(\) => \{[\s\S]*?return \(\) => \{[\s\S]*?(?:window\.)?clearTimeout\(advanceTimerRef\.current\);[\s\S]*?advanceTimerRef\.current = undefined;[\s\S]*?\};[\s\S]*?\}, \[index\]\);/,
+  'changing questions or unmounting must clear any pending answer-advance timer',
+);
+assert.match(
+  quizViewSource,
+  /onClick=\{\(\) => setIndex\(\(value\) => Math\.max\(0, value - 1\)\)\}[\s\S]*?disabled=\{index === 0 \|\| advancePending\}[\s\S]*?<ArrowLeft[\s\S]*?Previous/,
+  'Previous must be disabled while an automatic answer advance is pending',
+);
+assert.match(
+  quizViewSource,
+  /onClick=\{next\}[\s\S]*?disabled=\{!selected \|\| advancePending\}[\s\S]*?\{isLast \? 'Finish this run' : 'Next'\}/,
+  'Next must be disabled while an automatic answer advance is pending',
+);
+
 const resultViewStart = validationPageSource.indexOf('function ResultView(');
 const resultViewEnd = validationPageSource.indexOf(
   'function ComparisonView(',
