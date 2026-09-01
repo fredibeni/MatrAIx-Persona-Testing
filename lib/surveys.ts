@@ -1052,6 +1052,12 @@ const sillyQuestions: SurveyQuestion[] = [
   },
 ];
 
+const standardValidationPalette = {
+  color: 'var(--validation-survey-accent)',
+  pale: 'var(--validation-survey-soft)',
+  ink: 'var(--validation-survey-ink)',
+} as const;
+
 export const surveys: SurveyDefinition[] = [
   {
     id: 'everyday',
@@ -1060,9 +1066,7 @@ export const surveys: SurveyDefinition[] = [
     description:
       'See whether your persona knows the small preferences that quietly shape your day.',
     kind: 'categorical',
-    color: '#ff6b35',
-    pale: '#fff1ea',
-    ink: '#6d270d',
+    ...standardValidationPalette,
     questions: everydayQuestions,
   },
   {
@@ -1072,9 +1076,7 @@ export const surveys: SurveyDefinition[] = [
     description:
       'Compare degree, not just direction, across five everyday personality dimensions.',
     kind: 'scale',
-    color: '#6457d7',
-    pale: '#efedff',
-    ink: '#302779',
+    ...standardValidationPalette,
     questions: dialQuestions,
   },
   {
@@ -1084,9 +1086,7 @@ export const surveys: SurveyDefinition[] = [
     description:
       'Test how well your persona predicts what you do when ordinary plans go sideways.',
     kind: 'categorical',
-    color: '#0f9f7b',
-    pale: '#e4f8f2',
-    ink: '#075f4b',
+    ...standardValidationPalette,
     questions: plotTwistQuestions,
   },
   {
@@ -1096,9 +1096,7 @@ export const surveys: SurveyDefinition[] = [
     description:
       'A full silly type quiz for finding out whether your persona shares your exact flavor of online chaos.',
     kind: 'silly',
-    color: '#e33186',
-    pale: '#ffe8f3',
-    ink: '#7d1746',
+    ...standardValidationPalette,
     questions: sillyQuestions,
   },
 ];

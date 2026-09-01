@@ -746,7 +746,10 @@ function QuizView({
             onClick={next}
             disabled={!selected || advancePending}
             className="primary-button focus-ring"
-            style={{ backgroundColor: survey.color }}
+            style={{
+              backgroundColor: survey.color,
+              color: 'var(--validation-on-accent)',
+            }}
           >
             {isLast ? 'Finish this run' : 'Next'} <ArrowRight size={17} />
           </button>
@@ -940,7 +943,10 @@ function ResultView({
             {isAgent && (
               <div
                 className="mx-auto mt-2 w-fit rounded-full px-3 py-1.5 text-xs font-black"
-                style={{ backgroundColor: survey.color, color: 'white' }}
+                style={{
+                  backgroundColor: survey.color,
+                  color: 'var(--validation-on-accent)',
+                }}
               >
                 {agentRun.dimensionCount ?? 'Not recorded'} persona dimensions
               </div>

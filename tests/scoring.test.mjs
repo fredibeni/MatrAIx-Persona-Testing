@@ -72,6 +72,15 @@ assert.deepEqual(
   [5, 5, 5, 28],
   'the four surveys must remain independent and complete',
 );
+assert.deepEqual(
+  surveys.map(({ color, pale, ink }) => ({ color, pale, ink })),
+  Array.from({ length: surveys.length }, () => ({
+    color: 'var(--validation-survey-accent)',
+    pale: 'var(--validation-survey-soft)',
+    ink: 'var(--validation-survey-ink)',
+  })),
+  'all validation surveys must use the standard MatrAIx palette',
+);
 
 const validationManifest = JSON.parse(
   readFileSync(
@@ -620,6 +629,38 @@ assert.match(
   validationPageSource,
   /<p>Starts 10 fresh runs per survey<\/p>/,
   'the Agent validation helper copy must describe the number of runs concisely',
+);
+assert.equal(
+  validationPageSource.match(
+    /backgroundColor: survey\.color,\s*color: 'var\(--validation-on-accent\)',/g,
+  )?.length,
+  2,
+  'survey-colored actions and metadata must use the standard on-accent foreground',
+);
+assert.match(
+  validationStylesSource,
+  /:root\s*\{[\s\S]*?--validation-survey-accent:\s*#ffd166;[\s\S]*?--validation-survey-soft:\s*#fff1ce;[\s\S]*?--validation-survey-ink:\s*#8a5700;[\s\S]*?--validation-on-accent:\s*#17130a;/,
+  'the standalone validation view must use the standard light-theme palette',
+);
+assert.match(
+  validationStylesSource,
+  /\.validation-embedded\s*\{[\s\S]*?--validation-survey-accent:\s*var\(--validation-gold\);[\s\S]*?--validation-survey-soft:\s*var\(--validation-gold-soft\);[\s\S]*?--validation-survey-ink:\s*var\(--validation-gold-light\);[\s\S]*?--validation-on-accent:\s*var\(--validation-on-gold\);/,
+  'the embedded validation view must map every survey to the standard dark-theme palette',
+);
+assert.equal(
+  cssDeclarations(validationStylesSource, '.compare-button').color,
+  'var(--validation-on-accent)',
+  'standalone survey-colored buttons must keep an accessible foreground',
+);
+assert.match(
+  validationStylesSource,
+  /\.answer-selected \.option-key,\s*\.answer-selected \.option-check\s*\{[\s\S]*?color:\s*var\(--validation-on-accent\);/,
+  'selected standalone scale keys must keep an accessible foreground',
+);
+assert.match(
+  validationStylesSource,
+  /\.validation-embedded\s+:is\([\s\S]*?\.similarity-ring[\s\S]*?\)\s*\{[\s\S]*?--survey:\s*var\(--validation-survey-accent\) !important;[\s\S]*?--pale:\s*var\(--validation-survey-soft\) !important;[\s\S]*?--ink:\s*var\(--validation-survey-ink\) !important;/,
+  'embedded survey components must consume the shared semantic palette',
 );
 const resultsToolbarRule = validationStylesSource.match(
   /\.validation-embedded \.validation-results-toolbar\s*\{([^}]*)\}/,

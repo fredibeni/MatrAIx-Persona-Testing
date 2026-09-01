@@ -25,6 +25,10 @@
   --input: #e2e8f0;
   --ring: #111827;
   --radius: 0.75rem;
+  --validation-survey-accent: #ffd166;
+  --validation-survey-soft: #fff1ce;
+  --validation-survey-ink: #8a5700;
+  --validation-on-accent: #17130a;
 }
 
 * {
@@ -400,7 +404,7 @@ button:disabled {
   border-radius: 14px;
   background: var(--survey);
   padding: 0.8rem 1rem;
-  color: #fff;
+  color: var(--validation-on-accent);
   font-size: 0.82rem;
   font-weight: 900;
   transition: filter 150ms ease;
@@ -520,7 +524,7 @@ button:disabled {
 .answer-selected .option-key,
 .answer-selected .option-check {
   background: var(--survey);
-  color: #fff;
+  color: var(--validation-on-accent);
 }
 .option-check {
   display: grid;
@@ -1117,6 +1121,10 @@ button:disabled {
   --validation-gold-hover: #e0c46d;
   --validation-gold-soft: #2a2518;
   --validation-on-gold: #17130a;
+  --validation-survey-accent: var(--validation-gold);
+  --validation-survey-soft: var(--validation-gold-soft);
+  --validation-survey-ink: var(--validation-gold-light);
+  --validation-on-accent: var(--validation-on-gold);
   min-height: 100vh;
   min-height: 100dvh;
   position: relative;
@@ -1230,9 +1238,9 @@ button:disabled {
     .answer-selected,
     .similarity-ring
   ) {
-  --survey: var(--validation-gold) !important;
-  --pale: var(--validation-gold-soft) !important;
-  --ink: var(--validation-gold-light) !important;
+  --survey: var(--validation-survey-accent) !important;
+  --pale: var(--validation-survey-soft) !important;
+  --ink: var(--validation-survey-ink) !important;
 }
 
 .validation-embedded :is(.hero-kicker, .comparison-label) {
