@@ -323,10 +323,6 @@ input:focus-visible {
   padding-bottom: 20px;
 }
 
-.validation-nav-item:first-child {
-  margin-bottom: 7px;
-}
-
 .validation-survey-nav .validation-nav-item {
   grid-template-columns: minmax(0, 1fr);
 }
@@ -338,7 +334,7 @@ input:focus-visible {
 
 .module-nav {
   display: grid;
-  gap: 5px;
+  gap: var(--sidebar-content-inset);
 }
 
 .nav-item {
