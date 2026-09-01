@@ -147,8 +147,10 @@ input:focus-visible {
 }
 
 .workspace-header-card {
+  margin-top: -18px;
+  margin-inline: -12px;
   margin-bottom: 20px;
-  padding: 14px;
+  padding: 14px 0;
   border: 0;
   border-radius: 0;
   background: transparent;
@@ -1371,8 +1373,10 @@ h1 {
   }
 
   .workspace-header-card {
+    margin-top: -11px;
+    margin-inline: -7px;
     margin-bottom: 14px;
-    padding: 10px;
+    padding: 10px 0;
   }
 
   .sidebar-workspace-body {
@@ -1412,6 +1416,8 @@ h1 {
   }
 
   .workspace-header-card {
+    margin-top: 0;
+    margin-inline: 0;
     padding: 7px;
   }
 
