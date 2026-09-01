@@ -384,6 +384,32 @@ input:focus-visible {
   padding: 34px 0 70px;
 }
 
+.main-panel.section-finished-mode {
+  position: relative;
+  display: flex;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding-block: 0;
+  flex-direction: column;
+}
+
+.section-finished-mode .topbar {
+  position: absolute;
+  z-index: 1;
+  top: 34px;
+  right: 0;
+  left: 0;
+}
+
+.section-finished-mode #module-kicker,
+.section-finished-mode .module-summary {
+  display: none;
+}
+
+.section-finished-mode .save-cluster {
+  margin-left: auto;
+}
+
 .chat-panel {
   --chat-edge-space: 24px;
   display: flex;
@@ -882,6 +908,45 @@ h1 {
 .questions {
   display: grid;
   gap: 13px;
+}
+
+.section-finished-mode .questions {
+  display: grid;
+  flex: 1;
+  place-items: center;
+}
+
+.section-finished {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  text-align: center;
+}
+
+.section-finished-title {
+  margin: 0;
+  font-size: clamp(32px, 4vw, 48px);
+  font-weight: 400;
+  letter-spacing: -0.035em;
+  line-height: 1.08;
+}
+
+.section-finished-title:focus {
+  outline: none;
+}
+
+.section-finished-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.section-finished-actions .primary-button,
+.section-finished-actions .secondary-button {
+  font-weight: 400;
 }
 
 .question-card {
@@ -1391,6 +1456,10 @@ h1 {
     padding-top: 24px;
   }
 
+  .section-finished-mode .topbar {
+    top: 24px;
+  }
+
   .chat-panel {
     --chat-edge-space: 14px;
     width: min(100% - 28px, 880px);
@@ -1407,6 +1476,10 @@ h1 {
 
   .sidebar {
     padding: 14px 8px;
+  }
+
+  .section-finished-actions {
+    flex-wrap: wrap;
   }
 
   .workspace-header-card {

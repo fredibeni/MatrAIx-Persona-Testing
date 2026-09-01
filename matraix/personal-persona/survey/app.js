@@ -5,6 +5,7 @@ const app = {
   state: null,
   currentIndex: 0,
   currentQuestionIndex: 0,
+  viewMode: 'question',
   saveTimer: null,
   saveInFlight: null,
   refreshInFlight: null,
@@ -23,7 +24,9 @@ const elements = {
   moduleKicker: document.getElementById('module-kicker'),
   moduleTitle: document.getElementById('module-title'),
   moduleSummary: document.getElementById('module-summary'),
+  surveyView: document.getElementById('survey-view'),
   questions: document.getElementById('questions'),
+  footer: document.getElementById('survey-footer'),
   previous: document.getElementById('previous-button'),
   next: document.getElementById('next-button'),
   saveDot: document.getElementById('save-dot'),
@@ -805,9 +808,80 @@ function renderModuleSummary(module) {
   `;
 }
 
+function setSectionFinishedLayout(isFinished) {
+  if (isFinished) elements.surveyView.classList.add('section-finished-mode');
+  else elements.surveyView.classList.remove('section-finished-mode');
+  elements.footer.hidden = isFinished;
+}
+
+function nextReviewableModuleIndex() {
+  for (
+    let index = app.currentIndex + 1;
+    index < app.definition.modules.length;
+    index += 1
+  ) {
+    if (questionPagesForModule(app.definition.modules[index]).length) {
+      return index;
+    }
+  }
+  return -1;
+}
+
+function focusRenderedSurveyContent() {
+  window.requestAnimationFrame(() => {
+    const target = elements.questions.querySelector(
+      '.question-card, .section-finished-title',
+    );
+    if (!target) return;
+    target.setAttribute('tabindex', '-1');
+    target.focus({ preventScroll: true });
+  });
+}
+
+function returnToLastQuestion() {
+  if (app.viewMode !== 'module-complete') return;
+  clearAutoAdvance();
+  app.viewMode = 'question';
+  renderCurrentModule();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  focusRenderedSurveyContent();
+}
+
+function navigateToNextSurvey() {
+  const nextIndex = nextReviewableModuleIndex();
+  if (nextIndex < 0) return;
+  navigateTo(nextIndex);
+}
+
+function renderSectionFinished() {
+  const nextIndex = nextReviewableModuleIndex();
+  setSectionFinishedLayout(true);
+  elements.questions.innerHTML = `
+    <section class="section-finished" aria-labelledby="section-finished-title">
+      <h2 id="section-finished-title" class="section-finished-title" tabindex="-1">Finished</h2>
+      <div class="section-finished-actions">
+        <button class="secondary-button" type="button" data-finished-back>Back</button>
+        <button class="primary-button" type="button" data-finished-next ${nextIndex < 0 ? 'disabled' : ''}>Next survey</button>
+      </div>
+    </section>
+  `;
+  elements.questions
+    .querySelector('[data-finished-back]')
+    ?.addEventListener('click', returnToLastQuestion);
+  elements.questions
+    .querySelector('[data-finished-next]')
+    ?.addEventListener('click', navigateToNextSurvey);
+  elements.previous.disabled = true;
+  elements.next.disabled = true;
+  renderNav();
+  renderProgress();
+}
+
 function renderCurrentModule() {
   const allPages = app.definition.modules.length ? allQuestionPages() : [];
   if (!app.definition.modules.length || !allPages.length) {
+    app.viewMode = 'question';
+    setSectionFinishedLayout(false);
     elements.nav.innerHTML = '';
     elements.moduleKicker.textContent = 'Persona complete';
     elements.moduleTitle.textContent = 'No missing traits to fill in';
@@ -827,6 +901,12 @@ function renderCurrentModule() {
   );
   elements.moduleTitle.textContent = surveyModule.title;
   renderModuleSummary(surveyModule);
+  if (app.viewMode === 'module-complete' && questionPages.length) {
+    renderSectionFinished();
+    return;
+  }
+  app.viewMode = 'question';
+  setSectionFinishedLayout(false);
   elements.questions.innerHTML = questionPages.length
     ? renderQuestionPage(questionPages[app.currentQuestionIndex])
     : `
@@ -839,16 +919,10 @@ function renderCurrentModule() {
       </article>
     `;
   bindQuestionEvents();
-  const flatIndex = allPages.findIndex(
-    (page) =>
-      page.moduleIndex === app.currentIndex &&
-      page.questionIndex === app.currentQuestionIndex,
-  );
   const hasPrevious = questionPages.length > 0 && app.currentQuestionIndex > 0;
   const hasNext =
-    (flatIndex >= 0 && flatIndex < allPages.length - 1) ||
-    (flatIndex < 0 &&
-      allPages.some((page) => page.moduleIndex > app.currentIndex));
+    questionPages.length > 0 ||
+    allPages.some((page) => page.moduleIndex > app.currentIndex);
   elements.previous.disabled = !hasPrevious;
   elements.next.disabled = !hasNext;
   elements.previous.textContent = 'Previous';
@@ -860,6 +934,7 @@ function renderCurrentModule() {
 function navigateTo(index, questionIndex = null, options = {}) {
   if (index < 0 || index >= app.definition.modules.length) return;
   if (!options.fromAutoAdvance) clearAutoAdvance();
+  app.viewMode = 'question';
   app.currentIndex = index;
   const surveyModule = app.definition.modules[index];
   const pages = questionPagesForModule(surveyModule);
@@ -874,17 +949,31 @@ function navigateTo(index, questionIndex = null, options = {}) {
   }
   renderCurrentModule();
   window.scrollTo({ top: 0, behavior: 'smooth' });
-  window.requestAnimationFrame(() => {
-    const card = elements.questions.querySelector('.question-card');
-    if (!card) return;
-    card.setAttribute('tabindex', '-1');
-    card.focus({ preventScroll: true });
-  });
+  focusRenderedSurveyContent();
 }
 
 function navigateQuestion(direction, options = {}) {
   if (!options.fromAutoAdvance) clearAutoAdvance();
+  if (app.viewMode === 'module-complete') {
+    if (direction < 0) returnToLastQuestion();
+    else if (direction > 0) navigateToNextSurvey();
+    return;
+  }
   if (direction < 0 && app.currentQuestionIndex === 0) return;
+  const modulePages = questionPagesForModule(
+    app.definition.modules[app.currentIndex],
+  );
+  if (
+    direction > 0 &&
+    modulePages.length > 0 &&
+    app.currentQuestionIndex >= modulePages.length - 1
+  ) {
+    app.viewMode = 'module-complete';
+    renderCurrentModule();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    focusRenderedSurveyContent();
+    return;
+  }
   const pages = allQuestionPages();
   if (!pages.length) return;
   const currentIndex = pages.findIndex(
@@ -973,6 +1062,7 @@ function applySurveySnapshot(snapshot) {
   const previousContextId = app.state?.context_id;
   const previousModuleId = app.definition?.modules?.[app.currentIndex]?.id;
   const previousPageId = currentQuestionPage()?.id;
+  const previousViewMode = app.viewMode;
   clearAutoAdvance();
   app.definition = snapshot.definition;
   app.state = snapshot.state;
@@ -989,6 +1079,10 @@ function applySurveySnapshot(snapshot) {
     !contextChanged && previousPageId
       ? pages.find((page) => page.id === previousPageId)
       : null;
+  const preservedPageIsModuleEnd =
+    preservedPage &&
+    preservedPage.questionIndex ===
+      questionPagesForModule(modules[preservedPage.moduleIndex]).length - 1;
   const firstUnansweredPage = pages.find(
     (page) => !isQuestionPageAnswered(page),
   );
@@ -1001,6 +1095,14 @@ function applySurveySnapshot(snapshot) {
     firstUnansweredPage ||
     firstPageInPreviousModule ||
     pages[0];
+  app.viewMode =
+    previousViewMode === 'module-complete' &&
+    !contextChanged &&
+    preservedPage &&
+    targetPage?.id === preservedPage.id &&
+    preservedPageIsModuleEnd
+      ? 'module-complete'
+      : 'question';
   app.currentIndex = targetPage?.moduleIndex ?? Math.max(0, previousIndex);
   app.currentQuestionIndex = targetPage?.questionIndex ?? 0;
   if (modules.length) {
