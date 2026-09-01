@@ -844,10 +844,7 @@ function renderCurrentModule() {
       page.moduleIndex === app.currentIndex &&
       page.questionIndex === app.currentQuestionIndex,
   );
-  const hasPrevious =
-    flatIndex > 0 ||
-    (flatIndex < 0 &&
-      allPages.some((page) => page.moduleIndex < app.currentIndex));
+  const hasPrevious = questionPages.length > 0 && app.currentQuestionIndex > 0;
   const hasNext =
     (flatIndex >= 0 && flatIndex < allPages.length - 1) ||
     (flatIndex < 0 &&
@@ -887,6 +884,7 @@ function navigateTo(index, questionIndex = null, options = {}) {
 
 function navigateQuestion(direction, options = {}) {
   if (!options.fromAutoAdvance) clearAutoAdvance();
+  if (direction < 0 && app.currentQuestionIndex === 0) return;
   const pages = allQuestionPages();
   if (!pages.length) return;
   const currentIndex = pages.findIndex(

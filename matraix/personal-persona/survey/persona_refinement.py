@@ -417,7 +417,11 @@ def merge_updates(
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     refined = deepcopy(base)
     records = evidence_map(refined)
-    runtime = dict(refined.get("dimensions", {}))
+    runtime = {
+        dim_id: value
+        for dim_id, value in refined.get("dimensions", {}).items()
+        if value is not None
+    }
     applied: list[dict[str, Any]] = []
 
     # Last direct response for a dimension wins. Scale groups are unique.

@@ -10,6 +10,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from dataclasses import replace
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -160,8 +161,31 @@ def load_persona_identity(persona_path: Path) -> tuple[object, str]:
         render_persona_template,
         resolve_persona_template,
     )
+    from matraix.persona_builder import (
+        EVIDENCE_BLOCKS,
+        load_catalog,
+        load_sensitivity_policy,
+        migrate_persona_data,
+    )
 
     persona = load_persona(persona_path)
+    evidence_backed_fields = {
+        "version",
+        "source",
+        "system_prompt",
+        "dimensions",
+        "meta",
+        *EVIDENCE_BLOCKS,
+    }
+    if evidence_backed_fields.issubset(persona.data):
+        catalog = load_catalog()
+        sensitivity = load_sensitivity_policy(catalog=catalog)
+        migrated, _ = migrate_persona_data(
+            persona.data,
+            catalog=catalog,
+            sensitivity=sensitivity,
+        )
+        persona = replace(persona, data=migrated)
     template = resolve_persona_template(persona, None, PERSONA_SYSTEM_TEMPLATE)
     identity = render_persona_template(template, persona)
     return persona, identity

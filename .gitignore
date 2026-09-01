@@ -48,8 +48,9 @@ next-env.d.ts
 /matraix/.venv/
 /matraix/**/__pycache__/
 /matraix/**/*.pyc
-/matraix/personal-persona/persona.yaml
-/matraix/personal-persona/persona_*.yaml
+/matraix/personal-persona/*.yaml
+/matraix/personal-persona/*.yml
+!/matraix/personal-persona/persona.example.yaml
 /README [0-9]*.md
 /matraix/personal-persona/README [0-9]*.md
 /matraix/personal-persona/source-material/

@@ -14,9 +14,16 @@ Follow this file from the cloned repository root. The goal is a private local in
 ./install.sh
 ```
 
-The installer creates only `matraix/.venv` and installs the three pinned packages in `matraix/requirements.txt`. If Python is missing, report the installer's exact message. Do not silently install a system package manager or a different Python distribution.
+The installer creates `matraix/.venv` and installs the three pinned packages in `matraix/requirements.txt`. If `matraix/personal-persona/persona.yaml` does not exist, it also copies the tracked blank template from `persona.example.yaml` and protects the new private file with mode 600. If an active `persona.yaml` already exists, the installer leaves it unchanged. If Python is missing, report the installer's exact message. Do not silently install a system package manager or a different Python distribution.
 
-## 2. Establish the evidence boundary
+## 2. Understand the persona files
+
+- `matraix/personal-persona/persona.example.yaml` is tracked by Git. It contains all 1,290 schema dimension IDs with every dimension value set to `null`. It is a distribution template, not a person's profile.
+- `matraix/personal-persona/persona.yaml` is the ignored private runtime file. Installation or startup creates it from the template only when it is absent.
+- `install.sh` and `start-local.sh` never overwrite an existing `persona.yaml`. Preserve that file across reinstalls and normal starts.
+- Candidate compilation is the deliberate step that fills the private runtime file with supported values. Update persona can refine it later. Neither operation should modify `persona.example.yaml`.
+
+## 3. Establish the evidence boundary
 
 Before assessing any persona dimension, list the user-authored sources that this task can genuinely inspect. Eligible sources are limited to:
 
@@ -36,13 +43,13 @@ The desktop Codex app does not guarantee access to a complete ChatGPT archive. L
 
 Keep raw source content out of tracked files. Store only short factual evidence notes in the private candidate file. If the user supplied source files that must remain with the install, put them only under `matraix/personal-persona/source-material/`, which is ignored by Git.
 
-## 3. Review the complete dimension schema
+## 4. Review the complete dimension schema
 
 Use `matraix/persona/schema/dimensions.json` as the sole authority for dimension IDs, categories, and allowed values. The current schema contains many dimensions across many categories, so process it systematically rather than searching only for familiar traits.
 
 1. Enumerate every unique `category` in the schema.
 2. Within each category, review every dimension and its exact `values` list against the eligible evidence.
-3. Add a candidate only when the evidence supports one exact allowed value. Unsupported dimensions stay unset. Do not fill them with a default, midpoint, or plausible-sounding guess.
+3. Add a candidate only when the evidence supports one exact allowed value. Unsupported dimensions stay unset or are omitted from the compiled runtime mapping. Do not fill them with a default, midpoint, or plausible-sounding guess.
 4. Mark the schema review complete only after every category has been considered. In the candidate file, `"schema_categories_reviewed": ["*"]` means all current schema categories were actually reviewed. It must not be used as a shortcut.
 5. Record limitations such as missing full ChatGPT history, narrow time coverage, stale evidence, or a source concentrated in one area of life.
 
@@ -50,7 +57,7 @@ Use [the confidence guide](matraix/personal-persona/CONFIDENCE_LEVELS.md) for ev
 
 Sensitive dimensions are listed in `matraix/personal-persona/sensitive-dimensions.json`. Any history-derived candidate in that policy must have `runtime_included: false`, even when confidence is `stated`. The user can confirm or keep it private in Update persona later.
 
-## 4. Write the private candidate JSON
+## 5. Write the private candidate JSON
 
 Write the result to:
 
@@ -121,7 +128,7 @@ Rules for candidate records:
 
 If no personal evidence is available, keep `sources` and `candidates` empty, list the missing sources under `limitations`, and still record that every schema category was reviewed. This produces a valid sparse persona and is preferable to invented facts.
 
-## 5. Compile and validate
+## 6. Compile and validate
 
 Run:
 
@@ -131,10 +138,12 @@ Run:
 ./matraix/personal-persona/start-chat.sh --dry-run
 ```
 
-Compilation writes:
+Compilation deliberately fills or rebuilds the ignored private runtime file from the validated candidate data. This is different from installation and startup, which never overwrite an existing active file. Compilation writes:
 
 - `matraix/personal-persona/persona.yaml` - the active persona.
 - `matraix/personal-persona/survey/data/persona-build-report.json` - validation counts and coverage.
+
+After compilation, confirm that the tracked `persona.example.yaml` is unchanged and that unsupported dimensions were not promoted into runtime values.
 
 The builder validates candidate IDs, enum values, confidence labels, source references, sensitive-field exclusions, runtime rendering, private file modes, and Git ignore rules. Fix the candidate data and rerun both commands if any check fails. Do not use `--skip-private-checks` during installation.
 
@@ -152,13 +161,13 @@ done
 
 Use the build report for counts and the candidate's `source_coverage` for reviewed categories and limitations. In the completion summary, report the number of candidates at each confidence level, the number included at runtime, the number withheld as sensitive, the categories reviewed, and the source limitations. Do not quote private evidence text.
 
-## 6. Start the app
+## 7. Start the app
 
-Run `./start-local.sh` in a persistent terminal session. Wait for the local URL and chat status, then confirm that `http://127.0.0.1:8766/#chat` opens. Keep that process running for the user.
+Run `./start-local.sh` in a persistent terminal session. It copies `persona.example.yaml` only if `persona.yaml` is absent and never replaces an existing active persona. Wait for the local URL and chat status, then confirm that `http://127.0.0.1:8766/#chat` opens. Keep that process running for the user.
 
 If the app starts but Chat reports that Codex is not signed in, preserve the running local app and tell the user to run `codex login` and choose ChatGPT sign-in. Update persona and Validation can still be inspected locally.
 
-## 7. Graceful fallback
+## 8. Graceful fallback
 
 Missing history is an evidence limitation, not an installation failure. When a complete ChatGPT history or memory source is unavailable:
 

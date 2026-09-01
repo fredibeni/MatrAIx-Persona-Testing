@@ -70,6 +70,7 @@ DEFAULT_SCHEMA_PATH = MATRAIX_ROOT / "persona" / "schema" / "dimensions.json"
 DEFAULT_SENSITIVITY_PATH = PERSONA_DIR / "sensitive-dimensions.json"
 DEFAULT_CANDIDATES_PATH = PERSONA_DIR / "survey" / "data" / "persona-candidates.json"
 DEFAULT_PERSONA_PATH = PERSONA_DIR / "persona.yaml"
+DEFAULT_TEMPLATE_PATH = PERSONA_DIR / "persona.example.yaml"
 DEFAULT_REPORT_PATH = PERSONA_DIR / "survey" / "data" / "persona-build-report.json"
 
 PERSONA_ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9_-]{0,63}$")
@@ -558,8 +559,63 @@ def _block_for_row(row: dict[str, Any]) -> str:
 
 def rendered_dimension_count(dimensions: dict[str, Any]) -> int:
     """Return the number of dimensions that reach the rendered persona prompt."""
-    grouped = collect_dimension_items(dimensions)
+    populated = {
+        dim_id: value
+        for dim_id, value in dimensions.items()
+        if value is not None
+    }
+    grouped = collect_dimension_items(populated)
     return sum(len(rows) for rows in grouped.values())
+
+
+def build_blank_persona_template(
+    *,
+    catalog: Catalog,
+    sensitivity: SensitivityPolicy,
+) -> dict[str, Any]:
+    """Build the tracked, non-personal starter with every schema dimension null."""
+    payload: dict[str, Any] = {
+        "persona_id": "local-persona",
+        "version": "1.0",
+        "source": "blank_template",
+        "display_name": "Local Persona",
+        "summary": "A blank local persona ready to be filled from user-authorized evidence.",
+        "system_prompt": (
+            "Follow only attributes established in this profile. When an attribute is null or absent, "
+            "do not infer it from the schema or invent a personal fact."
+        ),
+        "dimensions": {row["id"]: None for row in catalog.rows},
+        "meta": {
+            "schema_version": catalog.schema_version,
+            "schema_sha256": catalog.sha256,
+            "schema_dimensions": len(catalog.rows),
+            "candidate_dimensions": 0,
+            "runtime_dimensions": 0,
+            "mapped_dimensions": 0,
+            "rendered_dimensions": 0,
+            "dimensions_left_unset": len(catalog.rows),
+            "selected_confidence_counts": {
+                confidence: 0 for confidence in BASE_CONFIDENCES
+            },
+            "sensitivity_policy_sha256": sensitivity.sha256,
+            "sensitivity_policy_source": sensitivity.source,
+            "source_coverage": {
+                "generated_at": "template",
+                "sources": [],
+                "schema_categories_reviewed": list(catalog.categories),
+                "limitations": [
+                    "This tracked template contains no personal evidence or filled dimensions."
+                ],
+            },
+        },
+        "instructions_for_consuming_model": (
+            "Use only non-null values in the top-level dimensions mapping for runtime behavior. "
+            "Never promote a null field or schema option into a personal fact."
+        ),
+        **{block: [] for block in EVIDENCE_BLOCKS},
+    }
+    validate_persona_data(payload, catalog=catalog, sensitivity=sensitivity)
+    return payload
 
 
 def build_persona_payload(
@@ -670,7 +726,14 @@ def validate_persona_data(
     _require(isinstance(dimensions, dict), "Persona dimensions must be a mapping")
     for dim_id, value in dimensions.items():
         _require(isinstance(dim_id, str), f"Runtime dimension ID must be a string: {dim_id!r}")
-        _validate_exact_value(dim_id, value, catalog, "runtime")
+        _require(dim_id in catalog.by_id, f"Unknown runtime dimension ID: {dim_id}")
+        if value is not None:
+            _validate_exact_value(dim_id, value, catalog, "runtime")
+    populated_dimensions = {
+        dim_id: value
+        for dim_id, value in dimensions.items()
+        if value is not None
+    }
 
     rows_by_id: dict[str, dict[str, Any]] = {}
     block_by_id: dict[str, str] = {}
@@ -692,26 +755,27 @@ def validate_persona_data(
             if "category" in row:
                 _require(row["category"] == catalog.by_id[dim_id]["category"], f"Evidence category is stale for {dim_id}")
             expected_sensitive = dim_id in sensitivity.dimension_ids
-            _require(row.get("sensitive") is expected_sensitive, f"Sensitivity flag is incorrect for {dim_id}")
-            sensitive_count += int(expected_sensitive)
+            sensitive = row.get("sensitive")
+            _require(isinstance(sensitive, bool), f"sensitive must be boolean for {dim_id}")
+            _require(
+                not expected_sensitive or sensitive,
+                f"Sensitivity flag is incorrect for {dim_id}",
+            )
+            sensitive_count += int(sensitive)
 
             history_confidence = row.get("confidence_chatgpt")
             _require(history_confidence in BASE_CONFIDENCES, f"Invalid ChatGPT confidence for {dim_id}: {history_confidence}")
             history_value = row.get("value_chatgpt")
             history_evidence = row.get("evidence_chatgpt")
             _require(isinstance(history_evidence, str) and bool(history_evidence.strip()), f"ChatGPT evidence is required for {dim_id}")
-            if history_confidence == "unknown":
-                _require(history_value is None, f"Unknown ChatGPT candidate {dim_id} must have a null value")
-            else:
+            if history_confidence != "unknown" or history_value is not None:
                 _validate_exact_value(dim_id, history_value, catalog, "ChatGPT")
 
             if "confidence_claude" in row or "value_claude" in row:
                 other_confidence = row.get("confidence_claude")
                 _require(other_confidence in BASE_CONFIDENCES, f"Invalid other-source confidence for {dim_id}")
                 other_value = row.get("value_claude")
-                if other_confidence == "unknown":
-                    _require(other_value is None, f"Unknown other-source candidate {dim_id} must have a null value")
-                else:
+                if other_confidence != "unknown" or other_value is not None:
                     _validate_exact_value(dim_id, other_value, catalog, "other-source")
 
             selected_from = row.get("selected_from")
@@ -756,22 +820,22 @@ def validate_persona_data(
             _require(isinstance(row.get("needs_review"), bool), f"needs_review must be boolean for {dim_id}")
             if runtime_included:
                 _require(selected_value is not None, f"Runtime evidence value is null for {dim_id}")
-                _require(dimensions.get(dim_id) == selected_value, f"Runtime mapping does not match evidence for {dim_id}")
+                _require(populated_dimensions.get(dim_id) == selected_value, f"Runtime mapping does not match evidence for {dim_id}")
             else:
-                _require(dim_id not in dimensions, f"Excluded dimension appears in runtime: {dim_id}")
+                _require(dimensions.get(dim_id) is None, f"Excluded dimension appears in runtime: {dim_id}")
 
-            if expected_sensitive and selected_from != "survey":
+            if sensitive and selected_from != "survey":
                 _require(not runtime_included, f"Sensitive history-derived value is included at runtime: {dim_id}")
             expected_block = _block_for_row(row)
             _require(block == expected_block, f"Evidence row {dim_id} belongs in {expected_block}, not {block}")
             confidence_counts[str(selected_confidence)] += 1
 
-    missing_evidence = sorted(set(dimensions) - set(rows_by_id))
+    missing_evidence = sorted(set(populated_dimensions) - set(rows_by_id))
     _require(not missing_evidence, f"Runtime dimensions have no evidence rows: {missing_evidence}")
 
-    rendered_count = rendered_dimension_count(dimensions)
+    rendered_count = rendered_dimension_count(populated_dimensions)
     _require(
-        rendered_count == len(dimensions),
+        rendered_count == len(populated_dimensions),
         "One or more runtime dimensions would be omitted from the rendered persona prompt",
     )
     meta = data.get("meta")
@@ -779,10 +843,10 @@ def validate_persona_data(
         _require(isinstance(meta, dict), "Persona meta must be a mapping")
         exact_counts = {
             "schema_dimensions": len(catalog.rows),
-            "runtime_dimensions": len(dimensions),
-            "mapped_dimensions": len(dimensions),
+            "runtime_dimensions": len(populated_dimensions),
+            "mapped_dimensions": len(populated_dimensions),
             "rendered_dimensions": rendered_count,
-            "dimensions_left_unset": len(catalog.rows) - len(dimensions),
+            "dimensions_left_unset": len(catalog.rows) - len(populated_dimensions),
         }
         for field, expected in exact_counts.items():
             if field in meta:
@@ -793,12 +857,151 @@ def validate_persona_data(
         "persona_id": persona_id,
         "display_name": display_name,
         "schema_dimensions": len(catalog.rows),
-        "runtime_dimensions": len(dimensions),
-        "mapped_dimensions": len(dimensions),
+        "runtime_dimensions": len(populated_dimensions),
+        "mapped_dimensions": len(populated_dimensions),
         "rendered_dimensions": rendered_count,
         "evidence_records": len(rows_by_id),
         "sensitive_records": sensitive_count,
         "selected_confidence_counts": dict(sorted(confidence_counts.items())),
+    }
+
+
+def migrate_persona_data(
+    data: dict[str, Any],
+    *,
+    catalog: Catalog,
+    sensitivity: SensitivityPolicy,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Return a current-policy persona and a non-sensitive migration report.
+
+    The current sensitivity policy is a privacy floor. Existing sensitivity
+    flags are retained even when the tracked policy no longer lists that
+    dimension. Evidence rows and their source-specific values are preserved.
+    """
+    _require(isinstance(data, dict), "Persona must be a mapping")
+    migrated = deepcopy(data)
+    dimensions = migrated.get("dimensions")
+    _require(isinstance(dimensions, dict), "Persona dimensions must be a mapping")
+
+    rows_by_block: dict[str, list[dict[str, Any]]] = {
+        block: [] for block in EVIDENCE_BLOCKS
+    }
+    seen_ids: set[str] = set()
+    sensitivity_flags_added = 0
+    legacy_sensitivity_flags_retained = 0
+    runtime_dimensions_withheld = 0
+    evidence_records = 0
+
+    for source_block in EVIDENCE_BLOCKS:
+        rows = migrated.get(source_block, [])
+        _require(isinstance(rows, list), f"Persona block {source_block} must be a list")
+        for index, row in enumerate(rows):
+            _require(
+                isinstance(row, dict),
+                f"Persona block {source_block}[{index}] must be an object",
+            )
+            dim_id = row.get("id")
+            _require(
+                isinstance(dim_id, str) and dim_id in catalog.by_id,
+                f"Unknown evidence dimension ID: {dim_id}",
+            )
+            _require(dim_id not in seen_ids, f"Duplicate evidence dimension ID: {dim_id}")
+            seen_ids.add(dim_id)
+            evidence_records += 1
+
+            existing_sensitive = row.get("sensitive")
+            _require(
+                isinstance(existing_sensitive, bool),
+                f"sensitive must be boolean for {dim_id}",
+            )
+            runtime_included = row.get("runtime_included")
+            _require(
+                isinstance(runtime_included, bool),
+                f"runtime_included must be boolean for {dim_id}",
+            )
+            _require(
+                isinstance(row.get("needs_review"), bool),
+                f"needs_review must be boolean for {dim_id}",
+            )
+
+            policy_sensitive = dim_id in sensitivity.dimension_ids
+            effective_sensitive = existing_sensitive or policy_sensitive
+            if policy_sensitive and not existing_sensitive:
+                sensitivity_flags_added += 1
+            if existing_sensitive and not policy_sensitive:
+                legacy_sensitivity_flags_retained += 1
+            row["sensitive"] = effective_sensitive
+
+            if effective_sensitive and row.get("selected_from") != "survey":
+                if runtime_included or dim_id in dimensions:
+                    runtime_dimensions_withheld += 1
+                row["runtime_included"] = False
+                row["needs_review"] = True
+                dimensions.pop(dim_id, None)
+                row.setdefault(
+                    "runtime_exclusion_reason",
+                    "Sensitive history-derived value withheld pending direct confirmation.",
+                )
+
+            destination_block = _block_for_row(row)
+            rows_by_block[destination_block].append(row)
+
+    for block, rows in rows_by_block.items():
+        rows.sort(key=lambda row: catalog.order[row["id"]])
+        migrated[block] = rows
+
+    meta = migrated.get("meta")
+    _require(meta is None or isinstance(meta, dict), "Persona meta must be a mapping")
+    if meta is None:
+        meta = {}
+        migrated["meta"] = meta
+    populated_dimensions = {
+        dim_id: value
+        for dim_id, value in dimensions.items()
+        if value is not None
+    }
+    rendered_count = rendered_dimension_count(populated_dimensions)
+    runtime_count = len(populated_dimensions)
+    meta.update(
+        {
+            "schema_dimensions": len(catalog.rows),
+            "runtime_dimensions": runtime_count,
+            "mapped_dimensions": runtime_count,
+            "rendered_dimensions": rendered_count,
+            "dimensions_left_unset": len(catalog.rows) - runtime_count,
+            "sensitivity_policy_sha256": sensitivity.sha256,
+            "sensitivity_policy_source": sensitivity.source,
+        }
+    )
+    survey_meta = meta.get("survey")
+    if isinstance(survey_meta, dict):
+        survey_meta["runtime_dimensions"] = runtime_count
+
+    validation = validate_persona_data(
+        migrated,
+        catalog=catalog,
+        sensitivity=sensitivity,
+    )
+    safe_validation = {
+        key: validation[key]
+        for key in (
+            "ok",
+            "schema_dimensions",
+            "runtime_dimensions",
+            "mapped_dimensions",
+            "rendered_dimensions",
+            "evidence_records",
+            "sensitive_records",
+            "selected_confidence_counts",
+        )
+    }
+    return migrated, {
+        "changed": migrated != data,
+        "sensitivity_flags_added": sensitivity_flags_added,
+        "legacy_sensitivity_flags_retained": legacy_sensitivity_flags_retained,
+        "runtime_dimensions_withheld": runtime_dimensions_withheld,
+        "evidence_records_preserved": evidence_records,
+        "validation": safe_validation,
     }
 
 
@@ -826,7 +1029,7 @@ def dump_readable_yaml(data: dict[str, Any]) -> str:
     return "\n".join(output) + "\n"
 
 
-def _atomic_write_private(path: Path, text: str) -> None:
+def _atomic_write(path: Path, text: str, mode: int) -> None:
     _require(not path.is_symlink(), f"Refusing to replace a symlink: {path}")
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary: Path | None = None
@@ -843,12 +1046,16 @@ def _atomic_write_private(path: Path, text: str) -> None:
             handle.flush()
             os.fsync(handle.fileno())
             temporary = Path(handle.name)
-        os.chmod(temporary, 0o600)
+        os.chmod(temporary, mode)
         os.replace(temporary, path)
-        os.chmod(path, 0o600)
+        os.chmod(path, mode)
     finally:
         if temporary is not None:
             temporary.unlink(missing_ok=True)
+
+
+def _atomic_write_private(path: Path, text: str) -> None:
+    _atomic_write(path, text, 0o600)
 
 
 def _ensure_private_mode(path: Path) -> None:
@@ -891,6 +1098,72 @@ def validate_persona(
     if require_git_ignore:
         _ensure_git_ignored(path)
     return report
+
+
+def write_blank_persona_template(
+    output_path: Path = DEFAULT_TEMPLATE_PATH,
+    *,
+    schema_path: Path = DEFAULT_SCHEMA_PATH,
+    sensitivity_path: Path = DEFAULT_SENSITIVITY_PATH,
+) -> dict[str, Any]:
+    """Write the complete, non-personal starter persona used by installations."""
+    catalog = load_catalog(schema_path)
+    sensitivity = load_sensitivity_policy(sensitivity_path, catalog=catalog)
+    payload = build_blank_persona_template(
+        catalog=catalog,
+        sensitivity=sensitivity,
+    )
+    _atomic_write(output_path, dump_readable_yaml(payload), 0o644)
+    report = validate_persona_data(
+        payload,
+        catalog=catalog,
+        sensitivity=sensitivity,
+    )
+    return {**report, "template_dimensions": len(payload["dimensions"]), "written": True}
+
+
+def migrate_persona(
+    path: Path = DEFAULT_PERSONA_PATH,
+    *,
+    schema_path: Path = DEFAULT_SCHEMA_PATH,
+    sensitivity_path: Path = DEFAULT_SENSITIVITY_PATH,
+    dry_run: bool = False,
+    enforce_private: bool = False,
+) -> dict[str, Any]:
+    """Migrate one private persona file to the current sensitivity policy."""
+    _require(not path.is_symlink(), f"Refusing to read a private symlink: {path}")
+    if enforce_private:
+        _ensure_git_ignored(path)
+        _ensure_private_mode(path)
+
+    catalog = load_catalog(schema_path)
+    sensitivity = load_sensitivity_policy(sensitivity_path, catalog=catalog)
+    data = _load_yaml_mapping(path)
+    migrated, migration = migrate_persona_data(
+        data,
+        catalog=catalog,
+        sensitivity=sensitivity,
+    )
+    changed = bool(migration["changed"])
+    written = bool(changed and not dry_run)
+    if written:
+        _atomic_write_private(path, dump_readable_yaml(migrated))
+
+    if enforce_private:
+        _ensure_private_mode(path)
+        _ensure_git_ignored(path)
+
+    validation = migration["validation"]
+    return {
+        **validation,
+        "migration": {
+            key: value
+            for key, value in migration.items()
+            if key != "validation"
+        },
+        "dry_run": dry_run,
+        "written": written,
+    }
 
 
 def compile_candidates(
@@ -947,6 +1220,24 @@ def _parser() -> argparse.ArgumentParser:
     validate_parser.add_argument("--schema", type=Path, default=DEFAULT_SCHEMA_PATH)
     validate_parser.add_argument("--sensitivity", type=Path, default=DEFAULT_SENSITIVITY_PATH)
     validate_parser.add_argument("--skip-private-checks", action="store_true")
+
+    template_parser = subparsers.add_parser(
+        "template",
+        help="Regenerate the tracked all-null persona starter",
+    )
+    template_parser.add_argument("--output", type=Path, default=DEFAULT_TEMPLATE_PATH)
+    template_parser.add_argument("--schema", type=Path, default=DEFAULT_SCHEMA_PATH)
+    template_parser.add_argument("--sensitivity", type=Path, default=DEFAULT_SENSITIVITY_PATH)
+
+    migrate_parser = subparsers.add_parser(
+        "migrate",
+        help="Migrate persona.yaml to the current privacy policy",
+    )
+    migrate_parser.add_argument("--persona", type=Path, default=DEFAULT_PERSONA_PATH)
+    migrate_parser.add_argument("--schema", type=Path, default=DEFAULT_SCHEMA_PATH)
+    migrate_parser.add_argument("--sensitivity", type=Path, default=DEFAULT_SENSITIVITY_PATH)
+    migrate_parser.add_argument("--dry-run", action="store_true")
+    migrate_parser.add_argument("--skip-private-checks", action="store_true")
     return parser
 
 
@@ -962,13 +1253,27 @@ def main(argv: list[str] | None = None) -> int:
                 report_path=args.report,
                 enforce_private=not args.skip_private_checks,
             )
-        else:
+        elif args.command == "validate":
             report = validate_persona(
                 args.persona,
                 schema_path=args.schema,
                 sensitivity_path=args.sensitivity,
                 require_private_mode=not args.skip_private_checks,
                 require_git_ignore=not args.skip_private_checks,
+            )
+        elif args.command == "template":
+            report = write_blank_persona_template(
+                args.output,
+                schema_path=args.schema,
+                sensitivity_path=args.sensitivity,
+            )
+        else:
+            report = migrate_persona(
+                args.persona,
+                schema_path=args.schema,
+                sensitivity_path=args.sensitivity,
+                dry_run=args.dry_run,
+                enforce_private=not args.skip_private_checks,
             )
     except (OSError, PersonaBuildError) as exc:
         print(f"Persona build error: {exc}", file=sys.stderr)

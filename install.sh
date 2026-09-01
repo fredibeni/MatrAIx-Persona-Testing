@@ -5,6 +5,9 @@ umask 077
 root_dir="$(cd "$(dirname "$0")" && pwd)"
 runtime_dir="$root_dir/matraix"
 venv_dir="$runtime_dir/.venv"
+persona_dir="$runtime_dir/personal-persona"
+persona_path="$persona_dir/persona.yaml"
+persona_template="$persona_dir/persona.example.yaml"
 
 find_python() {
   local candidate version_ok
@@ -43,10 +46,13 @@ fi
   -r "$runtime_dir/requirements.txt"
 
 echo "MatrAIx is installed."
-if [[ -f "$runtime_dir/personal-persona/persona.yaml" ]]; then
-  "$root_dir/build-persona.sh" validate --persona "$runtime_dir/personal-persona/persona.yaml" >/dev/null
-  echo "Persona: valid"
-else
-  echo "Persona: not built yet - follow BOOTSTRAP.md"
+if [[ ! -e "$persona_path" && ! -L "$persona_path" ]]; then
+  cp "$persona_template" "$persona_path"
+  chmod 600 "$persona_path"
+  echo "Persona: blank private template created"
 fi
+"$root_dir/build-persona.sh" migrate \
+  --persona "$persona_path" \
+  --dry-run >/dev/null
+echo "Persona: ready"
 echo "Start the app by double-clicking Start MatrAIx.command."

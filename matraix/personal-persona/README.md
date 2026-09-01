@@ -1,6 +1,6 @@
 # Local persona runtime
 
-This directory holds one private active persona and the local service used by the top-level MatrAIx app.
+This directory holds a tracked blank distribution template, one private active persona, and the local service used by the top-level MatrAIx app.
 
 Start the combined app from the repository root:
 
@@ -16,7 +16,11 @@ The app has three tabs:
 
 ## Active persona
 
-`persona.yaml` is the local source of truth. The initial file is compiled from the private candidate JSON described in the repository [bootstrap guide](../../BOOTSTRAP.md). It is ignored by Git.
+`persona.example.yaml` is the tracked distribution template. It lists every one of the 1,290 schema dimension IDs and sets every value to `null`. It contains no filled personal dimensions.
+
+`persona.yaml` is the private filled runtime file and the local source of truth. It is ignored by Git. `install.sh` and `start-local.sh` copy the tracked template to this path only when no active file exists. They never overwrite an existing `persona.yaml`.
+
+The private candidate JSON described in the repository [bootstrap guide](../../BOOTSTRAP.md) is compiled into `persona.yaml`. Compilation and Update persona may fill or refine the private runtime file, but they leave `persona.example.yaml` unchanged. Unsupported dimensions stay unset and are never inferred from the schema.
 
 Replacing `persona.yaml` with another compatible persona creates a separate local questionnaire and Validation context. Existing contexts remain under `survey/data/personas/`, so restoring a previously used persona YAML also restores its saved questionnaire state, Human benchmarks, and Agent runs.
 
@@ -33,6 +37,8 @@ The following content is private and generated locally:
 - `../.venv/` - the isolated Python environment.
 
 These paths are ignored by Git. Do not force-add them to a commit.
+
+The exception is `persona.example.yaml`: it is intentionally tracked because it contains the complete all-null schema template and no personal values.
 
 ## Useful checks
 

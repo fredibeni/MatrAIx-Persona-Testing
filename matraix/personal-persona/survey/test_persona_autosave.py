@@ -51,12 +51,11 @@ class PersonaAutosaveTests(unittest.TestCase):
         )
         dimension_id = question["dimension_id"]
         baseline = load_yaml(EXAMPLE_PERSONA_PATH)
-        baseline_record = evidence_record(baseline, dimension_id)
+        self.assertIsNone(baseline["dimensions"][dimension_id])
         answer = next(
             option["value"]
             for option in question["options"]
             if not option["value"].startswith("__")
-            and option["value"] != baseline_record.get("value")
         )
 
         with tempfile.TemporaryDirectory(
@@ -100,11 +99,16 @@ class PersonaAutosaveTests(unittest.TestCase):
 
             second_state, second_changes, _ = server.save_answers_and_rebuild({}, [])
             reverted = load_yaml(active_path)
-            reverted_record = evidence_record(reverted, dimension_id)
             self.assertEqual(second_state["save_revision"], 2)
             self.assertEqual(len(second_changes), 1)
-            self.assertEqual(reverted_record, baseline_record)
-            self.assertNotIn("value_survey", reverted_record)
+            self.assertNotIn(dimension_id, reverted["dimensions"])
+            self.assertFalse(
+                any(
+                    row["id"] == dimension_id
+                    for block in EVIDENCE_BLOCKS
+                    for row in reverted.get(block, [])
+                )
+            )
             _, _, context_events, context_derived = server.context_paths(
                 second_state["context_id"]
             )

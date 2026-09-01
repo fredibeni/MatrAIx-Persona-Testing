@@ -7,7 +7,9 @@ import os
 import stat
 import tempfile
 import unittest
+from contextlib import redirect_stdout
 from copy import deepcopy
+from io import StringIO
 from pathlib import Path
 
 import yaml
@@ -16,11 +18,16 @@ from matraix.persona_builder import (
     DEFAULT_SCHEMA_PATH,
     DEFAULT_SENSITIVITY_PATH,
     PersonaBuildError,
+    SensitivityPolicy,
+    build_blank_persona_template,
     build_persona_payload,
     compile_candidates,
     derive_sensitive_ids_from_survey,
     load_catalog,
     load_sensitivity_policy,
+    main as persona_builder_main,
+    migrate_persona,
+    migrate_persona_data,
     validate_candidate_payload,
     validate_persona,
     validate_persona_data,
@@ -96,8 +103,21 @@ class PersonaBuilderTests(unittest.TestCase):
             require_private_mode=False,
             require_git_ignore=False,
         )
-        self.assertEqual(report["runtime_dimensions"], 1)
-        self.assertEqual(report["rendered_dimensions"], 1)
+        self.assertEqual(report["runtime_dimensions"], 0)
+        self.assertEqual(report["rendered_dimensions"], 0)
+
+        template = yaml.safe_load(PERSONA_EXAMPLE_PATH.read_text(encoding="utf-8"))
+        expected = build_blank_persona_template(
+            catalog=self.catalog,
+            sensitivity=self.sensitivity,
+        )
+        expected_ids = [row["id"] for row in self.catalog.rows]
+        self.assertEqual(template, expected)
+        self.assertEqual(list(template["dimensions"]), expected_ids)
+        self.assertEqual(len(template["dimensions"]), 1290)
+        self.assertTrue(all(value is None for value in template["dimensions"].values()))
+        for block in ("evidenced", "best_guess", "sensitive_evidenced", "sensitive_best_guess", "unresolved"):
+            self.assertEqual(template[block], [])
 
     def test_sensitive_policy_matches_sanitized_survey(self) -> None:
         policy = json.loads(DEFAULT_SENSITIVITY_PATH.read_text(encoding="utf-8"))
@@ -209,6 +229,322 @@ class PersonaBuilderTests(unittest.TestCase):
         self.assertNotIn("gender_identity", built["dimensions"])
         self.assertEqual(built["sensitive_evidenced"][0]["id"], "gender_identity")
         self.assertFalse(built["sensitive_evidenced"][0]["runtime_included"])
+
+    def test_migration_applies_policy_floor_without_losing_evidence(self) -> None:
+        payload = candidate_payload()
+        candidate = payload["candidates"][0]
+        candidate.update(
+            {
+                "id": "urbanicity",
+                "value": self.catalog.by_id["urbanicity"]["values"][0],
+                "evidence": "The available source supported this location category.",
+            }
+        )
+        legacy_policy = SensitivityPolicy(
+            dimension_ids=frozenset(),
+            sha256="legacy-policy",
+            source="legacy-fixture",
+        )
+        legacy = build_persona_payload(
+            payload,
+            catalog=self.catalog,
+            sensitivity=legacy_policy,
+        )
+        legacy["meta"]["survey"] = {
+            "survey_id": "legacy-survey",
+            "runtime_dimensions": 1,
+        }
+        original = deepcopy(legacy)
+        original_row = deepcopy(legacy["evidenced"][0])
+
+        migrated, report = migrate_persona_data(
+            legacy,
+            catalog=self.catalog,
+            sensitivity=self.sensitivity,
+        )
+
+        self.assertEqual(legacy, original)
+        self.assertTrue(report["changed"])
+        self.assertEqual(report["sensitivity_flags_added"], 1)
+        self.assertEqual(report["legacy_sensitivity_flags_retained"], 0)
+        self.assertEqual(report["runtime_dimensions_withheld"], 1)
+        self.assertEqual(report["evidence_records_preserved"], 1)
+        self.assertNotIn("urbanicity", migrated["dimensions"])
+        migrated_row = migrated["sensitive_evidenced"][0]
+        self.assertTrue(migrated_row["sensitive"])
+        self.assertFalse(migrated_row["runtime_included"])
+        self.assertTrue(migrated_row["needs_review"])
+        mutable_fields = {
+            "sensitive",
+            "runtime_included",
+            "needs_review",
+            "runtime_exclusion_reason",
+        }
+        self.assertEqual(
+            {key: value for key, value in migrated_row.items() if key not in mutable_fields},
+            {key: value for key, value in original_row.items() if key not in mutable_fields},
+        )
+        self.assertEqual(
+            migrated["meta"]["sensitivity_policy_sha256"],
+            self.sensitivity.sha256,
+        )
+        self.assertEqual(migrated["meta"]["runtime_dimensions"], 0)
+        self.assertEqual(migrated["meta"]["survey"]["runtime_dimensions"], 0)
+        self.assertTrue(report["validation"]["ok"])
+
+        second, second_report = migrate_persona_data(
+            migrated,
+            catalog=self.catalog,
+            sensitivity=self.sensitivity,
+        )
+        self.assertEqual(second, migrated)
+        self.assertFalse(second_report["changed"])
+        self.assertEqual(second_report["sensitivity_flags_added"], 0)
+        self.assertEqual(second_report["runtime_dimensions_withheld"], 0)
+
+    def test_migration_retains_legacy_sensitivity_as_a_privacy_floor(self) -> None:
+        legacy = build_persona_payload(
+            candidate_payload(),
+            catalog=self.catalog,
+            sensitivity=self.sensitivity,
+        )
+        self.assertNotIn("cog_verbosity", self.sensitivity.dimension_ids)
+        row = legacy["evidenced"].pop()
+        row["sensitive"] = True
+        legacy["sensitive_evidenced"].append(row)
+
+        migrated, report = migrate_persona_data(
+            legacy,
+            catalog=self.catalog,
+            sensitivity=self.sensitivity,
+        )
+
+        migrated_row = migrated["sensitive_evidenced"][0]
+        self.assertTrue(migrated_row["sensitive"])
+        self.assertFalse(migrated_row["runtime_included"])
+        self.assertNotIn("cog_verbosity", migrated["dimensions"])
+        self.assertEqual(report["sensitivity_flags_added"], 0)
+        self.assertEqual(report["legacy_sensitivity_flags_retained"], 1)
+        self.assertEqual(report["runtime_dimensions_withheld"], 1)
+        self.assertTrue(report["validation"]["ok"])
+
+    def test_migration_keeps_directly_confirmed_sensitive_value_at_runtime(self) -> None:
+        payload = candidate_payload()
+        candidate = payload["candidates"][0]
+        candidate.update(
+            {
+                "id": "urbanicity",
+                "value": self.catalog.by_id["urbanicity"]["values"][0],
+                "evidence": "The available source supported this location category.",
+            }
+        )
+        legacy = build_persona_payload(
+            payload,
+            catalog=self.catalog,
+            sensitivity=SensitivityPolicy(
+                dimension_ids=frozenset(),
+                sha256="legacy-policy",
+                source="legacy-fixture",
+            ),
+        )
+        row = legacy["evidenced"][0]
+        row.update(
+            {
+                "value_survey": row["value"],
+                "confidence_survey": "self_report",
+                "evidence_survey": "Directly confirmed in the local survey.",
+                "selected_from": "survey",
+                "selected_confidence": "self_report",
+            }
+        )
+
+        migrated, report = migrate_persona_data(
+            legacy,
+            catalog=self.catalog,
+            sensitivity=self.sensitivity,
+        )
+
+        migrated_row = migrated["sensitive_evidenced"][0]
+        self.assertTrue(migrated_row["sensitive"])
+        self.assertTrue(migrated_row["runtime_included"])
+        self.assertIn("urbanicity", migrated["dimensions"])
+        self.assertEqual(report["runtime_dimensions_withheld"], 0)
+        self.assertTrue(report["validation"]["ok"])
+
+    def test_unknown_raw_candidate_is_retained_only_when_unselected(self) -> None:
+        built = build_persona_payload(
+            candidate_payload(),
+            catalog=self.catalog,
+            sensitivity=self.sensitivity,
+        )
+        row = built["evidenced"][0]
+        row.update(
+            {
+                "confidence_chatgpt": "unknown",
+                "value_claude": row["value"],
+                "confidence_claude": "stated",
+                "evidence_claude": "A separate retained source supplied this value.",
+                "selected_from": "claude",
+                "selected_confidence": "stated",
+            }
+        )
+        report = validate_persona_data(
+            built,
+            catalog=self.catalog,
+            sensitivity=self.sensitivity,
+        )
+        self.assertTrue(report["ok"])
+        self.assertIsNotNone(row["value_chatgpt"])
+
+        broken = deepcopy(built)
+        broken_row = broken["evidenced"][0]
+        broken_row["selected_from"] = "chatgpt"
+        broken_row["selected_confidence"] = "unknown"
+        with self.assertRaisesRegex(PersonaBuildError, "Selected ChatGPT candidate is unknown"):
+            validate_persona_data(
+                broken,
+                catalog=self.catalog,
+                sensitivity=self.sensitivity,
+            )
+
+    def test_raw_candidate_values_remain_strict_outside_legacy_unknown_case(self) -> None:
+        built = build_persona_payload(
+            candidate_payload(),
+            catalog=self.catalog,
+            sensitivity=self.sensitivity,
+        )
+
+        missing_chatgpt = deepcopy(built)
+        missing_chatgpt["evidenced"][0]["value_chatgpt"] = None
+        with self.assertRaisesRegex(PersonaBuildError, "Invalid ChatGPT value"):
+            validate_persona_data(
+                missing_chatgpt,
+                catalog=self.catalog,
+                sensitivity=self.sensitivity,
+            )
+
+        missing_other = deepcopy(built)
+        missing_other_row = missing_other["evidenced"][0]
+        missing_other_row["confidence_claude"] = "stated"
+        missing_other_row["value_claude"] = None
+        with self.assertRaisesRegex(PersonaBuildError, "Invalid other-source value"):
+            validate_persona_data(
+                missing_other,
+                catalog=self.catalog,
+                sensitivity=self.sensitivity,
+            )
+
+        invalid_unknown = deepcopy(built)
+        invalid_unknown_row = invalid_unknown["evidenced"][0]
+        invalid_unknown_row.update(
+            {
+                "confidence_chatgpt": "unknown",
+                "value_chatgpt": "Not an allowed value",
+                "value_claude": invalid_unknown_row["value"],
+                "confidence_claude": "stated",
+                "evidence_claude": "A separate retained source supplied this value.",
+                "selected_from": "claude",
+                "selected_confidence": "stated",
+            }
+        )
+        with self.assertRaisesRegex(PersonaBuildError, "Invalid ChatGPT value"):
+            validate_persona_data(
+                invalid_unknown,
+                catalog=self.catalog,
+                sensitivity=self.sensitivity,
+            )
+
+    def test_file_migration_dry_run_cli_write_and_idempotence(self) -> None:
+        payload = candidate_payload()
+        payload["candidates"][0].update(
+            {
+                "id": "urbanicity",
+                "value": self.catalog.by_id["urbanicity"]["values"][0],
+                "evidence": "The available source supported this location category.",
+            }
+        )
+        legacy = build_persona_payload(
+            payload,
+            catalog=self.catalog,
+            sensitivity=SensitivityPolicy(
+                dimension_ids=frozenset(),
+                sha256="legacy-policy",
+                source="legacy-fixture",
+            ),
+        )
+        with tempfile.TemporaryDirectory(prefix="matraix-persona-migration-") as name:
+            path = Path(name) / "persona.yaml"
+            path.write_text(
+                yaml.safe_dump(legacy, sort_keys=False, allow_unicode=False),
+                encoding="utf-8",
+            )
+            os.chmod(path, 0o600)
+            original_bytes = path.read_bytes()
+
+            output = StringIO()
+            with redirect_stdout(output):
+                return_code = persona_builder_main(
+                    [
+                        "migrate",
+                        "--persona",
+                        str(path),
+                        "--dry-run",
+                        "--skip-private-checks",
+                    ]
+                )
+            dry_run_report = json.loads(output.getvalue())
+            self.assertEqual(return_code, 0)
+            self.assertTrue(dry_run_report["dry_run"])
+            self.assertFalse(dry_run_report["written"])
+            self.assertTrue(dry_run_report["migration"]["changed"])
+            self.assertNotIn("persona_id", dry_run_report)
+            self.assertNotIn("display_name", dry_run_report)
+            self.assertEqual(path.read_bytes(), original_bytes)
+
+            written_report = migrate_persona(path, enforce_private=False)
+            self.assertTrue(written_report["written"])
+            self.assertEqual(stat.S_IMODE(path.stat().st_mode), 0o600)
+            migrated_bytes = path.read_bytes()
+            self.assertNotEqual(migrated_bytes, original_bytes)
+            self.assertTrue(
+                validate_persona(
+                    path,
+                    require_private_mode=True,
+                    require_git_ignore=False,
+                )["ok"]
+            )
+
+            second_report = migrate_persona(path, enforce_private=False)
+            self.assertFalse(second_report["migration"]["changed"])
+            self.assertFalse(second_report["written"])
+            self.assertEqual(path.read_bytes(), migrated_bytes)
+
+    def test_file_migration_rejects_symlink_and_unprotected_private_input(self) -> None:
+        payload = build_persona_payload(
+            candidate_payload(),
+            catalog=self.catalog,
+            sensitivity=self.sensitivity,
+        )
+        with tempfile.TemporaryDirectory(prefix="matraix-persona-symlink-") as name:
+            directory = Path(name)
+            target = directory / "persona.yaml"
+            link = directory / "linked-persona.yaml"
+            target.write_text(yaml.safe_dump(payload, sort_keys=False), encoding="utf-8")
+            os.chmod(target, 0o600)
+            link.symlink_to(target)
+            with self.assertRaisesRegex(PersonaBuildError, "private symlink"):
+                migrate_persona(link, dry_run=True, enforce_private=False)
+
+        data_dir = PERSONA_DIR / "survey" / "data"
+        with tempfile.TemporaryDirectory(
+            prefix=".persona-private-mode-",
+            dir=data_dir,
+        ) as name:
+            path = Path(name) / "persona.yaml"
+            path.write_text(yaml.safe_dump(payload, sort_keys=False), encoding="utf-8")
+            os.chmod(path, 0o644)
+            with self.assertRaisesRegex(PersonaBuildError, "must have mode 600"):
+                migrate_persona(path, dry_run=True, enforce_private=True)
 
     def test_unknown_source_reference_is_rejected(self) -> None:
         payload = candidate_payload()

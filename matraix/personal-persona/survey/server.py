@@ -27,6 +27,7 @@ from urllib.parse import urlparse
 
 import yaml
 from adaptive_survey import adapt_definition, persona_identity
+from matraix.persona_builder import migrate_persona, validate_persona
 from persona_refinement import atomic_write_text, dump_readable_yaml, refine_persona
 
 SURVEY_DIR = Path(__file__).resolve().parent
@@ -44,6 +45,7 @@ ACTIVE_PERSONA_PATH = PROJECT_DIR / "persona.yaml"
 PERSONA_STORE_DIR = DATA_DIR / "personas"
 PERSONA_REGISTRY_PATH = DATA_DIR / "persona-registry.json"
 SCHEMA_PATH = MATRAIX_DIR / "persona" / "schema" / "dimensions.json"
+SENSITIVITY_PATH = PROJECT_DIR / "sensitive-dimensions.json"
 CHAT_MODULE_PATH = MATRAIX_DIR / "local" / "single_persona_chat.py"
 MATRAIX_IMPORT_PATHS = (
     MATRAIX_DIR,
@@ -165,6 +167,22 @@ def load_persona_yaml(path: Path) -> dict[str, Any]:
     if not isinstance(dimensions, dict):
         raise TypeError("Persona dimensions must be a mapping")
     return data
+
+
+def is_evidence_backed_persona(data: dict[str, Any]) -> bool:
+    required = {
+        "version",
+        "source",
+        "system_prompt",
+        "dimensions",
+        "meta",
+        "evidenced",
+        "best_guess",
+        "sensitive_evidenced",
+        "sensitive_best_guess",
+        "unresolved",
+    }
+    return required.issubset(data)
 
 
 def active_persona_dimension_count() -> int:
@@ -1013,6 +1031,14 @@ def stage_refined_persona(
         derived_path=derived_candidate,
     )
     generated = load_persona_yaml(output_candidate)
+    if is_evidence_backed_persona(generated):
+        migrate_persona(
+            output_candidate,
+            schema_path=SCHEMA_PATH,
+            sensitivity_path=SENSITIVITY_PATH,
+            enforce_private=False,
+        )
+        generated = load_persona_yaml(output_candidate)
     if context is not None:
         generated_id, _ = persona_identity(generated, output_candidate.stem)
         if generated_id != context.persona_id:
@@ -1098,7 +1124,23 @@ def synchronize_active_persona_context_unlocked() -> PersonaContext | None:
         registry = load_persona_registry()
         entry = registry["contexts"][context.context_id]
         context = context_from_entry(context.context_id, entry)
+    elif context is not None:
+        active_persona = load_persona_yaml(ACTIVE_PERSONA_PATH)
+        if is_evidence_backed_persona(active_persona):
+            migration = migrate_persona(
+                ACTIVE_PERSONA_PATH,
+                schema_path=SCHEMA_PATH,
+                sensitivity_path=SENSITIVITY_PATH,
+                enforce_private=False,
+            )
+            if migration["written"]:
+                output_sha256 = sha256_path(ACTIVE_PERSONA_PATH)
+                update_context_output_hash(context, output_sha256)
+                context = replace(context, output_sha256=output_sha256)
+                if not changed:
+                    clear_chat_for_persona_change()
     return context
+
 
 def rebuild_active_persona(
     context: PersonaContext | None = None,
@@ -2092,6 +2134,14 @@ def main() -> int:
         context = synchronize_active_persona_context_unlocked()
         if context is None:
             raise SystemExit("No active persona is available.")
+        if is_evidence_backed_persona(load_persona_yaml(ACTIVE_PERSONA_PATH)):
+            validate_persona(
+                ACTIVE_PERSONA_PATH,
+                schema_path=SCHEMA_PATH,
+                sensitivity_path=SENSITIVITY_PATH,
+                require_private_mode=True,
+                require_git_ignore=True,
+            )
     initialize_chat_backend(
         timeout=args.chat_timeout,
         fake_reply=args.fake_chat_reply,

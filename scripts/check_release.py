@@ -15,6 +15,10 @@ ROOT = Path(__file__).resolve().parents[1]
 SURVEY_DEFINITION = (
     ROOT / "matraix/personal-persona/survey/survey-definition.json"
 )
+PERSONA_SCHEMA = ROOT / "matraix/persona/schema/dimensions.json"
+PERSONA_TEMPLATE_PATH = PurePosixPath(
+    "matraix/personal-persona/persona.example.yaml"
+)
 PREBUILT_ASSETS = (
     ROOT / "matraix/personal-persona/survey/assets/validation.js",
     ROOT / "matraix/personal-persona/survey/assets/validation.css",
@@ -81,11 +85,10 @@ def is_forbidden_tracked_path(path: PurePosixPath) -> str | None:
     name = path.name.casefold()
     suffix = path.suffix.casefold()
 
-    if value == "matraix/personal-persona/persona.yaml":
-        return "active local persona"
     if (
-        value.startswith("matraix/personal-persona/persona_")
+        path.parent.as_posix() == "matraix/personal-persona"
         and suffix in {".yaml", ".yml"}
+        and path != PERSONA_TEMPLATE_PATH
     ):
         return "active local persona"
     if value.startswith("matraix/personal-persona/source-material/"):
@@ -177,6 +180,64 @@ def check_prebuilt_assets(issues: list[str]) -> None:
             issues.append(f"empty prebuilt asset: {relative}")
 
 
+def indexed_text(path: PurePosixPath) -> str:
+    result = subprocess.run(
+        ["git", "show", f":{path.as_posix()}"],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+    )
+    return result.stdout.decode("utf-8")
+
+
+def check_persona_template(issues: list[str]) -> None:
+    tracked_persona_yaml = [
+        path
+        for path in tracked_paths()
+        if path.parent.as_posix() == "matraix/personal-persona"
+        and path.suffix.casefold() in {".yaml", ".yml"}
+    ]
+    if tracked_persona_yaml != [PERSONA_TEMPLATE_PATH]:
+        listed = ", ".join(path.as_posix() for path in tracked_persona_yaml)
+        issues.append(
+            "tracked persona YAML set must contain only persona.example.yaml"
+            + (f" (found: {listed})" if listed else "")
+        )
+        return
+
+    schema = json.loads(PERSONA_SCHEMA.read_text(encoding="utf-8"))
+    expected_ids = [row["id"] for row in schema["dimensions"]]
+    lines = indexed_text(PERSONA_TEMPLATE_PATH).splitlines()
+    try:
+        start = lines.index("dimensions:") + 1
+        end = lines.index("meta:", start)
+    except ValueError:
+        issues.append("tracked persona template has no canonical dimensions block")
+        return
+
+    dimension_ids: list[str] = []
+    for line in lines[start:end]:
+        match = re.fullmatch(r"  ([A-Za-z0-9_]+): null", line)
+        if match is None:
+            issues.append("tracked persona template dimensions must all be null")
+            return
+        dimension_ids.append(match.group(1))
+    if dimension_ids != expected_ids:
+        issues.append(
+            "tracked persona template must contain every schema dimension in order"
+        )
+
+    for block in (
+        "evidenced",
+        "best_guess",
+        "sensitive_evidenced",
+        "sensitive_best_guess",
+        "unresolved",
+    ):
+        if f"{block}: []" not in lines:
+            issues.append(f"tracked persona template {block} must be empty")
+
+
 def check_tracked_paths(issues: list[str]) -> None:
     for path in tracked_paths():
         reason = is_forbidden_tracked_path(path)
@@ -231,6 +292,7 @@ def main() -> int:
         check_survey_definition(issues)
         check_prebuilt_assets(issues)
         check_tracked_paths(issues)
+        check_persona_template(issues)
         check_candidate_content(issues)
     except (OSError, subprocess.CalledProcessError) as exc:
         issues.append(f"release check could not inspect the repository: {exc}")

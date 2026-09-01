@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import http.client
 import json
-import shutil
 import tempfile
 import threading
 import unittest
@@ -13,11 +12,57 @@ from pathlib import Path
 from unittest.mock import patch
 
 import server
-
-EXAMPLE_PERSONA_PATH = Path(__file__).resolve().parent.parent / "persona.example.yaml"
+from matraix.persona_builder import (
+    SensitivityPolicy,
+    build_persona_payload,
+    dump_readable_yaml,
+    load_catalog,
+    load_sensitivity_policy,
+)
 
 
 VALIDATION_ORIGIN = "http://127.0.0.1:8767"
+
+
+def filled_example_persona() -> dict:
+    catalog = load_catalog()
+    sensitivity = load_sensitivity_policy(catalog=catalog)
+    return build_persona_payload(
+        {
+            "schema_version": 1,
+            "persona": {
+                "persona_id": "example-persona",
+                "display_name": "Example Persona",
+                "version": "1.0",
+            },
+            "source_coverage": {
+                "generated_at": "2026-09-01T00:00:00Z",
+                "sources": [
+                    {
+                        "id": "test-source",
+                        "type": "current_task",
+                        "description": "A deterministic test fixture.",
+                        "items_reviewed": 1,
+                        "limitations": [],
+                    }
+                ],
+                "schema_categories_reviewed": ["*"],
+                "limitations": [],
+            },
+            "candidates": [
+                {
+                    "id": "cog_verbosity",
+                    "value": "Concise",
+                    "confidence": "stated",
+                    "evidence": "The deterministic fixture selects concise responses.",
+                    "source_refs": ["test-source"],
+                    "runtime_included": True,
+                }
+            ],
+        },
+        catalog=catalog,
+        sensitivity=sensitivity,
+    )
 
 
 def example_store(*, answer: str = "short-plan") -> dict:
@@ -74,8 +119,11 @@ class ValidationPersistenceTests(unittest.TestCase):
         )
         self.addCleanup(self.temp_directory.cleanup)
         self.data_dir = Path(self.temp_directory.name)
-        self.active_persona = self.data_dir / "persona_alfred.yaml"
-        shutil.copyfile(EXAMPLE_PERSONA_PATH, self.active_persona)
+        self.active_persona = self.data_dir / "persona.yaml"
+        self.active_persona.write_text(
+            dump_readable_yaml(filled_example_persona()),
+            encoding="utf-8",
+        )
         self.patchers = (
             patch.object(server, "DATA_DIR", self.data_dir),
             patch.object(server, "RESPONSES_PATH", self.data_dir / "responses.json"),
@@ -109,6 +157,140 @@ class ValidationPersistenceTests(unittest.TestCase):
         self.addCleanup(self.httpd.server_close)
         self.addCleanup(self.httpd.shutdown)
         self.port = int(self.httpd.server_address[1])
+
+    def test_policy_migration_preserves_context_questionnaire_and_validation_files(
+        self,
+    ) -> None:
+        catalog = load_catalog()
+        legacy_policy = SensitivityPolicy(
+            dimension_ids=frozenset(),
+            sha256="legacy-policy-sha256",
+            source="legacy-test-policy",
+        )
+        legacy_persona = build_persona_payload(
+            {
+                "schema_version": 1,
+                "persona": {
+                    "persona_id": "legacy-policy-persona",
+                    "display_name": "Legacy Policy Persona",
+                    "version": "1.0",
+                },
+                "source_coverage": {
+                    "generated_at": "2026-09-01T00:00:00Z",
+                    "sources": [
+                        {
+                            "id": "legacy-test-source",
+                            "type": "current_task",
+                            "description": "A deterministic legacy-policy fixture.",
+                            "items_reviewed": 1,
+                            "limitations": [],
+                        }
+                    ],
+                    "schema_categories_reviewed": ["*"],
+                    "limitations": [],
+                },
+                "candidates": [
+                    {
+                        "id": "urbanicity",
+                        "value": "Dense urban",
+                        "confidence": "stated",
+                        "evidence": "The fixture supplies an evidence-backed value.",
+                        "source_refs": ["legacy-test-source"],
+                        "runtime_included": True,
+                    }
+                ],
+            },
+            catalog=catalog,
+            sensitivity=legacy_policy,
+        )
+        self.active_persona.write_text(
+            dump_readable_yaml(legacy_persona),
+            encoding="utf-8",
+        )
+
+        registry, context = server.initialize_persona_registry()
+        original_active_hash = server.sha256_path(self.active_persona)
+        original_baseline = context.baseline_path.read_bytes()
+        self.assertEqual(len(registry["contexts"]), 1)
+
+        questionnaire_state = server.state_for_context(context)
+        questionnaire_state.update(
+            {
+                "answers": {"direct_cog_verbosity": "Concise"},
+                "visited_modules": ["conversation_fingerprint"],
+                "save_revision": 7,
+                "saved_at": "2026-09-01T08:00:00Z",
+            }
+        )
+        server.atomic_write_json(context.responses_path, questionnaire_state)
+
+        validation_state = server.empty_validation_state(context)
+        validation_state.update(
+            {
+                "save_revision": 4,
+                "saved_at": "2026-09-01T08:05:00Z",
+            }
+        )
+        validation_state["store"] = expected_stamped_store(
+            validation_state,
+            example_store(),
+        )
+        validation_path = server.validation_results_path(context)
+        server.atomic_write_json(validation_path, validation_state)
+
+        original_questionnaire = context.responses_path.read_bytes()
+        original_validation = validation_path.read_bytes()
+
+        with server.STATE_LOCK:
+            migrated_context = server.synchronize_active_persona_context_unlocked()
+
+        self.assertIsNotNone(migrated_context)
+        assert migrated_context is not None
+        self.assertEqual(migrated_context.context_id, context.context_id)
+        self.assertEqual(migrated_context.baseline_sha256, context.baseline_sha256)
+        self.assertEqual(context.baseline_path.read_bytes(), original_baseline)
+        self.assertEqual(context.responses_path.read_bytes(), original_questionnaire)
+        self.assertEqual(validation_path.read_bytes(), original_validation)
+
+        migrated_active_hash = server.sha256_path(self.active_persona)
+        self.assertNotEqual(migrated_active_hash, original_active_hash)
+        self.assertEqual(migrated_context.output_sha256, migrated_active_hash)
+        migrated_registry = server.load_persona_registry()
+        self.assertEqual(migrated_registry["active_context_id"], context.context_id)
+        self.assertEqual(len(migrated_registry["contexts"]), 1)
+        self.assertEqual(
+            migrated_registry["contexts"][context.context_id]["output_sha256"],
+            migrated_active_hash,
+        )
+
+        migrated_persona = server.load_persona_yaml(self.active_persona)
+        migrated_row = next(
+            row
+            for row in migrated_persona["sensitive_evidenced"]
+            if row["id"] == "urbanicity"
+        )
+        self.assertTrue(migrated_row["sensitive"])
+        self.assertFalse(migrated_row["runtime_included"])
+        self.assertEqual(migrated_row["value"], "Dense urban")
+        self.assertNotIn("urbanicity", migrated_persona["dimensions"])
+        self.assertTrue(
+            server.validate_persona(
+                self.active_persona,
+                schema_path=server.SCHEMA_PATH,
+                sensitivity_path=server.SENSITIVITY_PATH,
+            )["ok"]
+        )
+
+        reloaded_questionnaire = server.load_state(migrated_context)
+        self.assertEqual(reloaded_questionnaire["save_revision"], 7)
+        self.assertEqual(
+            reloaded_questionnaire["answers"],
+            {"direct_cog_verbosity": "Concise"},
+        )
+        self.assertEqual(
+            json.loads(validation_path.read_text(encoding="utf-8"))["store"],
+            validation_state["store"],
+        )
 
     def test_empty_get_returns_active_persona_envelope(self) -> None:
         status, body, _ = self.request("GET", "/api/validation/state")
