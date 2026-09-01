@@ -12800,10 +12800,6 @@ function Lr({ survey: e, history: t, onHuman: n, onAgent: r, onHistory: i, agent
 		className: "survey-card",
 		style: Or(e),
 		children: [
-			/* @__PURE__ */ (0, L.jsx)("div", {
-				className: "card-stripe",
-				"aria-hidden": "true"
-			}),
 			/* @__PURE__ */ (0, L.jsxs)("div", {
 				className: "flex items-center justify-between gap-4",
 				children: [/* @__PURE__ */ (0, L.jsx)("div", {
@@ -12937,7 +12933,7 @@ function Rr({ store: e, onHuman: t, onAgent: n, onHistory: r, onLicense: i, runn
 		}), /* @__PURE__ */ (0, L.jsxs)("section", {
 			className: "mx-auto max-w-[1240px] px-5 pb-20 pt-16 sm:px-8 lg:px-10",
 			children: [/* @__PURE__ */ (0, L.jsx)("div", {
-				className: "grid gap-6 lg:grid-cols-2",
+				className: "validation-survey-list flex flex-col gap-6",
 				children: qt.map((i) => /* @__PURE__ */ (0, L.jsx)(Lr, {
 					survey: i,
 					history: jn(e, i.id),

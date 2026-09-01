@@ -321,7 +321,6 @@ function SurveyCard({
 
   return (
     <article className="survey-card" style={surveyThemeStyle(survey)}>
-      <div className="card-stripe" aria-hidden="true" />
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">
           <h2 className="survey-title font-display min-w-0 text-[clamp(1.55rem,3vw,2.15rem)] font-black leading-[0.98] tracking-[-0.045em] text-slate-950">
@@ -445,7 +444,7 @@ function HomeView({
       </section>
 
       <section className="mx-auto max-w-[1240px] px-5 pb-20 pt-16 sm:px-8 lg:px-10">
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="validation-survey-list flex flex-col gap-6">
           {surveys.map((survey) => (
             <SurveyCard
               key={survey.id}
