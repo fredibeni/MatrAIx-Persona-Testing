@@ -267,6 +267,24 @@ assert.match(
   /<h1 className="[^"]*text-\[28px\][^"]*">\s*\{result\.title\}/,
   'the completed-result title must declare an exact 28px size',
 );
+const resultDescriptionMatch = resultViewSource.match(
+  /<p className="([^"]*)">\s*\{result\.description\}\s*<\/p>/,
+);
+assert.ok(
+  resultDescriptionMatch,
+  'the completed-result description must remain discoverable',
+);
+const resultDescriptionClasses = resultDescriptionMatch?.[1] ?? '';
+assert.match(
+  resultDescriptionClasses,
+  /(?:^|\s)text-\[14px\](?:\s|$)/,
+  'the completed-result description must declare an exact 14px size',
+);
+assert.doesNotMatch(
+  resultDescriptionClasses,
+  /(?:^|\s)(?:sm|md|lg|xl|2xl):text-[^\s]+/,
+  'the completed-result description must remain 14px at every breakpoint without a responsive text-size override',
+);
 const validationHomeTitleRule = validationStylesSource.match(
   /\.validation-embedded \.hero-grid h1\s*\{([^}]*)\}/,
 );

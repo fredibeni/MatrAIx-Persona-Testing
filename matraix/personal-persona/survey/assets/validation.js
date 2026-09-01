@@ -13678,7 +13678,7 @@ function Si({ survey: e, actor: t, run: n, agentRun: r, hasCompletedHuman: i, on
 									children: c.title
 								}),
 								"description" in c && /* @__PURE__ */ (0, z.jsx)("p", {
-									className: "mx-auto mt-6 max-w-[620px] text-center text-base leading-7 text-slate-600 sm:text-lg",
+									className: "mx-auto mt-6 max-w-[620px] text-center text-[14px] leading-7 text-slate-600",
 									children: c.description
 								})
 							]

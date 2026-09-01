@@ -949,7 +949,7 @@ function ResultView({
               {result.title}
             </h1>
             {'description' in result && (
-              <p className="mx-auto mt-6 max-w-[620px] text-center text-base leading-7 text-slate-600 sm:text-lg">
+              <p className="mx-auto mt-6 max-w-[620px] text-center text-[14px] leading-7 text-slate-600">
                 {result.description}
               </p>
             )}
