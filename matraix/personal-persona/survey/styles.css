@@ -325,6 +325,15 @@ input:focus-visible {
   grid-template-columns: minmax(0, 1fr);
 }
 
+.validation-survey-nav .validation-nav-item.with-home-icon {
+  grid-template-columns: 15px minmax(0, 1fr);
+}
+
+.validation-nav-home-icon {
+  width: 15px;
+  height: 15px;
+}
+
 .validation-nav-item .nav-label {
   font-weight: 400;
   white-space: normal;

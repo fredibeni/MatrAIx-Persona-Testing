@@ -80,6 +80,34 @@ const source = readFileSync(
   new URL('../matraix/personal-persona/survey/app.js', import.meta.url),
   'utf8',
 );
+const chatSource = readFileSync(
+  new URL('../matraix/personal-persona/survey/chat.js', import.meta.url),
+  'utf8',
+);
+const shellStylesSource = readFileSync(
+  new URL('../matraix/personal-persona/survey/styles.css', import.meta.url),
+  'utf8',
+);
+assert.match(
+  chatSource,
+  /title:\s*'Results',[\s\S]*?showHomeIcon:\s*true,/,
+  'the Validation sidebar Results item must request its Home icon',
+);
+assert.match(
+  chatSource,
+  /function createValidationHomeIcon\(\)[\s\S]*?validation-nav-home-icon[\s\S]*?aria-hidden[\s\S]*?return icon;/,
+  'the Validation sidebar Home icon must be decorative and reusable',
+);
+assert.match(
+  chatSource,
+  /M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8[\s\S]*?M3 10a2 2 0 0 1 \.709-1\.528l7-6/,
+  'the Validation sidebar must use the same Lucide Home geometry as the Results button',
+);
+assert.match(
+  shellStylesSource,
+  /\.validation-survey-nav \.validation-nav-item\.with-home-icon\s*\{\s*grid-template-columns:\s*15px minmax\(0, 1fr\);\s*\}/,
+  'the Validation sidebar must reserve a leading column for the Home icon',
+);
 vm.runInContext(source, context, { filename: 'survey/app.js' });
 
 const originalRanking = ['adventure', 'tradition', 'achievement'];

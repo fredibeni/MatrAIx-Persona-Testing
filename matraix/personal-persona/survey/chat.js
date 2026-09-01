@@ -307,10 +307,42 @@ function navigateValidation(name, surveyId) {
   });
 }
 
-function createValidationNavItem({ title, active, complete, onClick }) {
+function createValidationHomeIcon() {
+  const namespace = 'http://www.w3.org/2000/svg';
+  const icon = document.createElementNS(namespace, 'svg');
+  icon.classList.add('validation-nav-home-icon');
+  icon.setAttribute('width', '15');
+  icon.setAttribute('height', '15');
+  icon.setAttribute('viewBox', '0 0 24 24');
+  icon.setAttribute('fill', 'none');
+  icon.setAttribute('stroke', 'currentColor');
+  icon.setAttribute('stroke-width', '2');
+  icon.setAttribute('stroke-linecap', 'round');
+  icon.setAttribute('stroke-linejoin', 'round');
+  icon.setAttribute('aria-hidden', 'true');
+  icon.setAttribute('focusable', 'false');
+
+  const door = document.createElementNS(namespace, 'path');
+  door.setAttribute('d', 'M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8');
+  const outline = document.createElementNS(namespace, 'path');
+  outline.setAttribute(
+    'd',
+    'M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z',
+  );
+  icon.append(door, outline);
+  return icon;
+}
+
+function createValidationNavItem({
+  title,
+  active,
+  complete,
+  showHomeIcon = false,
+  onClick,
+}) {
   const button = document.createElement('button');
   button.type = 'button';
-  button.className = `nav-item validation-nav-item${active ? ' active' : ''}${complete ? ' complete' : ''}`;
+  button.className = `nav-item validation-nav-item${showHomeIcon ? ' with-home-icon' : ''}${active ? ' active' : ''}${complete ? ' complete' : ''}`;
   button.setAttribute('aria-current', active ? 'page' : 'false');
   button.addEventListener('click', onClick);
 
@@ -318,6 +350,7 @@ function createValidationNavItem({ title, active, complete, onClick }) {
   label.className = 'nav-label';
   label.textContent = title;
 
+  if (showHomeIcon) button.append(createValidationHomeIcon());
   button.append(label);
   return button;
 }
@@ -334,6 +367,7 @@ function renderValidationNavigation(snapshot) {
       title: 'Results',
       active: !activeSurveyId,
       complete: false,
+      showHomeIcon: true,
       onClick: () => navigateValidation('home'),
     }),
   );
