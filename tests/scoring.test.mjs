@@ -249,6 +249,52 @@ const resultViewSource = validationPageSource.slice(
 );
 assert.doesNotMatch(
   resultViewSource,
+  /\{survey\.questions\.length\}\s*answers/,
+  'completed validation results must not render an answer-count badge',
+);
+assert.doesNotMatch(
+  resultViewSource,
+  /How the choices stacked up/,
+  'completed validation results must not render the choices-stacked-up heading',
+);
+assert.doesNotMatch(
+  resultViewSource,
+  /Strongest signal/i,
+  'completed validation results must not render a Strongest signal label',
+);
+assert.match(
+  resultViewSource,
+  /<h1 className="[^"]*text-\[28px\][^"]*">\s*\{result\.title\}/,
+  'the completed-result title must declare an exact 28px size',
+);
+const validationHomeTitleRule = validationStylesSource.match(
+  /\.validation-embedded \.hero-grid h1\s*\{([^}]*)\}/,
+);
+const validationResultTitleRule = validationStylesSource.match(
+  /\.validation-embedded \.result-hero h1\s*\{([^}]*)\}/,
+);
+assert.ok(
+  validationHomeTitleRule && validationResultTitleRule,
+  'the Validation home and completed-result title rules must remain discoverable',
+);
+const validationHomeTitleSize = validationHomeTitleRule?.[1].match(
+  /font-size:\s*([^;]+);/,
+)?.[1];
+const validationResultTitleSize = validationResultTitleRule?.[1].match(
+  /font-size:\s*([^;]+);/,
+)?.[1];
+assert.equal(
+  validationHomeTitleSize,
+  '28px !important',
+  'the embedded Validation home title must remain exactly 28px',
+);
+assert.equal(
+  validationResultTitleSize,
+  validationHomeTitleSize,
+  'the completed-result title must use the same exact 28px size as the Validation home title',
+);
+assert.doesNotMatch(
+  resultViewSource,
   /Next stage|primaryTitle|primaryCopy|result-primary-button|onClick=\{onPrimary\}/,
   'completed validation results must not render the aggregate-results Next stage panel or its action',
 );

@@ -945,13 +945,7 @@ function ResultView({
                 {agentRun.dimensionCount ?? 'Not recorded'} persona dimensions
               </div>
             )}
-            <p
-              className="mt-8 text-center text-xs font-black uppercase tracking-[0.16em]"
-              style={{ color: survey.ink }}
-            >
-              {result.kind === 'silly' ? result.code : 'Strongest signal'}
-            </p>
-            <h1 className="font-display mx-auto mt-3 max-w-[850px] text-center text-[clamp(2.7rem,7vw,6.3rem)] font-black leading-[0.9] tracking-[-0.065em] text-slate-950">
+            <h1 className="font-display mx-auto mt-3 max-w-[850px] text-center text-[28px] font-black leading-[0.9] tracking-[-0.065em] text-slate-950">
               {result.title}
             </h1>
             {'description' in result && (
@@ -962,25 +956,13 @@ function ResultView({
           </div>
         </section>
 
-        <section className="mx-auto mt-7 max-w-[900px] rounded-[30px] bg-white p-6 shadow-sm sm:p-9">
-          <div className="flex items-start justify-between gap-5">
-            <div>
-              <p className="section-kicker">Result detail</p>
-              <h2 className="font-display mt-2 text-2xl font-black tracking-[-0.035em] text-slate-950">
-                {result.kind === 'silly'
-                  ? 'Four silly axes'
-                  : result.kind === 'scale'
-                    ? 'Five personal dials'
-                    : 'How the choices stacked up'}
-              </h2>
-            </div>
-            <span
-              className="hidden rounded-xl px-3 py-2 text-xs font-bold sm:block"
-              style={{ backgroundColor: survey.pale, color: survey.ink }}
-            >
-              {survey.questions.length} answers
-            </span>
-          </div>
+        <section
+          aria-labelledby="result-detail-heading"
+          className="mx-auto mt-7 max-w-[900px] rounded-[30px] bg-white p-6 shadow-sm sm:p-9"
+        >
+          <h2 id="result-detail-heading" className="section-kicker">
+            Result detail
+          </h2>
           <ResultVisual result={result} survey={survey} />
         </section>
 

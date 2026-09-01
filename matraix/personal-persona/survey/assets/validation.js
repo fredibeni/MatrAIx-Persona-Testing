@@ -13673,13 +13673,8 @@ function Si({ survey: e, actor: t, run: n, agentRun: r, hasCompletedHuman: i, on
 									},
 									children: [r.dimensionCount ?? "Not recorded", " persona dimensions"]
 								}),
-								/* @__PURE__ */ (0, z.jsx)("p", {
-									className: "mt-8 text-center text-xs font-black uppercase tracking-[0.16em]",
-									style: { color: e.ink },
-									children: c.kind === "silly" ? c.code : "Strongest signal"
-								}),
 								/* @__PURE__ */ (0, z.jsx)("h1", {
-									className: "font-display mx-auto mt-3 max-w-[850px] text-center text-[clamp(2.7rem,7vw,6.3rem)] font-black leading-[0.9] tracking-[-0.065em] text-slate-950",
+									className: "font-display mx-auto mt-3 max-w-[850px] text-center text-[28px] font-black leading-[0.9] tracking-[-0.065em] text-slate-950",
 									children: c.title
 								}),
 								"description" in c && /* @__PURE__ */ (0, z.jsx)("p", {
@@ -13691,23 +13686,12 @@ function Si({ survey: e, actor: t, run: n, agentRun: r, hasCompletedHuman: i, on
 					]
 				}),
 				/* @__PURE__ */ (0, z.jsxs)("section", {
+					"aria-labelledby": "result-detail-heading",
 					className: "mx-auto mt-7 max-w-[900px] rounded-[30px] bg-white p-6 shadow-sm sm:p-9",
-					children: [/* @__PURE__ */ (0, z.jsxs)("div", {
-						className: "flex items-start justify-between gap-5",
-						children: [/* @__PURE__ */ (0, z.jsxs)("div", { children: [/* @__PURE__ */ (0, z.jsx)("p", {
-							className: "section-kicker",
-							children: "Result detail"
-						}), /* @__PURE__ */ (0, z.jsx)("h2", {
-							className: "font-display mt-2 text-2xl font-black tracking-[-0.035em] text-slate-950",
-							children: c.kind === "silly" ? "Four silly axes" : c.kind === "scale" ? "Five personal dials" : "How the choices stacked up"
-						})] }), /* @__PURE__ */ (0, z.jsxs)("span", {
-							className: "hidden rounded-xl px-3 py-2 text-xs font-bold sm:block",
-							style: {
-								backgroundColor: e.pale,
-								color: e.ink
-							},
-							children: [e.questions.length, " answers"]
-						})]
+					children: [/* @__PURE__ */ (0, z.jsx)("h2", {
+						id: "result-detail-heading",
+						className: "section-kicker",
+						children: "Result detail"
 					}), /* @__PURE__ */ (0, z.jsx)(xi, {
 						result: c,
 						survey: e
