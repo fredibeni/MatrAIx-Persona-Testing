@@ -316,7 +316,6 @@ function SurveyCard({
   const human = history.human;
   const humanStatus = runStatus(human);
   const hasResults = Boolean(aggregate?.completedRuns);
-  const legacyExperiment = aggregate?.expectedRuns === 1;
 
   return (
     <article className="survey-card" style={surveyThemeStyle(survey)}>
@@ -331,38 +330,6 @@ function SurveyCard({
       <p className="survey-description mt-4 min-h-[3.1rem] text-sm leading-6 text-slate-600">
         {survey.description}
       </p>
-
-      <div className="validation-result-metrics">
-        <div className="validation-result-metric">
-          <span>Agent responses</span>
-          <strong>
-            {aggregate?.completedRuns ?? 0}
-            {aggregate?.expectedRuns ? ` of ${aggregate.expectedRuns}` : ''}
-          </strong>
-        </div>
-        <div className="validation-result-metric">
-          <span>Agent consistency</span>
-          <strong>
-            {!hasResults
-              ? '-'
-              : legacyExperiment
-                ? '1 response'
-                : aggregate?.consistency == null
-                  ? '-'
-                  : percent(aggregate.consistency)}
-          </strong>
-        </div>
-        <div className="validation-result-metric">
-          <span>Benchmark match</span>
-          <strong>
-            {!aggregate?.hasHumanBenchmark
-              ? 'No benchmark'
-              : aggregate.benchmarkSimilarity === null
-                ? '-'
-                : percent(aggregate.benchmarkSimilarity)}
-          </strong>
-        </div>
-      </div>
 
       <div className="mt-6">
         <button

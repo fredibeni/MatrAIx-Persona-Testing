@@ -13170,7 +13170,7 @@ function ui({ children: e, onHome: t, simple: n = !1 }) {
 	});
 }
 function di({ survey: e, history: t, onHuman: n, aggregate: r, interactionDisabled: i }) {
-	let a = t.human, o = oi(a), s = !!r?.completedRuns, c = r?.expectedRuns === 1;
+	let a = t.human, o = oi(a), s = !!r?.completedRuns;
 	return /* @__PURE__ */ (0, z.jsxs)("article", {
 		className: "survey-card",
 		style: ni(e),
@@ -13195,23 +13195,6 @@ function di({ survey: e, history: t, onHuman: n, aggregate: r, interactionDisabl
 			/* @__PURE__ */ (0, z.jsx)("p", {
 				className: "survey-description mt-4 min-h-[3.1rem] text-sm leading-6 text-slate-600",
 				children: e.description
-			}),
-			/* @__PURE__ */ (0, z.jsxs)("div", {
-				className: "validation-result-metrics",
-				children: [
-					/* @__PURE__ */ (0, z.jsxs)("div", {
-						className: "validation-result-metric",
-						children: [/* @__PURE__ */ (0, z.jsx)("span", { children: "Agent responses" }), /* @__PURE__ */ (0, z.jsxs)("strong", { children: [r?.completedRuns ?? 0, r?.expectedRuns ? ` of ${r.expectedRuns}` : ""] })]
-					}),
-					/* @__PURE__ */ (0, z.jsxs)("div", {
-						className: "validation-result-metric",
-						children: [/* @__PURE__ */ (0, z.jsx)("span", { children: "Agent consistency" }), /* @__PURE__ */ (0, z.jsx)("strong", { children: s ? c ? "1 response" : r?.consistency == null ? "-" : an(r.consistency) : "-" })]
-					}),
-					/* @__PURE__ */ (0, z.jsxs)("div", {
-						className: "validation-result-metric",
-						children: [/* @__PURE__ */ (0, z.jsx)("span", { children: "Benchmark match" }), /* @__PURE__ */ (0, z.jsx)("strong", { children: r?.hasHumanBenchmark ? r.benchmarkSimilarity === null ? "-" : an(r.benchmarkSimilarity) : "No benchmark" })]
-					})
-				]
 			}),
 			/* @__PURE__ */ (0, z.jsx)("div", {
 				className: "mt-6",

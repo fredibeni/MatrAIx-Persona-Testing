@@ -1381,15 +1381,13 @@ button:disabled {
   margin-bottom: 13px;
 }
 
-.validation-embedded .validation-overall-results > div,
-.validation-embedded .validation-result-metric {
+.validation-embedded .validation-overall-results > div {
   border-radius: 13px;
   background: var(--validation-control);
   padding: 14px;
 }
 
-.validation-embedded .validation-overall-results span,
-.validation-embedded .validation-result-metric span {
+.validation-embedded .validation-overall-results span {
   display: block;
   color: var(--validation-muted);
   font-size: 10px;
@@ -1398,8 +1396,7 @@ button:disabled {
   text-transform: uppercase;
 }
 
-.validation-embedded .validation-overall-results strong,
-.validation-embedded .validation-result-metric strong {
+.validation-embedded .validation-overall-results strong {
   display: block;
   margin-top: 6px;
   color: var(--validation-ink);
@@ -1424,21 +1421,6 @@ button:disabled {
   padding: 13px 14px;
   font-size: 12px;
   line-height: 1.55;
-}
-
-.validation-embedded .validation-result-metrics {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-  margin-top: 14px;
-}
-
-.validation-embedded .validation-result-metric {
-  background: var(--validation-paper-soft);
-}
-
-.validation-embedded .validation-result-metric strong {
-  font-size: 17px;
 }
 
 .validation-embedded .validation-result-note {
@@ -2199,7 +2181,6 @@ button:disabled {
   }
 
   .validation-embedded .validation-overall-results,
-  .validation-embedded .validation-result-metrics,
   .validation-embedded .validation-question-result dl {
     grid-template-columns: 1fr;
   }
