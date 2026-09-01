@@ -244,11 +244,6 @@ input:focus-visible {
   padding-bottom: 14px;
 }
 
-.validation-progress > .survey-stats {
-  margin-bottom: 0;
-  padding-bottom: 0;
-}
-
 .survey-stat {
   display: flex;
   min-width: 0;

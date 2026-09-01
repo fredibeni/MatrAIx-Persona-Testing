@@ -6,8 +6,6 @@ const workspaceElements = {
   sidebarBody: document.getElementById('sidebar-workspace-body'),
   surveySidebar: document.getElementById('survey-sidebar'),
   validationSidebar: document.getElementById('validation-sidebar'),
-  validationBenchmarks: document.getElementById('validation-benchmarks'),
-  validationAgentRuns: document.getElementById('validation-agent-runs'),
   validationSurveyNav: document.getElementById('validation-survey-nav'),
   chatView: document.getElementById('chat-view'),
   surveyView: document.getElementById('survey-view'),
@@ -353,15 +351,7 @@ function renderValidationNavigation(snapshot) {
   });
 }
 
-function renderValidationTotals(snapshot) {
-  const benchmarkCount = snapshot?.totals.completedBenchmarks || 0;
-  const agentRunCount = snapshot?.totals.completedAgentRuns || 0;
-  workspaceElements.validationBenchmarks.textContent = String(benchmarkCount);
-  workspaceElements.validationAgentRuns.textContent = String(agentRunCount);
-}
-
 function renderValidationSidebar(snapshot) {
-  renderValidationTotals(snapshot);
   renderValidationNavigation(snapshot);
 }
 

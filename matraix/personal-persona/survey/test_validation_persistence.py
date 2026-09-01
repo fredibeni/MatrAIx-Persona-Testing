@@ -112,6 +112,25 @@ def expected_stamped_store(envelope: dict, store: dict) -> dict:
     return stamped
 
 
+class ValidationHostDocumentTests(unittest.TestCase):
+    def test_validation_sidebar_omits_summary_but_keeps_navigation(self) -> None:
+        document = (server.SURVEY_DIR / "index.html").read_text(encoding="utf-8")
+        sidebar_start = document.index('<section id="validation-sidebar"')
+        sidebar_end = document.index("</section>", sidebar_start)
+        validation_sidebar = document[sidebar_start:sidebar_end]
+
+        self.assertNotIn(
+            'class="overall-progress validation-progress"', validation_sidebar
+        )
+        self.assertNotIn('aria-label="Validation summary"', validation_sidebar)
+        self.assertNotIn("Human benchmarks", validation_sidebar)
+        self.assertNotIn('id="validation-benchmarks"', validation_sidebar)
+        self.assertNotIn("Agent runs", validation_sidebar)
+        self.assertNotIn('id="validation-agent-runs"', validation_sidebar)
+        self.assertIn('id="validation-survey-nav"', validation_sidebar)
+        self.assertIn('aria-label="Validation surveys"', validation_sidebar)
+
+
 class ValidationPersistenceTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temp_directory = tempfile.TemporaryDirectory(
