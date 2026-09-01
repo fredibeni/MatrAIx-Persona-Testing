@@ -80,8 +80,7 @@ button:disabled {
 }
 
 .brand-button,
-.quiet-button,
-.result-primary-button {
+.quiet-button {
   border: 0;
 }
 
@@ -104,10 +103,6 @@ button:disabled {
 .brand-button:hover,
 .quiet-button:hover {
   background: var(--accent);
-}
-
-.result-primary-button {
-  background: #fff;
 }
 
 .site-header {
@@ -1673,12 +1668,6 @@ button:disabled {
 
 .validation-embedded :is(.brand-button, .quiet-button):hover {
   background: var(--validation-hover);
-}
-
-.validation-embedded .result-primary-button {
-  border: 0;
-  color: var(--validation-on-gold) !important;
-  background: var(--validation-gold) !important;
 }
 
 .validation-embedded button {

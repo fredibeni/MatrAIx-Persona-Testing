@@ -236,17 +236,36 @@ assert.match(
 
 const resultViewStart = validationPageSource.indexOf('function ResultView(');
 const resultViewEnd = validationPageSource.indexOf(
-  'function ComparisonView(',
+  'function MiniResult(',
   resultViewStart,
 );
 assert.ok(
   resultViewStart >= 0 && resultViewEnd > resultViewStart,
   'the completed validation result view must remain discoverable',
 );
+const resultViewSource = validationPageSource.slice(
+  resultViewStart,
+  resultViewEnd,
+);
+assert.doesNotMatch(
+  resultViewSource,
+  /Next stage|primaryTitle|primaryCopy|result-primary-button|onClick=\{onPrimary\}/,
+  'completed validation results must not render the aggregate-results Next stage panel or its action',
+);
 assert.match(
-  validationPageSource.slice(resultViewStart, resultViewEnd),
+  resultViewSource,
   /onClick=\{onHome\}[\s\S]*?<Home[\s\S]*?Results/,
   'completed validation views must retain their Results navigation',
+);
+assert.match(
+  resultViewSource,
+  /onClick=\{onHistory\}[\s\S]*?<History[\s\S]*?Earlier run history/,
+  'completed Agent results must retain the conditional Earlier run history control',
+);
+assert.match(
+  resultViewSource,
+  /onClick=\{onHumanChange\}[\s\S]*?<RotateCcw[\s\S]*?Retake benchmark/,
+  'completed Human results must retain the Retake benchmark control',
 );
 const questionDetailsStart = validationPageSource.indexOf(
   '<details className="validation-question-details">',

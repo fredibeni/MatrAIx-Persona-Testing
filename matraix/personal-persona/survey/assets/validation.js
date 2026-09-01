@@ -13626,10 +13626,10 @@ function xi({ result: e, survey: t, compact: n = !1 }) {
 		compact: n
 	});
 }
-function Si({ survey: e, actor: t, run: n, agentRun: r, hasCompletedHuman: i, completedAgentCount: a, onPrimary: o, onHistory: s, onHumanChange: c, onHome: l }) {
-	let u = nn(e, n.answers), d = t === "agent" && r, f = Qr[t], p = d ? i ? `Compare Agent run ${r.sequence}` : "Complete the Human benchmark" : a ? "View the aggregated validation Results" : "Go to validation Results", m = d ? i ? "The Human benchmark and this run are now ready for their own question-level comparison." : "This Agent run is saved. Complete the Human benchmark to unlock its question-level comparison." : a ? `There ${a === 1 ? "is" : "are"} ${a} saved Agent ${a === 1 ? "response" : "responses"} for this benchmark. Results keeps the aggregate comparison together.` : "The Human answers are saved locally. Start the next full Agent experiment from Results.";
+function Si({ survey: e, actor: t, run: n, agentRun: r, hasCompletedHuman: i, onHistory: a, onHumanChange: o, onHome: s }) {
+	let c = nn(e, n.answers), l = t === "agent" && r, u = Qr[t];
 	return /* @__PURE__ */ (0, z.jsx)(pi, {
-		onHome: l,
+		onHome: s,
 		children: /* @__PURE__ */ (0, z.jsxs)("div", {
 			className: "result-stage",
 			style: ai(e),
@@ -13653,9 +13653,9 @@ function Si({ survey: e, actor: t, run: n, agentRun: r, hasCompletedHuman: i, co
 								/* @__PURE__ */ (0, z.jsxs)("div", {
 									className: "mx-auto flex w-fit items-center gap-2 rounded-full bg-white/70 px-4 py-2 text-xs font-black uppercase tracking-[0.13em] text-slate-600 shadow-sm",
 									children: [
-										/* @__PURE__ */ (0, z.jsx)(f.Icon, { size: 15 }),
+										/* @__PURE__ */ (0, z.jsx)(u.Icon, { size: 15 }),
 										" ",
-										d ? `Agent run ${r.sequence}` : "Human benchmark",
+										l ? `Agent run ${r.sequence}` : "Human benchmark",
 										" -",
 										" ",
 										e.shortTitle
@@ -13665,7 +13665,7 @@ function Si({ survey: e, actor: t, run: n, agentRun: r, hasCompletedHuman: i, co
 									className: "mx-auto mt-4 w-fit rounded-full bg-white/70 px-3 py-1.5 text-xs font-black text-slate-600 shadow-sm",
 									children: ["Persona agent: ", oi(n.personaAgent)]
 								}),
-								d && /* @__PURE__ */ (0, z.jsxs)("div", {
+								l && /* @__PURE__ */ (0, z.jsxs)("div", {
 									className: "mx-auto mt-2 w-fit rounded-full px-3 py-1.5 text-xs font-black",
 									style: {
 										backgroundColor: e.color,
@@ -13676,15 +13676,15 @@ function Si({ survey: e, actor: t, run: n, agentRun: r, hasCompletedHuman: i, co
 								/* @__PURE__ */ (0, z.jsx)("p", {
 									className: "mt-8 text-center text-xs font-black uppercase tracking-[0.16em]",
 									style: { color: e.ink },
-									children: u.kind === "silly" ? u.code : "Strongest signal"
+									children: c.kind === "silly" ? c.code : "Strongest signal"
 								}),
 								/* @__PURE__ */ (0, z.jsx)("h1", {
 									className: "font-display mx-auto mt-3 max-w-[850px] text-center text-[clamp(2.7rem,7vw,6.3rem)] font-black leading-[0.9] tracking-[-0.065em] text-slate-950",
-									children: u.title
+									children: c.title
 								}),
-								"description" in u && /* @__PURE__ */ (0, z.jsx)("p", {
+								"description" in c && /* @__PURE__ */ (0, z.jsx)("p", {
 									className: "mx-auto mt-6 max-w-[620px] text-center text-base leading-7 text-slate-600 sm:text-lg",
-									children: u.description
+									children: c.description
 								})
 							]
 						})
@@ -13699,7 +13699,7 @@ function Si({ survey: e, actor: t, run: n, agentRun: r, hasCompletedHuman: i, co
 							children: "Result detail"
 						}), /* @__PURE__ */ (0, z.jsx)("h2", {
 							className: "font-display mt-2 text-2xl font-black tracking-[-0.035em] text-slate-950",
-							children: u.kind === "silly" ? "Four silly axes" : u.kind === "scale" ? "Five personal dials" : "How the choices stacked up"
+							children: c.kind === "silly" ? "Four silly axes" : c.kind === "scale" ? "Five personal dials" : "How the choices stacked up"
 						})] }), /* @__PURE__ */ (0, z.jsxs)("span", {
 							className: "hidden rounded-xl px-3 py-2 text-xs font-bold sm:block",
 							style: {
@@ -13709,54 +13709,25 @@ function Si({ survey: e, actor: t, run: n, agentRun: r, hasCompletedHuman: i, co
 							children: [e.questions.length, " answers"]
 						})]
 					}), /* @__PURE__ */ (0, z.jsx)(xi, {
-						result: u,
+						result: c,
 						survey: e
-					})]
-				}),
-				/* @__PURE__ */ (0, z.jsxs)("section", {
-					className: "mx-auto mt-6 max-w-[900px] rounded-[28px] bg-slate-950 p-6 text-white sm:flex sm:items-center sm:justify-between sm:p-8",
-					children: [/* @__PURE__ */ (0, z.jsxs)("div", {
-						className: "max-w-[570px]",
-						children: [
-							/* @__PURE__ */ (0, z.jsx)("p", {
-								className: "text-xs font-black uppercase tracking-[0.15em] text-slate-400",
-								children: "Next stage"
-							}),
-							/* @__PURE__ */ (0, z.jsx)("h2", {
-								className: "font-display mt-2 text-2xl font-black tracking-[-0.035em]",
-								children: p
-							}),
-							/* @__PURE__ */ (0, z.jsx)("p", {
-								className: "mt-2 text-sm leading-6 text-slate-300",
-								children: m
-							})
-						]
-					}), /* @__PURE__ */ (0, z.jsxs)("button", {
-						type: "button",
-						onClick: o,
-						className: "result-primary-button mt-6 inline-flex h-12 items-center gap-2 rounded-xl bg-white px-5 text-sm font-black text-slate-950 transition hover:-translate-y-0.5 sm:ml-8 sm:mt-0 focus-ring",
-						children: [
-							d && i ? /* @__PURE__ */ (0, z.jsx)(ae, { size: 18 }) : d ? /* @__PURE__ */ (0, z.jsx)(N, { size: 18 }) : a ? /* @__PURE__ */ (0, z.jsx)(M, { size: 18 }) : /* @__PURE__ */ (0, z.jsx)(te, { size: 18 }),
-							d ? i ? "Compare this run" : "Set Human benchmark" : "View Results",
-							/* @__PURE__ */ (0, z.jsx)(O, { size: 17 })
-						]
 					})]
 				}),
 				/* @__PURE__ */ (0, z.jsxs)("div", {
 					className: "mx-auto mt-7 flex max-w-[900px] flex-wrap items-center justify-center gap-3 pb-14",
 					children: [/* @__PURE__ */ (0, z.jsxs)("button", {
 						type: "button",
-						onClick: l,
+						onClick: s,
 						className: "secondary-button focus-ring",
 						children: [/* @__PURE__ */ (0, z.jsx)(A, { size: 16 }), " Results"]
-					}), d ? i && /* @__PURE__ */ (0, z.jsxs)("button", {
+					}), l ? i && /* @__PURE__ */ (0, z.jsxs)("button", {
 						type: "button",
-						onClick: s,
+						onClick: a,
 						className: "secondary-button focus-ring",
 						children: [/* @__PURE__ */ (0, z.jsx)(se, { size: 16 }), " Earlier run history"]
 					}) : /* @__PURE__ */ (0, z.jsxs)("button", {
 						type: "button",
-						onClick: c,
+						onClick: o,
 						className: "secondary-button focus-ring",
 						children: [/* @__PURE__ */ (0, z.jsx)(ce, { size: 16 }), " Retake benchmark"]
 					})]
@@ -14935,19 +14906,13 @@ function ki({ hosted: e = !1 }) {
 		if (r.name === "result") {
 			let t = r.actor === "human" ? e.human : Pn(e, r.runId);
 			if (!t?.completedAt) return le();
-			let n = !!(e.human?.completedAt && (r.actor === "human" || si(e.human.personaAgent, t.personaAgent))), a = n ? Mn(e, e.human.id).length : 0;
+			let n = !!(e.human?.completedAt && (r.actor === "human" || si(e.human.personaAgent, t.personaAgent)));
 			return /* @__PURE__ */ (0, z.jsx)(Si, {
 				survey: k,
 				actor: r.actor,
 				run: t,
 				agentRun: r.actor === "agent" ? t : void 0,
 				hasCompletedHuman: n,
-				completedAgentCount: a,
-				onPrimary: () => r.actor === "agent" ? n ? i({
-					name: "comparison",
-					surveyId: r.surveyId,
-					runId: r.runId
-				}) : j(r.surveyId) : ie(),
 				onHistory: () => i({
 					name: "history",
 					surveyId: r.surveyId

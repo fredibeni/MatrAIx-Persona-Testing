@@ -901,8 +901,6 @@ function ResultView({
   run,
   agentRun,
   hasCompletedHuman,
-  completedAgentCount,
-  onPrimary,
   onHistory,
   onHumanChange,
   onHome,
@@ -912,8 +910,6 @@ function ResultView({
   run: StoredRun;
   agentRun?: AgentRun;
   hasCompletedHuman: boolean;
-  completedAgentCount: number;
-  onPrimary: () => void;
   onHistory: () => void;
   onHumanChange: () => void;
   onHome: () => void;
@@ -921,20 +917,6 @@ function ResultView({
   const result = scoreSurvey(survey, run.answers);
   const isAgent = actor === 'agent' && agentRun;
   const meta = actorMeta[actor];
-  const primaryTitle = isAgent
-    ? hasCompletedHuman
-      ? `Compare Agent run ${agentRun.sequence}`
-      : 'Complete the Human benchmark'
-    : completedAgentCount
-      ? 'View the aggregated validation Results'
-      : 'Go to validation Results';
-  const primaryCopy = isAgent
-    ? hasCompletedHuman
-      ? 'The Human benchmark and this run are now ready for their own question-level comparison.'
-      : 'This Agent run is saved. Complete the Human benchmark to unlock its question-level comparison.'
-    : completedAgentCount
-      ? `There ${completedAgentCount === 1 ? 'is' : 'are'} ${completedAgentCount} saved Agent ${completedAgentCount === 1 ? 'response' : 'responses'} for this benchmark. Results keeps the aggregate comparison together.`
-      : 'The Human answers are saved locally. Start the next full Agent experiment from Results.';
 
   return (
     <Shell onHome={onHome}>
@@ -1000,41 +982,6 @@ function ResultView({
             </span>
           </div>
           <ResultVisual result={result} survey={survey} />
-        </section>
-
-        <section className="mx-auto mt-6 max-w-[900px] rounded-[28px] bg-slate-950 p-6 text-white sm:flex sm:items-center sm:justify-between sm:p-8">
-          <div className="max-w-[570px]">
-            <p className="text-xs font-black uppercase tracking-[0.15em] text-slate-400">
-              Next stage
-            </p>
-            <h2 className="font-display mt-2 text-2xl font-black tracking-[-0.035em]">
-              {primaryTitle}
-            </h2>
-            <p className="mt-2 text-sm leading-6 text-slate-300">
-              {primaryCopy}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={onPrimary}
-            className="result-primary-button mt-6 inline-flex h-12 items-center gap-2 rounded-xl bg-white px-5 text-sm font-black text-slate-950 transition hover:-translate-y-0.5 sm:ml-8 sm:mt-0 focus-ring"
-          >
-            {isAgent && hasCompletedHuman ? (
-              <ClipboardCheck size={18} />
-            ) : isAgent ? (
-              <UserRound size={18} />
-            ) : completedAgentCount ? (
-              <TrendingUp size={18} />
-            ) : (
-              <Bot size={18} />
-            )}
-            {isAgent
-              ? hasCompletedHuman
-                ? 'Compare this run'
-                : 'Set Human benchmark'
-              : 'View Results'}
-            <ArrowRight size={17} />
-          </button>
         </section>
 
         <div className="mx-auto mt-7 flex max-w-[900px] flex-wrap items-center justify-center gap-3 pb-14">
@@ -2636,9 +2583,6 @@ export function ValidationApp({ hosted = false }: { hosted?: boolean }) {
         (view.actor === 'human' ||
           samePersonaContext(history.human.personaAgent, run.personaAgent)),
       );
-      const completedCount = hasCompletedHuman
-        ? completedAgentRuns(history, history.human!.id).length
-        : 0;
       return (
         <ResultView
           survey={activeSurvey}
@@ -2646,18 +2590,6 @@ export function ValidationApp({ hosted = false }: { hosted?: boolean }) {
           run={run}
           agentRun={view.actor === 'agent' ? (run as AgentRun) : undefined}
           hasCompletedHuman={hasCompletedHuman}
-          completedAgentCount={completedCount}
-          onPrimary={() =>
-            view.actor === 'agent'
-              ? hasCompletedHuman
-                ? setView({
-                    name: 'comparison',
-                    surveyId: view.surveyId,
-                    runId: view.runId,
-                  })
-                : openHuman(view.surveyId)
-              : goHome()
-          }
           onHistory={() =>
             setView({ name: 'history', surveyId: view.surveyId })
           }
