@@ -220,15 +220,16 @@ input:focus-visible {
 }
 
 .sidebar-workspace-body {
+  --sidebar-content-inset: 10px;
   flex: 1 0 auto;
   margin: -10px -22px -22px;
-  padding: 10px 10px 22px;
+  padding: 10px var(--sidebar-content-inset) 22px;
   border-top: 0;
   background: var(--sidebar-lower);
 }
 
 .overall-progress {
-  margin-bottom: 20px;
+  margin-bottom: var(--sidebar-content-inset);
   padding: 16px;
   border: 0;
   border-radius: 15px;
@@ -1380,16 +1381,13 @@ h1 {
   }
 
   .sidebar-workspace-body {
+    --sidebar-content-inset: 7px;
     margin: -7px -14px -18px;
-    padding: 7px 7px 18px;
+    padding: 7px var(--sidebar-content-inset) 18px;
   }
 
   .brand {
     padding: 0 14px 13px;
-  }
-
-  .overall-progress {
-    margin-bottom: 12px;
   }
 
   .main-panel {
