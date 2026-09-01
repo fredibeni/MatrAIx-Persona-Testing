@@ -9,7 +9,10 @@ import { surveyById, surveys, type SurveyId } from './surveys.ts';
 
 export const VALIDATION_CHANNEL = 'matraix-validation';
 export const VALIDATION_MESSAGE_VERSION = 1;
-export const VALIDATION_HOST_ORIGIN = 'http://127.0.0.1:8766';
+export const VALIDATION_HOST_ORIGIN =
+  typeof window === 'undefined'
+    ? 'http://127.0.0.1:8766'
+    : window.location.origin;
 export const VALIDATION_COMMAND_EVENT = 'matraix-validation-command';
 export const VALIDATION_STATE_EVENT = 'matraix-validation-state';
 

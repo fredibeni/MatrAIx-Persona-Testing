@@ -60,20 +60,20 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 		}
 	}
 	function x(e) {
-		if (h = !1, b(e), !m) if (n(c) !== null) m = !0, ee || (ee = !0, E());
+		if (h = !1, b(e), !m) if (n(c) !== null) m = !0, ee || (ee = !0, T());
 		else {
 			var t = n(l);
-			t !== null && ie(x, t.startTime - e);
+			t !== null && ae(x, t.startTime - e);
 		}
 	}
-	var ee = !1, S = -1, C = 5, w = -1;
-	function te() {
-		return g ? !0 : !(e.unstable_now() - w < C);
+	var ee = !1, S = -1, C = 5, te = -1;
+	function ne() {
+		return g ? !0 : !(e.unstable_now() - te < C);
 	}
-	function T() {
+	function w() {
 		if (g = !1, ee) {
 			var t = e.unstable_now();
-			w = t;
+			te = t;
 			var i = !0;
 			try {
 				a: {
@@ -81,7 +81,7 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 					var a = f;
 					try {
 						b: {
-							for (b(t), d = n(c); d !== null && !(d.expirationTime > t && te());) {
+							for (b(t), d = n(c); d !== null && !(d.expirationTime > t && ne());) {
 								var o = d.callback;
 								if (typeof o == "function") {
 									d.callback = null, f = d.priorityLevel;
@@ -97,7 +97,7 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 							if (d !== null) i = !0;
 							else {
 								var u = n(l);
-								u !== null && ie(x, u.startTime - t), i = !1;
+								u !== null && ae(x, u.startTime - t), i = !1;
 							}
 						}
 						break a;
@@ -107,23 +107,23 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 					i = void 0;
 				}
 			} finally {
-				i ? E() : ee = !1;
+				i ? T() : ee = !1;
 			}
 		}
 	}
-	var E;
-	if (typeof y == "function") E = function() {
-		y(T);
+	var T;
+	if (typeof y == "function") T = function() {
+		y(w);
 	};
 	else if (typeof MessageChannel < "u") {
-		var ne = new MessageChannel(), re = ne.port2;
-		ne.port1.onmessage = T, E = function() {
-			re.postMessage(null);
+		var re = new MessageChannel(), ie = re.port2;
+		re.port1.onmessage = w, T = function() {
+			ie.postMessage(null);
 		};
-	} else E = function() {
-		_(T, 0);
+	} else T = function() {
+		_(w, 0);
 	};
-	function ie(t, n) {
+	function ae(t, n) {
 		S = _(function() {
 			t(e.unstable_now());
 		}, n);
@@ -192,8 +192,8 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 			startTime: a,
 			expirationTime: s,
 			sortIndex: -1
-		}, a > o ? (r.sortIndex = a, t(l, r), n(c) === null && r === n(l) && (h ? (v(S), S = -1) : h = !0, ie(x, a - o))) : (r.sortIndex = s, t(c, r), m || p || (m = !0, ee || (ee = !0, E()))), r;
-	}, e.unstable_shouldYield = te, e.unstable_wrapCallback = function(e) {
+		}, a > o ? (r.sortIndex = a, t(l, r), n(c) === null && r === n(l) && (h ? (v(S), S = -1) : h = !0, ae(x, a - o))) : (r.sortIndex = s, t(c, r), m || p || (m = !0, ee || (ee = !0, T()))), r;
+	}, e.unstable_shouldYield = ne, e.unstable_wrapCallback = function(e) {
 		var t = f;
 		return function() {
 			var n = f;
@@ -243,8 +243,8 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 		A: null,
 		T: null,
 		S: null
-	}, w = Object.prototype.hasOwnProperty;
-	function te(e, n, r) {
+	}, te = Object.prototype.hasOwnProperty;
+	function ne(e, n, r) {
 		var i = r.ref;
 		return {
 			$$typeof: t,
@@ -254,13 +254,13 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 			props: r
 		};
 	}
-	function T(e, t) {
-		return te(e.type, t, e.props);
+	function w(e, t) {
+		return ne(e.type, t, e.props);
 	}
-	function E(e) {
+	function T(e) {
 		return typeof e == "object" && !!e && e.$$typeof === t;
 	}
-	function ne(e) {
+	function re(e) {
 		var t = {
 			"=": "=0",
 			":": "=2"
@@ -269,11 +269,11 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 			return t[e];
 		});
 	}
-	var re = /\/+/g;
-	function ie(e, t) {
-		return typeof e == "object" && e && e.key != null ? ne("" + e.key) : t.toString(36);
+	var ie = /\/+/g;
+	function ae(e, t) {
+		return typeof e == "object" && e && e.key != null ? re("" + e.key) : t.toString(36);
 	}
-	function D(e) {
+	function E(e) {
 		switch (e.status) {
 			case "fulfilled": return e.value;
 			case "rejected": throw e.reason;
@@ -288,7 +288,7 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 		}
 		throw e;
 	}
-	function ae(e, r, i, a, o) {
+	function D(e, r, i, a, o) {
 		var s = typeof e;
 		(s === "undefined" || s === "boolean") && (e = null);
 		var c = !1;
@@ -304,18 +304,18 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 				case n:
 					c = !0;
 					break;
-				case d: return c = e._init, ae(c(e._payload), r, i, a, o);
+				case d: return c = e._init, D(c(e._payload), r, i, a, o);
 			}
 		}
-		if (c) return o = o(e), c = a === "" ? "." + ie(e, 0) : a, ee(o) ? (i = "", c != null && (i = c.replace(re, "$&/") + "/"), ae(o, r, i, "", function(e) {
+		if (c) return o = o(e), c = a === "" ? "." + ae(e, 0) : a, ee(o) ? (i = "", c != null && (i = c.replace(ie, "$&/") + "/"), D(o, r, i, "", function(e) {
 			return e;
-		})) : o != null && (E(o) && (o = T(o, i + (o.key == null || e && e.key === o.key ? "" : ("" + o.key).replace(re, "$&/") + "/") + c)), r.push(o)), 1;
+		})) : o != null && (T(o) && (o = w(o, i + (o.key == null || e && e.key === o.key ? "" : ("" + o.key).replace(ie, "$&/") + "/") + c)), r.push(o)), 1;
 		c = 0;
 		var l = a === "" ? "." : a + ":";
-		if (ee(e)) for (var u = 0; u < e.length; u++) a = e[u], s = l + ie(a, u), c += ae(a, r, i, s, o);
-		else if (u = m(e), typeof u == "function") for (e = u.call(e), u = 0; !(a = e.next()).done;) a = a.value, s = l + ie(a, u++), c += ae(a, r, i, s, o);
+		if (ee(e)) for (var u = 0; u < e.length; u++) a = e[u], s = l + ae(a, u), c += D(a, r, i, s, o);
+		else if (u = m(e), typeof u == "function") for (e = u.call(e), u = 0; !(a = e.next()).done;) a = a.value, s = l + ae(a, u++), c += D(a, r, i, s, o);
 		else if (s === "object") {
-			if (typeof e.then == "function") return ae(D(e), r, i, a, o);
+			if (typeof e.then == "function") return D(E(e), r, i, a, o);
 			throw r = String(e), Error("Objects are not valid as a React child (found: " + (r === "[object Object]" ? "object with keys {" + Object.keys(e).join(", ") + "}" : r) + "). If you meant to render a collection of children, use an array instead.");
 		}
 		return c;
@@ -323,7 +323,7 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 	function oe(e, t, n) {
 		if (e == null) return e;
 		var r = [], i = 0;
-		return ae(e, r, "", "", function(e) {
+		return D(e, r, "", "", function(e) {
 			return t.call(n, e, i++);
 		}), r;
 	}
@@ -372,7 +372,7 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 			}) || [];
 		},
 		only: function(e) {
-			if (!E(e)) throw Error("React.Children.only expected to receive a single React element child.");
+			if (!T(e)) throw Error("React.Children.only expected to receive a single React element child.");
 			return e;
 		}
 	};
@@ -390,14 +390,14 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 	}, e.cloneElement = function(e, t, n) {
 		if (e == null) throw Error("The argument must be a React element, but you passed " + e + ".");
 		var r = g({}, e.props), i = e.key;
-		if (t != null) for (a in t.key !== void 0 && (i = "" + t.key), t) !w.call(t, a) || a === "key" || a === "__self" || a === "__source" || a === "ref" && t.ref === void 0 || (r[a] = t[a]);
+		if (t != null) for (a in t.key !== void 0 && (i = "" + t.key), t) !te.call(t, a) || a === "key" || a === "__self" || a === "__source" || a === "ref" && t.ref === void 0 || (r[a] = t[a]);
 		var a = arguments.length - 2;
 		if (a === 1) r.children = n;
 		else if (1 < a) {
 			for (var o = Array(a), s = 0; s < a; s++) o[s] = arguments[s + 2];
 			r.children = o;
 		}
-		return te(e.type, i, r);
+		return ne(e.type, i, r);
 	}, e.createContext = function(e) {
 		return e = {
 			$$typeof: s,
@@ -412,7 +412,7 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 		}, e;
 	}, e.createElement = function(e, t, n) {
 		var r, i = {}, a = null;
-		if (t != null) for (r in t.key !== void 0 && (a = "" + t.key), t) w.call(t, r) && r !== "key" && r !== "__self" && r !== "__source" && (i[r] = t[r]);
+		if (t != null) for (r in t.key !== void 0 && (a = "" + t.key), t) te.call(t, r) && r !== "key" && r !== "__self" && r !== "__source" && (i[r] = t[r]);
 		var o = arguments.length - 2;
 		if (o === 1) i.children = n;
 		else if (1 < o) {
@@ -420,7 +420,7 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 			i.children = s;
 		}
 		if (e && e.defaultProps) for (r in o = e.defaultProps, o) i[r] === void 0 && (i[r] = o[r]);
-		return te(e, a, i);
+		return ne(e, a, i);
 	}, e.createRef = function() {
 		return { current: null };
 	}, e.forwardRef = function(e) {
@@ -428,7 +428,7 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 			$$typeof: c,
 			render: e
 		};
-	}, e.isValidElement = E, e.lazy = function(e) {
+	}, e.isValidElement = T, e.lazy = function(e) {
 		return {
 			$$typeof: d,
 			_payload: {
@@ -728,22 +728,22 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 		}
 		return null;
 	}
-	var h = Object.assign, g = Symbol.for("react.element"), _ = Symbol.for("react.transitional.element"), v = Symbol.for("react.portal"), y = Symbol.for("react.fragment"), b = Symbol.for("react.strict_mode"), x = Symbol.for("react.profiler"), ee = Symbol.for("react.consumer"), S = Symbol.for("react.context"), C = Symbol.for("react.forward_ref"), w = Symbol.for("react.suspense"), te = Symbol.for("react.suspense_list"), T = Symbol.for("react.memo"), E = Symbol.for("react.lazy"), ne = Symbol.for("react.activity"), re = Symbol.for("react.memo_cache_sentinel"), ie = Symbol.iterator;
-	function D(e) {
-		return typeof e != "object" || !e ? null : (e = ie && e[ie] || e["@@iterator"], typeof e == "function" ? e : null);
+	var h = Object.assign, g = Symbol.for("react.element"), _ = Symbol.for("react.transitional.element"), v = Symbol.for("react.portal"), y = Symbol.for("react.fragment"), b = Symbol.for("react.strict_mode"), x = Symbol.for("react.profiler"), ee = Symbol.for("react.consumer"), S = Symbol.for("react.context"), C = Symbol.for("react.forward_ref"), te = Symbol.for("react.suspense"), ne = Symbol.for("react.suspense_list"), w = Symbol.for("react.memo"), T = Symbol.for("react.lazy"), re = Symbol.for("react.activity"), ie = Symbol.for("react.memo_cache_sentinel"), ae = Symbol.iterator;
+	function E(e) {
+		return typeof e != "object" || !e ? null : (e = ae && e[ae] || e["@@iterator"], typeof e == "function" ? e : null);
 	}
-	var ae = Symbol.for("react.client.reference");
+	var D = Symbol.for("react.client.reference");
 	function oe(e) {
 		if (e == null) return null;
-		if (typeof e == "function") return e.$$typeof === ae ? null : e.displayName || e.name || null;
+		if (typeof e == "function") return e.$$typeof === D ? null : e.displayName || e.name || null;
 		if (typeof e == "string") return e;
 		switch (e) {
 			case y: return "Fragment";
 			case x: return "Profiler";
 			case b: return "StrictMode";
-			case w: return "Suspense";
-			case te: return "SuspenseList";
-			case ne: return "Activity";
+			case te: return "Suspense";
+			case ne: return "SuspenseList";
+			case re: return "Activity";
 		}
 		if (typeof e == "object") switch (e.$$typeof) {
 			case v: return "Portal";
@@ -752,8 +752,8 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 			case C:
 				var t = e.render;
 				return e = e.displayName, e ||= (e = t.displayName || t.name || "", e === "" ? "ForwardRef" : "ForwardRef(" + e + ")"), e;
-			case T: return t = e.displayName || null, t === null ? oe(e.type) || "Memo" : t;
-			case E:
+			case w: return t = e.displayName || null, t === null ? oe(e.type) || "Memo" : t;
+			case T:
 				t = e._payload, e = e._init;
 				try {
 					return oe(e(t));
@@ -2025,14 +2025,14 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 		if (r = e, typeof e == "function") ui(e) && (s = 1);
 		else if (typeof e == "string") s = Uf(e, n, de.current) ? 26 : e === "html" || e === "head" || e === "body" ? 27 : 5;
 		else a: switch (e) {
-			case ne: return e = li(31, n, t, a), e.elementType = ne, e.lanes = o, e;
+			case re: return e = li(31, n, t, a), e.elementType = re, e.lanes = o, e;
 			case y: return mi(n.children, a, o, t);
 			case b:
 				s = 8, a |= 24;
 				break;
 			case x: return e = li(12, n, t, a | 2), e.elementType = x, e.lanes = o, e;
-			case w: return e = li(13, n, t, a), e.elementType = w, e.lanes = o, e;
-			case te: return e = li(19, n, t, a), e.elementType = te, e.lanes = o, e;
+			case te: return e = li(13, n, t, a), e.elementType = te, e.lanes = o, e;
+			case ne: return e = li(19, n, t, a), e.elementType = ne, e.lanes = o, e;
 			default:
 				if (typeof e == "object" && e) switch (e.$$typeof) {
 					case S:
@@ -2044,10 +2044,10 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 					case C:
 						s = 11;
 						break a;
-					case T:
+					case w:
 						s = 14;
 						break a;
-					case E:
+					case T:
 						s = 16, r = null;
 						break a;
 				}
@@ -2471,7 +2471,7 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 		}
 		function l(e, t, n, r) {
 			var i = n.type;
-			return i === y ? d(e, t, n.props.children, r, n.key) : t !== null && (t.elementType === i || typeof i == "object" && i && i.$$typeof === E && Oa(i) === t.type) ? (t = a(t, n.props), Fa(t, n), t.return = e, t) : (t = pi(n.type, n.key, n.props, null, e.mode, r), Fa(t, n), t.return = e, t);
+			return i === y ? d(e, t, n.props.children, r, n.key) : t !== null && (t.elementType === i || typeof i == "object" && i && i.$$typeof === T && Oa(i) === t.type) ? (t = a(t, n.props), Fa(t, n), t.return = e, t) : (t = pi(n.type, n.key, n.props, null, e.mode, r), Fa(t, n), t.return = e, t);
 		}
 		function u(e, t, n, r) {
 			return t === null || t.tag !== 4 || t.stateNode.containerInfo !== n.containerInfo || t.stateNode.implementation !== n.implementation ? (t = _i(n, e.mode, r), t.return = e, t) : (t = a(t, n.children || []), t.return = e, t);
@@ -2485,9 +2485,9 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 				switch (t.$$typeof) {
 					case _: return n = pi(t.type, t.key, t.props, null, e.mode, n), Fa(n, t), n.return = e, n;
 					case v: return t = _i(t, e.mode, n), t.return = e, t;
-					case E: return t = Oa(t), f(e, t, n);
+					case T: return t = Oa(t), f(e, t, n);
 				}
-				if (se(t) || D(t)) return t = mi(t, e.mode, n, null), t.return = e, t;
+				if (se(t) || E(t)) return t = mi(t, e.mode, n, null), t.return = e, t;
 				if (typeof t.then == "function") return f(e, Pa(t), n);
 				if (t.$$typeof === S) return f(e, na(e, t), n);
 				Ia(e, t);
@@ -2501,9 +2501,9 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 				switch (n.$$typeof) {
 					case _: return n.key === i ? l(e, t, n, r) : null;
 					case v: return n.key === i ? u(e, t, n, r) : null;
-					case E: return n = Oa(n), p(e, t, n, r);
+					case T: return n = Oa(n), p(e, t, n, r);
 				}
-				if (se(n) || D(n)) return i === null ? d(e, t, n, r, null) : null;
+				if (se(n) || E(n)) return i === null ? d(e, t, n, r, null) : null;
 				if (typeof n.then == "function") return p(e, t, Pa(n), r);
 				if (n.$$typeof === S) return p(e, t, na(e, n), r);
 				Ia(e, n);
@@ -2516,9 +2516,9 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 				switch (r.$$typeof) {
 					case _: return e = e.get(r.key === null ? n : r.key) || null, l(t, e, r, i);
 					case v: return e = e.get(r.key === null ? n : r.key) || null, u(t, e, r, i);
-					case E: return r = Oa(r), m(e, t, n, r, i);
+					case T: return r = Oa(r), m(e, t, n, r, i);
 				}
-				if (se(r) || D(r)) return e = e.get(n) || null, d(t, e, r, i, null);
+				if (se(r) || E(r)) return e = e.get(n) || null, d(t, e, r, i, null);
 				if (typeof r.then == "function") return m(e, t, n, Pa(r), i);
 				if (r.$$typeof === S) return m(e, t, n, na(t, r), i);
 				Ia(t, r);
@@ -2578,7 +2578,7 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 											n(e, r.sibling), c = a(r, o.props.children), c.return = e, e = c;
 											break a;
 										}
-									} else if (r.elementType === l || typeof l == "object" && l && l.$$typeof === E && Oa(l) === r.type) {
+									} else if (r.elementType === l || typeof l == "object" && l && l.$$typeof === T && Oa(l) === r.type) {
 										n(e, r.sibling), c = a(r, o.props), Fa(c, o), c.return = e, e = c;
 										break a;
 									}
@@ -2606,11 +2606,11 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 							c = _i(o, e.mode, c), c.return = e, e = c;
 						}
 						return s(e);
-					case E: return o = Oa(o), b(e, r, o, c);
+					case T: return o = Oa(o), b(e, r, o, c);
 				}
 				if (se(o)) return h(e, r, o, c);
-				if (D(o)) {
-					if (l = D(o), typeof l != "function") throw Error(i(150));
+				if (E(o)) {
+					if (l = E(o), typeof l != "function") throw Error(i(150));
 					return o = l.call(o), g(e, r, o, c);
 				}
 				if (typeof o.then == "function") return b(e, r, Pa(o), c);
@@ -2944,7 +2944,7 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 		if (t ??= {
 			data: [],
 			index: 0
-		}, n === null && (n = Mo(), B.updateQueue = n), n.memoCache = t, n = t.data[t.index], n === void 0) for (n = t.data[t.index] = Array(e), r = 0; r < e; r++) n[r] = re;
+		}, n === null && (n = Mo(), B.updateQueue = n), n.memoCache = t, n = t.data[t.index], n === void 0) for (n = t.data[t.index] = Array(e), r = 0; r < e; r++) n[r] = ie;
 		return t.index++, n;
 	}
 	function Io(e, t) {
@@ -4179,7 +4179,7 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 							if (a === C) {
 								t.tag = 11, t = oc(null, t, e, r, n);
 								break a;
-							} else if (a === T) {
+							} else if (a === w) {
 								t.tag = 14, t = sc(null, t, e, r, n);
 								break a;
 							}
@@ -8018,8 +8018,8 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 }, ee = (e) => {
 	for (let t in e) if (t.startsWith("aria-") || t === "role" || t === "title") return !0;
 	return !1;
-}, S = /* @__PURE__ */ c(f(), 1), C = (0, S.createContext)({}), w = () => (0, S.useContext)(C), te = (0, S.forwardRef)(({ color: e, size: t, strokeWidth: n, absoluteStrokeWidth: r, className: i = "", children: a, iconNode: o, ...s }, c) => {
-	let { size: l = 24, strokeWidth: u = 2, absoluteStrokeWidth: d = !1, color: f = "currentColor", className: p = "" } = w() ?? {}, m = r ?? d ? Number(n ?? u) * 24 / Number(t ?? l) : n ?? u;
+}, S = /* @__PURE__ */ c(f(), 1), C = (0, S.createContext)({}), te = () => (0, S.useContext)(C), ne = (0, S.forwardRef)(({ color: e, size: t, strokeWidth: n, absoluteStrokeWidth: r, className: i = "", children: a, iconNode: o, ...s }, c) => {
+	let { size: l = 24, strokeWidth: u = 2, absoluteStrokeWidth: d = !1, color: f = "currentColor", className: p = "" } = te() ?? {}, m = r ?? d ? Number(n ?? u) * 24 / Number(t ?? l) : n ?? u;
 	return (0, S.createElement)("svg", {
 		ref: c,
 		...x,
@@ -8031,27 +8031,27 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 		...!a && !ee(s) && { "aria-hidden": "true" },
 		...s
 	}, [...o.map(([e, t]) => (0, S.createElement)(e, t)), ...Array.isArray(a) ? a : [a]]);
-}), T = (e, t) => {
-	let n = (0, S.forwardRef)(({ className: n, ...r }, i) => (0, S.createElement)(te, {
+}), w = (e, t) => {
+	let n = (0, S.forwardRef)(({ className: n, ...r }, i) => (0, S.createElement)(ne, {
 		ref: i,
 		iconNode: t,
 		className: _(`lucide-${v(b(e))}`, `lucide-${e}`, n),
 		...r
 	}));
 	return n.displayName = b(e), n;
-}, E = T("arrow-left", [["path", {
+}, T = w("arrow-left", [["path", {
 	d: "m12 19-7-7 7-7",
 	key: "1l729n"
 }], ["path", {
 	d: "M19 12H5",
 	key: "x3x0zl"
-}]]), ne = T("arrow-right", [["path", {
+}]]), re = w("arrow-right", [["path", {
 	d: "M5 12h14",
 	key: "1ays0h"
 }], ["path", {
 	d: "m12 5 7 7-7 7",
 	key: "xquz4c"
-}]]), re = T("bot", [
+}]]), ie = w("bot", [
 	["path", {
 		d: "M12 8V4H8",
 		key: "hb8ula"
@@ -8080,13 +8080,13 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 		d: "M9 13v2",
 		key: "rq6x2g"
 	}]
-]), ie = T("check", [["path", {
+]), ae = w("check", [["path", {
 	d: "M20 6 9 17l-5-5",
 	key: "1gmf2c"
-}]]), D = T("chevron-right", [["path", {
+}]]), E = w("chevron-right", [["path", {
 	d: "m9 18 6-6-6-6",
 	key: "mthhwq"
-}]]), ae = T("circle-check", [["circle", {
+}]]), D = w("circle-check", [["circle", {
 	cx: "12",
 	cy: "12",
 	r: "10",
@@ -8094,7 +8094,7 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 }], ["path", {
 	d: "m9 12 2 2 4-4",
 	key: "dzmm74"
-}]]), oe = T("clipboard-check", [
+}]]), oe = w("clipboard-check", [
 	["rect", {
 		width: "8",
 		height: "4",
@@ -8112,13 +8112,13 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 		d: "m9 14 2 2 4-4",
 		key: "df797q"
 	}]
-]), se = T("house", [["path", {
+]), se = w("house", [["path", {
 	d: "M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8",
 	key: "5wwlr5"
 }], ["path", {
 	d: "M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z",
 	key: "r6nss1"
-}]]), O = T("info", [
+}]]), O = w("info", [
 	["circle", {
 		cx: "12",
 		cy: "12",
@@ -8133,16 +8133,16 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 		d: "M12 8h.01",
 		key: "e9boi3"
 	}]
-]), k = T("loader-circle", [["path", {
+]), k = w("loader-circle", [["path", {
 	d: "M21 12a9 9 0 1 1-6.219-8.56",
 	key: "13zald"
-}]]), ce = T("plus", [["path", {
+}]]), ce = w("plus", [["path", {
 	d: "M5 12h14",
 	key: "1ays0h"
 }], ["path", {
 	d: "M12 5v14",
 	key: "s699le"
-}]]), le = T("rotate-ccw-clock", [
+}]]), le = w("rotate-ccw-clock", [
 	["path", {
 		d: "M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8",
 		key: "1357e3"
@@ -8155,19 +8155,19 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 		d: "M12 7v5l4 2",
 		key: "1fdv2h"
 	}]
-]), ue = T("rotate-ccw", [["path", {
+]), ue = w("rotate-ccw", [["path", {
 	d: "M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8",
 	key: "1357e3"
 }], ["path", {
 	d: "M3 3v5h5",
 	key: "1xhq8a"
-}]]), A = T("trending-up", [["path", {
+}]]), A = w("trending-up", [["path", {
 	d: "M16 7h6v6",
 	key: "box55l"
 }], ["path", {
 	d: "m22 7-8.5 8.5-5-5L2 17",
 	key: "1t1m79"
-}]]), j = T("user-round", [["circle", {
+}]]), j = w("user-round", [["circle", {
 	cx: "12",
 	cy: "8",
 	r: "5",
@@ -8468,18 +8468,18 @@ var fe = (e, t) => {
 		I,
 		F,
 		c
-	], w = () => [
+	], te = () => [
 		et,
 		"full",
 		"auto",
 		...C()
-	], te = () => [
+	], ne = () => [
 		tt,
 		"none",
 		"subgrid",
 		I,
 		F
-	], T = () => [
+	], w = () => [
 		"auto",
 		{ span: [
 			"full",
@@ -8490,19 +8490,19 @@ var fe = (e, t) => {
 		tt,
 		I,
 		F
-	], E = () => [
+	], T = () => [
 		tt,
 		"auto",
 		I,
 		F
-	], ne = () => [
+	], re = () => [
 		"auto",
 		"min",
 		"max",
 		"fr",
 		I,
 		F
-	], re = () => [
+	], ie = () => [
 		"start",
 		"end",
 		"center",
@@ -8513,14 +8513,14 @@ var fe = (e, t) => {
 		"baseline",
 		"center-safe",
 		"end-safe"
-	], ie = () => [
+	], ae = () => [
 		"start",
 		"end",
 		"center",
 		"stretch",
 		"center-safe",
 		"end-safe"
-	], D = () => ["auto", ...C()], ae = () => [
+	], E = () => ["auto", ...C()], D = () => [
 		et,
 		"auto",
 		"full",
@@ -8805,23 +8805,23 @@ var fe = (e, t) => {
 				"relative",
 				"sticky"
 			],
-			inset: [{ inset: w() }],
-			"inset-x": [{ "inset-x": w() }],
-			"inset-y": [{ "inset-y": w() }],
+			inset: [{ inset: te() }],
+			"inset-x": [{ "inset-x": te() }],
+			"inset-y": [{ "inset-y": te() }],
 			start: [{
-				"inset-s": w(),
-				start: w()
+				"inset-s": te(),
+				start: te()
 			}],
 			end: [{
-				"inset-e": w(),
-				end: w()
+				"inset-e": te(),
+				end: te()
 			}],
-			"inset-bs": [{ "inset-bs": w() }],
-			"inset-be": [{ "inset-be": w() }],
-			top: [{ top: w() }],
-			right: [{ right: w() }],
-			bottom: [{ bottom: w() }],
-			left: [{ left: w() }],
+			"inset-bs": [{ "inset-bs": te() }],
+			"inset-be": [{ "inset-be": te() }],
+			top: [{ top: te() }],
+			right: [{ right: te() }],
+			bottom: [{ bottom: te() }],
+			left: [{ left: te() }],
 			visibility: [
 				"visible",
 				"invisible",
@@ -8879,14 +8879,14 @@ var fe = (e, t) => {
 				I,
 				F
 			] }],
-			"grid-cols": [{ "grid-cols": te() }],
-			"col-start-end": [{ col: T() }],
-			"col-start": [{ "col-start": E() }],
-			"col-end": [{ "col-end": E() }],
-			"grid-rows": [{ "grid-rows": te() }],
-			"row-start-end": [{ row: T() }],
-			"row-start": [{ "row-start": E() }],
-			"row-end": [{ "row-end": E() }],
+			"grid-cols": [{ "grid-cols": ne() }],
+			"col-start-end": [{ col: w() }],
+			"col-start": [{ "col-start": T() }],
+			"col-end": [{ "col-end": T() }],
+			"grid-rows": [{ "grid-rows": ne() }],
+			"row-start-end": [{ row: w() }],
+			"row-start": [{ "row-start": T() }],
+			"row-end": [{ "row-end": T() }],
 			"grid-flow": [{ "grid-flow": [
 				"row",
 				"col",
@@ -8894,24 +8894,24 @@ var fe = (e, t) => {
 				"row-dense",
 				"col-dense"
 			] }],
-			"auto-cols": [{ "auto-cols": ne() }],
-			"auto-rows": [{ "auto-rows": ne() }],
+			"auto-cols": [{ "auto-cols": re() }],
+			"auto-rows": [{ "auto-rows": re() }],
 			gap: [{ gap: C() }],
 			"gap-x": [{ "gap-x": C() }],
 			"gap-y": [{ "gap-y": C() }],
-			"justify-content": [{ justify: [...re(), "normal"] }],
-			"justify-items": [{ "justify-items": [...ie(), "normal"] }],
-			"justify-self": [{ "justify-self": ["auto", ...ie()] }],
-			"align-content": [{ content: ["normal", ...re()] }],
-			"align-items": [{ items: [...ie(), { baseline: ["", "last"] }] }],
+			"justify-content": [{ justify: [...ie(), "normal"] }],
+			"justify-items": [{ "justify-items": [...ae(), "normal"] }],
+			"justify-self": [{ "justify-self": ["auto", ...ae()] }],
+			"align-content": [{ content: ["normal", ...ie()] }],
+			"align-items": [{ items: [...ae(), { baseline: ["", "last"] }] }],
 			"align-self": [{ self: [
 				"auto",
-				...ie(),
+				...ae(),
 				{ baseline: ["", "last"] }
 			] }],
-			"place-content": [{ "place-content": re() }],
-			"place-items": [{ "place-items": [...ie(), "baseline"] }],
-			"place-self": [{ "place-self": ["auto", ...ie()] }],
+			"place-content": [{ "place-content": ie() }],
+			"place-items": [{ "place-items": [...ae(), "baseline"] }],
+			"place-self": [{ "place-self": ["auto", ...ae()] }],
 			p: [{ p: C() }],
 			px: [{ px: C() }],
 			py: [{ py: C() }],
@@ -8923,22 +8923,22 @@ var fe = (e, t) => {
 			pr: [{ pr: C() }],
 			pb: [{ pb: C() }],
 			pl: [{ pl: C() }],
-			m: [{ m: D() }],
-			mx: [{ mx: D() }],
-			my: [{ my: D() }],
-			ms: [{ ms: D() }],
-			me: [{ me: D() }],
-			mbs: [{ mbs: D() }],
-			mbe: [{ mbe: D() }],
-			mt: [{ mt: D() }],
-			mr: [{ mr: D() }],
-			mb: [{ mb: D() }],
-			ml: [{ ml: D() }],
+			m: [{ m: E() }],
+			mx: [{ mx: E() }],
+			my: [{ my: E() }],
+			ms: [{ ms: E() }],
+			me: [{ me: E() }],
+			mbs: [{ mbs: E() }],
+			mbe: [{ mbe: E() }],
+			mt: [{ mt: E() }],
+			mr: [{ mr: E() }],
+			mb: [{ mb: E() }],
+			ml: [{ ml: E() }],
 			"space-x": [{ "space-x": C() }],
 			"space-x-reverse": ["space-x-reverse"],
 			"space-y": [{ "space-y": C() }],
 			"space-y-reverse": ["space-y-reverse"],
-			size: [{ size: ae() }],
+			size: [{ size: D() }],
 			"inline-size": [{ inline: ["auto", ...oe()] }],
 			"min-inline-size": [{ "min-inline": ["auto", ...oe()] }],
 			"max-inline-size": [{ "max-inline": ["none", ...oe()] }],
@@ -8948,13 +8948,13 @@ var fe = (e, t) => {
 			w: [{ w: [
 				s,
 				"screen",
-				...ae()
+				...D()
 			] }],
 			"min-w": [{ "min-w": [
 				s,
 				"screen",
 				"none",
-				...ae()
+				...D()
 			] }],
 			"max-w": [{ "max-w": [
 				s,
@@ -8962,23 +8962,23 @@ var fe = (e, t) => {
 				"none",
 				"prose",
 				{ screen: [o] },
-				...ae()
+				...D()
 			] }],
 			h: [{ h: [
 				"screen",
 				"lh",
-				...ae()
+				...D()
 			] }],
 			"min-h": [{ "min-h": [
 				"screen",
 				"lh",
 				"none",
-				...ae()
+				...D()
 			] }],
 			"max-h": [{ "max-h": [
 				"screen",
 				"lh",
-				...ae()
+				...D()
 			] }],
 			"font-size": [{ text: [
 				"base",
@@ -12410,7 +12410,7 @@ function zn(e) {
 }
 //#endregion
 //#region lib/validation-bridge.ts
-var Bn = "matraix-validation", Vn = "http://127.0.0.1:8766", Hn = "matraix-validation-command", Un = "matraix-validation-state";
+var Bn = "matraix-validation", Vn = typeof window > "u" ? "http://127.0.0.1:8766" : window.location.origin, Hn = "matraix-validation-command", Un = "matraix-validation-state";
 function Wn(e) {
 	return !!(e && typeof e == "object" && !Array.isArray(e));
 }
@@ -12684,7 +12684,7 @@ var xr = {
 	agent: {
 		label: "Agent run",
 		shortLabel: "Agent",
-		Icon: re
+		Icon: ie
 	}
 }, Sr = { name: "home" }, Cr = new Intl.DateTimeFormat(void 0, {
 	month: "short",
@@ -12740,7 +12740,7 @@ function Pr({ status: e, label: t }) {
 	return e === "complete" ? /* @__PURE__ */ (0, L.jsxs)("span", {
 		className: "status-pill status-complete",
 		children: [
-			/* @__PURE__ */ (0, L.jsx)(ie, {
+			/* @__PURE__ */ (0, L.jsx)(ae, {
 				size: 12,
 				strokeWidth: 3
 			}),
@@ -12844,7 +12844,7 @@ function Lr({ survey: e, history: t, onHuman: n, onAgent: r, onHistory: i, agent
 							})
 						}),
 						/* @__PURE__ */ (0, L.jsx)(Pr, { status: c }),
-						/* @__PURE__ */ (0, L.jsx)(D, {
+						/* @__PURE__ */ (0, L.jsx)(E, {
 							size: 17,
 							className: "text-slate-400"
 						})
@@ -12861,7 +12861,7 @@ function Lr({ survey: e, history: t, onHuman: n, onAgent: r, onHistory: i, agent
 							children: a ? /* @__PURE__ */ (0, L.jsx)(k, {
 								size: 18,
 								className: "animate-spin"
-							}) : /* @__PURE__ */ (0, L.jsx)(re, { size: 18 })
+							}) : /* @__PURE__ */ (0, L.jsx)(ie, { size: 18 })
 						}),
 						/* @__PURE__ */ (0, L.jsx)("span", {
 							className: "min-w-0 flex-1 text-left",
@@ -12874,7 +12874,7 @@ function Lr({ survey: e, history: t, onHuman: n, onAgent: r, onHistory: i, agent
 							status: a || l ? "in-progress" : u.length ? "complete" : "not-started",
 							label: a ? "Running" : u.length ? `${u.length} saved` : void 0
 						}),
-						/* @__PURE__ */ (0, L.jsx)(D, {
+						/* @__PURE__ */ (0, L.jsx)(E, {
 							size: 17,
 							className: "text-slate-400"
 						})
@@ -12889,7 +12889,7 @@ function Lr({ survey: e, history: t, onHuman: n, onAgent: r, onHistory: i, agent
 				children: [
 					/* @__PURE__ */ (0, L.jsx)(A, { size: 17 }),
 					d.length ? `View convergence - ${d.length} ${d.length === 1 ? "run" : "runs"}` : u.length && !s?.completedAt ? "Complete the Human benchmark to compare" : s?.completedAt ? "Complete an Agent run to compare" : "Complete both records to compare",
-					f && /* @__PURE__ */ (0, L.jsx)(ne, {
+					f && /* @__PURE__ */ (0, L.jsx)(re, {
 						size: 16,
 						className: "ml-auto"
 					})
@@ -13070,7 +13070,7 @@ function zr({ survey: e, actor: t, run: n, agentRun: r, onSaveAnswer: i, onCompl
 							onClick: () => l((e) => Math.max(0, e - 1)),
 							disabled: c === 0,
 							className: "secondary-button focus-ring",
-							children: [/* @__PURE__ */ (0, L.jsx)(E, { size: 17 }), " Previous"]
+							children: [/* @__PURE__ */ (0, L.jsx)(T, { size: 17 }), " Previous"]
 						}), /* @__PURE__ */ (0, L.jsx)("button", {
 							type: "button",
 							onClick: o,
@@ -13086,7 +13086,7 @@ function zr({ survey: e, actor: t, run: n, agentRun: r, onSaveAnswer: i, onCompl
 						children: [
 							m ? "Finish this run" : "Next",
 							" ",
-							/* @__PURE__ */ (0, L.jsx)(ne, { size: 17 })
+							/* @__PURE__ */ (0, L.jsx)(re, { size: 17 })
 						]
 					})]
 				}),
@@ -13312,9 +13312,9 @@ function Wr({ survey: e, actor: t, run: n, agentRun: r, hasCompletedHuman: i, co
 						onClick: o,
 						className: "result-primary-button mt-6 inline-flex h-12 items-center gap-2 rounded-xl bg-white px-5 text-sm font-black text-slate-950 transition hover:-translate-y-0.5 sm:ml-8 sm:mt-0 focus-ring",
 						children: [
-							f && i ? /* @__PURE__ */ (0, L.jsx)(oe, { size: 18 }) : f ? /* @__PURE__ */ (0, L.jsx)(j, { size: 18 }) : a ? /* @__PURE__ */ (0, L.jsx)(A, { size: 18 }) : /* @__PURE__ */ (0, L.jsx)(re, { size: 18 }),
+							f && i ? /* @__PURE__ */ (0, L.jsx)(oe, { size: 18 }) : f ? /* @__PURE__ */ (0, L.jsx)(j, { size: 18 }) : a ? /* @__PURE__ */ (0, L.jsx)(A, { size: 18 }) : /* @__PURE__ */ (0, L.jsx)(ie, { size: 18 }),
 							f ? i ? "Compare this run" : "Set Human benchmark" : a ? "View convergence" : "Start Agent run",
-							/* @__PURE__ */ (0, L.jsx)(ne, { size: 17 })
+							/* @__PURE__ */ (0, L.jsx)(re, { size: 17 })
 						]
 					})]
 				}),
@@ -13502,7 +13502,7 @@ function Kr({ survey: e, human: t, agentRun: n, onResult: r, onHistory: i, onNew
 					}), s.differences.length === 0 ? /* @__PURE__ */ (0, L.jsxs)("div", {
 						className: "empty-match",
 						children: [
-							/* @__PURE__ */ (0, L.jsx)(ae, {
+							/* @__PURE__ */ (0, L.jsx)(D, {
 								size: 34,
 								style: { color: e.color }
 							}),
@@ -13535,7 +13535,7 @@ function Kr({ survey: e, human: t, agentRun: n, onResult: r, onHistory: i, onNew
 									}), /* @__PURE__ */ (0, L.jsxs)("div", {
 										className: "answer-quote persona-quote",
 										children: [/* @__PURE__ */ (0, L.jsxs)("span", { children: [
-											/* @__PURE__ */ (0, L.jsx)(re, { size: 14 }),
+											/* @__PURE__ */ (0, L.jsx)(ie, { size: 14 }),
 											" Agent run ",
 											n.sequence
 										] }), /* @__PURE__ */ (0, L.jsx)("p", { children: e.personaAnswer })]
@@ -13591,7 +13591,7 @@ function Kr({ survey: e, human: t, agentRun: n, onResult: r, onHistory: i, onNew
 							type: "button",
 							onClick: () => r("agent"),
 							className: "secondary-button focus-ring",
-							children: [/* @__PURE__ */ (0, L.jsx)(re, { size: 16 }), " Agent result"]
+							children: [/* @__PURE__ */ (0, L.jsx)(ie, { size: 16 }), " Agent result"]
 						}),
 						/* @__PURE__ */ (0, L.jsxs)("button", {
 							type: "button",
@@ -13641,7 +13641,7 @@ function qr({ points: e, survey: t }) {
 					}),
 					className: "chart-pan-button focus-ring",
 					"aria-label": "Pan chart left",
-					children: [/* @__PURE__ */ (0, L.jsx)(E, { size: 15 }), " Left"]
+					children: [/* @__PURE__ */ (0, L.jsx)(T, { size: 15 }), " Left"]
 				}), /* @__PURE__ */ (0, L.jsxs)("button", {
 					type: "button",
 					onClick: () => n.current?.scrollBy({
@@ -13650,7 +13650,7 @@ function qr({ points: e, survey: t }) {
 					}),
 					className: "chart-pan-button focus-ring",
 					"aria-label": "Pan chart right",
-					children: ["Right ", /* @__PURE__ */ (0, L.jsx)(ne, { size: 15 })]
+					children: ["Right ", /* @__PURE__ */ (0, L.jsx)(re, { size: 15 })]
 				})]
 			}),
 			/* @__PURE__ */ (0, L.jsx)("div", {
@@ -14047,7 +14047,7 @@ function Yr({ onHome: e }) {
 					type: "button",
 					onClick: e,
 					className: "secondary-button focus-ring",
-					children: [/* @__PURE__ */ (0, L.jsx)(E, { size: 16 }), " All surveys"]
+					children: [/* @__PURE__ */ (0, L.jsx)(T, { size: 16 }), " All surveys"]
 				}),
 				/* @__PURE__ */ (0, L.jsx)("p", {
 					className: "section-kicker mt-10",
@@ -14070,7 +14070,7 @@ function Yr({ onHome: e }) {
 					href: "https://github.com/SillyBigTypeIndicator/SBTI",
 					target: "_blank",
 					rel: "noreferrer",
-					children: ["View the source repository ", /* @__PURE__ */ (0, L.jsx)(ne, { size: 15 })]
+					children: ["View the source repository ", /* @__PURE__ */ (0, L.jsx)(re, { size: 15 })]
 				}),
 				/* @__PURE__ */ (0, L.jsxs)("div", {
 					className: "mt-10 rounded-2xl bg-slate-950 p-6 text-xs leading-6 text-slate-300 sm:p-8",
@@ -14116,7 +14116,7 @@ function Zr({ hosted: e = !1 }) {
 	(0, S.useEffect)(() => {
 		h.current = t;
 	}, [t]);
-	let w = (0, S.useEffectEvent)(async () => {
+	let te = (0, S.useEffectEvent)(async () => {
 		let e = g.current;
 		if (!e) return;
 		if (y.current) {
@@ -14197,7 +14197,7 @@ function Zr({ hosted: e = !1 }) {
 		if (!a || !g.current) return;
 		let e = ur(t);
 		if (!(e === ur(_.current) || e === x.current)) return v.current !== void 0 && window.clearTimeout(v.current), v.current = window.setTimeout(() => {
-			v.current = void 0, w();
+			v.current = void 0, te();
 		}, 300), () => {
 			v.current !== void 0 && (window.clearTimeout(v.current), v.current = void 0);
 		};
@@ -14206,27 +14206,27 @@ function Zr({ hosted: e = !1 }) {
 		a,
 		p
 	]);
-	let te = Nr(t, r), T = "surveyId" in r ? Jt[r.surveyId] : void 0;
-	function E(e, t) {
+	let ne = Nr(t, r), w = "surveyId" in r ? Jt[r.surveyId] : void 0;
+	function T(e, t) {
 		n((n) => ({
 			...n,
 			[e]: t(jn(n, e))
 		}));
 	}
-	function ne() {
+	function re() {
 		i(Sr), window.scrollTo({
 			top: 0,
 			behavior: "smooth"
 		});
 	}
-	function re() {
+	function ie() {
 		let e = g.current?.personaAgent;
 		return e ? { ...e } : (u({
 			kind: "error",
 			message: "active persona identity is unavailable - reload Validation before starting a run."
 		}), null);
 	}
-	async function ie() {
+	async function ae() {
 		try {
 			let e = await or(), r = g.current;
 			if (r && e.contextId !== r.contextId) return g.current = e, _.current = e.store, h.current = e.store, x.current = null, n(e.store), i(Sr), u({
@@ -14242,7 +14242,7 @@ function Zr({ hosted: e = !1 }) {
 			}), null;
 		}
 	}
-	function D(e) {
+	function E(e) {
 		let n = jn(t, e);
 		if (n.human?.completedAt) i({
 			name: "result",
@@ -14257,7 +14257,7 @@ function Zr({ hosted: e = !1 }) {
 			runId: n.human.id
 		});
 		else {
-			let t = re();
+			let t = ie();
 			if (!t) return;
 			let n = {
 				id: Tr("human"),
@@ -14265,7 +14265,7 @@ function Zr({ hosted: e = !1 }) {
 				startedAt: (/* @__PURE__ */ new Date()).toISOString(),
 				personaAgent: t
 			};
-			E(e, (e) => ({
+			T(e, (e) => ({
 				...e,
 				human: n
 			})), i({
@@ -14277,14 +14277,14 @@ function Zr({ hosted: e = !1 }) {
 		}
 		window.scrollTo({ top: 0 });
 	}
-	async function ae(e) {
+	async function D(e) {
 		if (!ee.current) {
 			ee.current = !0, f(e), u({
 				kind: "saving",
 				message: `running ${Jt[e].shortTitle} with a clean Agent context...`
 			});
 			try {
-				let t = await ie();
+				let t = await ae();
 				if (!t) return;
 				let r = Jt[e], a = await br(r, t.contextId, t.personaRevision);
 				if (!C.current) return;
@@ -14346,7 +14346,7 @@ function Zr({ hosted: e = !1 }) {
 				clearedAnswers: n.size ? [...n] : void 0
 			};
 		};
-		E(e, (e) => t === "human" ? !e.human || e.human.id !== n || e.human.completedAt ? e : {
+		T(e, (e) => t === "human" ? !e.human || e.human.id !== n || e.human.completedAt ? e : {
 			...e,
 			human: {
 				...e.human,
@@ -14364,7 +14364,7 @@ function Zr({ hosted: e = !1 }) {
 		let a = Jt[e], o = jn(t, e), s = n === "human" ? o.human : Pn(o, r);
 		if (!s || a.questions.some((e) => !s.answers[e.id])) return;
 		let c = (/* @__PURE__ */ new Date()).toISOString();
-		E(e, (e) => n === "human" ? e.human?.id === r ? Fn({
+		T(e, (e) => n === "human" ? e.human?.id === r ? Fn({
 			...e,
 			human: {
 				...e.human,
@@ -14389,7 +14389,7 @@ function Zr({ hosted: e = !1 }) {
 	function O(e) {
 		let r = jn(t, e).agentRuns.length > 0 ? "Reset this survey? This removes its Human benchmark and every Agent run from disk. Other surveys are not affected." : "Retake this Human benchmark? Its current answers will be replaced.";
 		if (!window.confirm(r)) return;
-		let a = re();
+		let a = ie();
 		if (!a) return;
 		let o = {
 			id: Tr("human"),
@@ -14414,28 +14414,28 @@ function Zr({ hosted: e = !1 }) {
 	}
 	let k = (0, S.useEffectEvent)((e) => {
 		if (e.name === "home") {
-			ne();
+			re();
 			return;
 		}
 		if (!e.surveyId) return;
 		if (e.name === "human") {
-			D(e.surveyId);
+			E(e.surveyId);
 			return;
 		}
 		if (e.name === "agent") {
-			ae(e.surveyId);
+			D(e.surveyId);
 			return;
 		}
 		let n = e.surveyId, r = jn(t, n);
 		(r.human?.completedAt ? Mn(r, r.human.id) : []).length ? (i({
 			name: "history",
 			surveyId: n
-		}), window.scrollTo({ top: 0 })) : r.human?.completedAt ? ae(n) : D(n);
+		}), window.scrollTo({ top: 0 })) : r.human?.completedAt ? D(n) : E(n);
 	});
 	(0, S.useEffect)(() => {
 		if (!s || !a) return;
 		function n() {
-			let n = Xn(t, te);
+			let n = Xn(t, ne);
 			if (e) {
 				window.dispatchEvent(new CustomEvent(Un, { detail: n }));
 				return;
@@ -14459,7 +14459,7 @@ function Zr({ hosted: e = !1 }) {
 			e instanceof CustomEvent && r(e.detail);
 		}
 		function o(e) {
-			e.origin !== "http://127.0.0.1:8766" || e.source !== window.parent || r(e.data);
+			e.origin !== Vn || e.source !== window.parent || r(e.data);
 		}
 		return e ? window.addEventListener(Hn, i) : window.addEventListener("message", o), n(), () => {
 			e ? window.removeEventListener(Hn, i) : window.removeEventListener("message", o);
@@ -14469,13 +14469,13 @@ function Zr({ hosted: e = !1 }) {
 		e,
 		a,
 		t,
-		te
+		ne
 	]);
 	function ce() {
 		return /* @__PURE__ */ (0, L.jsx)(Rr, {
 			store: t,
-			onHuman: D,
-			onAgent: ae,
+			onHuman: E,
+			onAgent: D,
 			onHistory: (e) => i({
 				name: "history",
 				surveyId: e
@@ -14487,19 +14487,19 @@ function Zr({ hosted: e = !1 }) {
 	function le() {
 		if (!a) return /* @__PURE__ */ (0, L.jsx)("div", { className: "validation-loading min-h-screen" });
 		if (r.name === "home") return ce();
-		if (r.name === "license") return /* @__PURE__ */ (0, L.jsx)(Yr, { onHome: ne });
-		if (!T) return null;
-		let e = jn(t, T.id);
+		if (r.name === "license") return /* @__PURE__ */ (0, L.jsx)(Yr, { onHome: re });
+		if (!w) return null;
+		let e = jn(t, w.id);
 		if (r.name === "quiz") {
 			let t = r.actor === "human" ? e.human : Pn(e, r.runId);
 			return t ? /* @__PURE__ */ (0, L.jsx)(zr, {
-				survey: T,
+				survey: w,
 				actor: r.actor,
 				run: t,
 				agentRun: r.actor === "agent" ? t : void 0,
 				onSaveAnswer: (e, t) => oe(r.surveyId, r.actor, r.runId, e, t),
 				onComplete: () => se(r.surveyId, r.actor, r.runId),
-				onHome: ne
+				onHome: re
 			}, r.runId) : ce();
 		}
 		if (r.name === "result") {
@@ -14507,7 +14507,7 @@ function Zr({ hosted: e = !1 }) {
 			if (!t?.completedAt) return ce();
 			let n = !!(e.human?.completedAt && (r.actor === "human" || Ar(e.human.personaAgent, t.personaAgent))), a = n ? Mn(e, e.human.id).length : 0;
 			return /* @__PURE__ */ (0, L.jsx)(Wr, {
-				survey: T,
+				survey: w,
 				actor: r.actor,
 				run: t,
 				agentRun: r.actor === "agent" ? t : void 0,
@@ -14517,23 +14517,23 @@ function Zr({ hosted: e = !1 }) {
 					name: "comparison",
 					surveyId: r.surveyId,
 					runId: r.runId
-				}) : D(r.surveyId) : a ? i({
+				}) : E(r.surveyId) : a ? i({
 					name: "history",
 					surveyId: r.surveyId
-				}) : void ae(r.surveyId),
+				}) : void D(r.surveyId),
 				onHistory: () => i({
 					name: "history",
 					surveyId: r.surveyId
 				}),
-				onNewAgent: () => void ae(r.surveyId),
+				onNewAgent: () => void D(r.surveyId),
 				onHumanChange: () => O(r.surveyId),
-				onHome: ne
+				onHome: re
 			});
 		}
 		if (r.name === "comparison") {
 			let t = Pn(e, r.runId);
 			return !e.human?.completedAt || !t?.completedAt || t.benchmarkId !== e.human.id || !Ar(e.human.personaAgent, t.personaAgent) ? ce() : /* @__PURE__ */ (0, L.jsx)(Kr, {
-				survey: T,
+				survey: w,
 				human: e.human,
 				agentRun: t,
 				onResult: (n) => i({
@@ -14546,29 +14546,29 @@ function Zr({ hosted: e = !1 }) {
 					name: "history",
 					surveyId: r.surveyId
 				}),
-				onNewAgent: () => void ae(r.surveyId),
-				onHome: ne
+				onNewAgent: () => void D(r.surveyId),
+				onHome: re
 			});
 		}
 		return !e.human?.completedAt || Mn(e, e.human.id).length === 0 ? ce() : /* @__PURE__ */ (0, L.jsx)(Jr, {
-			survey: T,
+			survey: w,
 			history: e,
 			onComparison: (e) => i({
 				name: "comparison",
 				surveyId: r.surveyId,
 				runId: e
 			}),
-			onNewAgent: () => void ae(r.surveyId),
+			onNewAgent: () => void D(r.surveyId),
 			onHumanResult: () => i({
 				name: "result",
 				surveyId: r.surveyId,
 				actor: "human",
 				runId: e.human.id
 			}),
-			onHome: ne
+			onHome: re
 		});
 	}
-	let ue = a && te.name !== "license" && l !== null;
+	let ue = a && ne.name !== "license" && l !== null;
 	return /* @__PURE__ */ (0, L.jsxs)("div", {
 		className: [s ? "validation-embedded" : "", ue ? "validation-save-visible" : ""].filter(Boolean).join(" ") || void 0,
 		children: [le(), ue && /* @__PURE__ */ (0, L.jsx)(Xr, { notice: l })]
