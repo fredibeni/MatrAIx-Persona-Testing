@@ -359,6 +359,203 @@ assert.deepEqual(
 );
 assert.match(
   quizViewSource,
+  /<section className="question-card" data-question-id=\{question\.id\}>\s*<div className="question-heading">[\s\S]*?<h1[\s\S]*?className="validation-question-title outline-none"[\s\S]*?<fieldset\s*className=\{`validation-answer-list/,
+  'validation questions must reuse the Update persona card, heading, and answer-list structure',
+);
+assert.doesNotMatch(
+  quizViewSource,
+  /(?:mt-8|space-y-3)/,
+  'validation answer spacing must come from the shared question layout instead of Tailwind margins',
+);
+const updateQuestionCard = cssDeclarations(
+  updatePersonaStylesSource,
+  '.question-card',
+);
+const updateQuestionDataCard = cssDeclarations(
+  updatePersonaStylesSource,
+  '.question-card[data-question-id]',
+);
+const validationQuestionDataCard = cssDeclarations(
+  validationStylesSource,
+  '.question-card[data-question-id]',
+);
+const embeddedValidationQuestionCard = cssDeclarations(
+  validationStylesSource,
+  '.validation-embedded .question-card',
+);
+assert.deepEqual(
+  {
+    padding: validationQuestionDataCard.padding,
+    border: validationQuestionDataCard.border,
+    background: validationQuestionDataCard.background,
+    shadow: validationQuestionDataCard['box-shadow'],
+  },
+  {
+    padding: updateQuestionCard.padding,
+    border: updateQuestionDataCard.border,
+    background: updateQuestionDataCard.background,
+    shadow: updateQuestionDataCard['box-shadow'],
+  },
+  'validation question cards must match the Update persona inset and unboxed surface',
+);
+assert.equal(
+  embeddedValidationQuestionCard.padding,
+  updateQuestionCard.padding,
+  'embedded validation question cards must retain the Update persona inset',
+);
+assert.equal(
+  embeddedValidationQuestionCard['border-radius'],
+  '18px',
+  'embedded validation question cards must retain the Update persona radius',
+);
+const updateQuestionTitle = cssDeclarations(
+  updatePersonaStylesSource,
+  '.question-title',
+);
+const validationQuestionTitle = cssDeclarations(
+  validationStylesSource,
+  '.validation-question-title',
+);
+for (const property of ['margin', 'font-size', 'font-weight', 'line-height']) {
+  assert.equal(
+    validationQuestionTitle[property],
+    updateQuestionTitle[property],
+    `validation question title ${property} must match Update persona`,
+  );
+}
+assert.equal(
+  validationQuestionTitle['max-width'],
+  updateQuestionTitle['max-width'],
+  'validation question titles must use the same available width as Update persona',
+);
+assert.equal(
+  cssDeclarations(
+    validationStylesSource,
+    '.validation-embedded .validation-question-title',
+  )['font-size'],
+  '20px !important',
+  'the embedded theme must not shrink validation question titles',
+);
+assert.equal(
+  cssDeclarations(validationStylesSource, '.question-heading')[
+    'margin-bottom'
+  ],
+  cssDeclarations(updatePersonaStylesSource, '.question-heading')[
+    'margin-bottom'
+  ],
+  'validation question headings must use the Update persona answer separation',
+);
+assert.deepEqual(
+  cssDeclarations(
+    validationStylesSource,
+    '.validation-answer-list:not(.scale-options)',
+  ),
+  cssDeclarations(updatePersonaStylesSource, '.choice-list'),
+  'categorical validation answers must use the Update persona grid spacing',
+);
+const updateChoiceOption = cssDeclarations(
+  updatePersonaStylesSource,
+  '.choice-option',
+);
+const validationAnswerOption = cssDeclarations(
+  validationStylesSource,
+  '.answer-option',
+);
+for (const property of [
+  'display',
+  'align-items',
+  'gap',
+  'min-height',
+  'padding',
+  'border',
+  'border-radius',
+  'font-size',
+]) {
+  assert.equal(
+    validationAnswerOption[property],
+    updateChoiceOption[property],
+    `validation answer option ${property} must match Update persona`,
+  );
+}
+assert.deepEqual(
+  {
+    width: cssDeclarations(validationStylesSource, '.option-radio').width,
+    height: cssDeclarations(validationStylesSource, '.option-radio').height,
+    border: cssDeclarations(validationStylesSource, '.option-radio').border,
+    background: cssDeclarations(validationStylesSource, '.option-radio')
+      .background,
+  },
+  {
+    width: '13px',
+    height: '13px',
+    border: '1px solid #94a3b8',
+    background: 'transparent',
+  },
+  'validation radio markers must match the Update persona control size and outline treatment',
+);
+assert.equal(
+  cssDeclarations(validationStylesSource, '.scale-options').gap,
+  cssDeclarations(updatePersonaStylesSource, '.likert').gap,
+  'validation scale questions must use the Update persona option spacing',
+);
+const validationScaleOption = cssDeclarations(
+  validationStylesSource,
+  '.scale-option',
+);
+const updateLikertOption = cssDeclarations(
+  updatePersonaStylesSource,
+  '.likert-option label',
+);
+for (const property of [
+  'display',
+  'grid-template-rows',
+  'align-items',
+  'justify-items',
+  'min-height',
+  'padding',
+  'border-radius',
+  'font-size',
+  'line-height',
+  'text-align',
+]) {
+  assert.equal(
+    validationScaleOption[property],
+    updateLikertOption[property],
+    `validation scale option ${property} must match Update persona`,
+  );
+}
+const validationScaleKey = cssDeclarations(
+  validationStylesSource,
+  '.scale-option .option-key',
+);
+const updateLikertKey = cssDeclarations(
+  updatePersonaStylesSource,
+  '.likert-option label strong',
+);
+for (const property of ['display', 'margin', 'font-size', 'line-height']) {
+  assert.equal(
+    validationScaleKey[property],
+    updateLikertKey[property],
+    `validation scale number ${property} must match Update persona`,
+  );
+}
+assert.equal(
+  validationScaleKey['font-weight'],
+  '400',
+  'validation scale numbers must use the effective Update persona weight',
+);
+assert.match(
+  validationStylesSource,
+  /@media \(max-width: 920px\) \{[\s\S]*?\.scale-option \{\s*display: flex;\s*min-height: 42px;\s*align-items: center;\s*justify-content: flex-start;\s*gap: 9px;\s*padding: 9px 12px;\s*text-align: left;[\s\S]*?\.scale-option > span:nth-child\(2\) \{\s*align-self: auto;\s*text-align: left;/,
+  'validation scale questions must match the Update persona mobile layout',
+);
+assert.match(
+  validationStylesSource,
+  /@media \(max-width: 920px\) \{[\s\S]*?\.validation-embedded \.scale-option \{\s*display: flex;\s*min-height: 42px;\s*align-items: center;\s*justify-content: flex-start;\s*gap: 9px;\s*padding: 9px 12px;\s*text-align: left;[\s\S]*?\.validation-embedded \.scale-option > span:nth-child\(2\) \{\s*align-self: auto;\s*text-align: left;/,
+  'embedded validation scale questions must retain the Update persona mobile layout',
+);
+assert.match(
+  quizViewSource,
   /onClick=\{\(\) => setIndex\(\(value\) => Math\.max\(0, value - 1\)\)\}[\s\S]*?<ArrowLeft[\s\S]*?Previous/,
   'mid-survey question pages must retain Previous navigation',
 );

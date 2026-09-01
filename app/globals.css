@@ -466,10 +466,22 @@ button:disabled {
 }
 .question-card[data-question-id] {
   border: 0;
-  border-radius: 0;
+  border-radius: 18px;
   background: transparent;
-  padding: 0;
+  padding: 20px;
   box-shadow: none;
+}
+.question-heading {
+  margin-bottom: 14px;
+}
+.validation-answer-list {
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+.validation-answer-list:not(.scale-options) {
+  display: grid;
+  gap: 8px;
 }
 .question-bubble {
   display: grid;
@@ -484,17 +496,17 @@ button:disabled {
 .answer-option {
   display: flex;
   width: 100%;
-  min-height: 58px;
+  min-height: 43px;
   align-items: center;
-  gap: 0.9rem;
+  gap: 10px;
   border: 0;
-  border-radius: 16px;
+  border-radius: 11px;
   background: var(--secondary);
-  padding: 0.8rem 0.9rem;
+  padding: 10px 12px;
   color: #334155;
-  font-size: 0.94rem;
+  font-size: 15px;
   font-weight: 400;
-  line-height: 1.4;
+  line-height: normal;
   transition:
     transform 140ms ease,
     border-color 140ms ease,
@@ -537,14 +549,23 @@ button:disabled {
 }
 .option-radio {
   position: relative;
-  width: 10px;
-  height: 10px;
-  flex: 0 0 10px;
-  border: 0;
+  width: 13px;
+  height: 13px;
+  flex: 0 0 13px;
+  border: 1px solid #94a3b8;
   border-radius: 50%;
-  background: #94a3b8;
+  background: transparent;
 }
 .answer-selected .option-radio {
+  border-color: var(--survey);
+}
+.option-radio::after {
+  position: absolute;
+  inset: 3px;
+  border-radius: inherit;
+  content: '';
+}
+.answer-selected .option-radio::after {
   background: var(--survey);
 }
 .validation-quiz-context {
@@ -570,10 +591,9 @@ button:disabled {
   font-weight: 400;
 }
 .validation-question-title {
-  max-width: 820px;
   margin: 2px 0 0;
   color: #0f172a;
-  font-size: 0.94rem;
+  font-size: 20px;
   font-weight: 400;
   letter-spacing: 0;
   line-height: 1.45;
@@ -598,21 +618,62 @@ button:disabled {
 .scale-options {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 0.65rem;
+  gap: 7px;
 }
 .scale-option {
-  min-height: 150px;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: 1rem 0.75rem;
+  position: relative;
+  display: grid;
+  grid-template-rows: 20px 1fr;
+  min-height: 66px;
+  align-items: start;
+  justify-items: center;
+  gap: 0;
+  padding: 9px 6px;
+  border-radius: 10px;
+  color: #64748b;
+  font-size: 10px;
+  line-height: 1.25;
   text-align: center;
 }
 .scale-option:hover {
-  transform: translateY(-3px);
+  transform: none;
+}
+.scale-option .option-key {
+  display: block;
+  width: auto;
+  height: auto;
+  margin: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
 }
 .scale-option > span:nth-child(2) {
+  align-self: start;
   text-align: center;
-  font-size: 0.8rem;
+  font-size: 10px;
+  line-height: 1.25;
+}
+
+@media (max-width: 920px) {
+  .scale-options {
+    grid-template-columns: 1fr;
+  }
+  .scale-option {
+    display: flex;
+    min-height: 42px;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 9px;
+    padding: 9px 12px;
+    text-align: left;
+  }
+  .scale-option > span:nth-child(2) {
+    align-self: auto;
+    text-align: left;
+  }
 }
 
 .result-stage,
@@ -997,17 +1058,6 @@ button:disabled {
   .hero-wrap,
   .hero-grid {
     min-height: 720px;
-  }
-  .scale-options {
-    grid-template-columns: 1fr;
-  }
-  .scale-option {
-    min-height: 58px;
-    flex-direction: row;
-    text-align: left;
-  }
-  .scale-option > span:nth-child(2) {
-    text-align: left;
   }
   .result-hero {
     min-height: 380px;
@@ -1762,10 +1812,10 @@ button:disabled {
 .validation-embedded .question-card {
   margin-top: 18px;
   border: 0;
-  border-radius: 0;
+  border-radius: 18px;
   color: var(--validation-ink);
   background: transparent;
-  padding: 0;
+  padding: 20px;
   box-shadow: none;
 }
 
@@ -1780,21 +1830,19 @@ button:disabled {
 
 .validation-embedded .validation-question-title {
   color: var(--validation-ink) !important;
-  font-size: 15px !important;
+  font-size: 20px !important;
   font-weight: 400 !important;
   letter-spacing: 0 !important;
   line-height: 1.45 !important;
 }
 
-.validation-embedded .question-card fieldset {
-  margin-top: 14px !important;
-}
-
 .validation-embedded .answer-option {
+  gap: 10px;
   min-height: 43px;
   padding: 10px 12px;
   font-size: 15px;
   font-weight: 400;
+  line-height: normal;
 }
 
 .validation-embedded .answer-selected {
@@ -1813,12 +1861,13 @@ button:disabled {
 }
 
 .validation-embedded .option-radio {
-  border: 0;
-  background: #71717a;
+  border-color: #71717a;
+  background: transparent;
 }
 
 .validation-embedded .answer-selected .option-radio {
-  background: var(--validation-gold);
+  border-color: var(--validation-gold);
+  background: transparent;
 }
 
 .validation-embedded .answer-selected .option-key {
@@ -1826,8 +1875,24 @@ button:disabled {
 }
 
 .validation-embedded .scale-option {
+  display: grid;
+  gap: 0;
   min-height: 66px;
-  padding: 9px 7px;
+  padding: 9px 6px;
+  border-radius: 10px;
+  color: var(--validation-muted);
+  font-size: 10px;
+  line-height: 1.25;
+  text-align: center;
+}
+
+.validation-embedded .scale-option .option-key,
+.validation-embedded .scale-option.answer-selected .option-key {
+  width: auto;
+  color: var(--validation-ink) !important;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
 }
 
 .validation-embedded .quiz-footer-actions {
@@ -2128,6 +2193,25 @@ button:disabled {
   .validation-embedded .validation-question-result dl {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .validation-embedded .scale-options {
+    grid-template-columns: 1fr;
+  }
+
+  .validation-embedded .scale-option {
+    display: flex;
+    min-height: 42px;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 9px;
+    padding: 9px 12px;
+    text-align: left;
+  }
+
+  .validation-embedded .scale-option > span:nth-child(2) {
+    align-self: auto;
+    text-align: left;
+  }
 }
 
 @media (max-width: 780px) {
@@ -2159,20 +2243,6 @@ button:disabled {
 
   .validation-embedded .validation-experiment-warning {
     grid-column: 1;
-  }
-
-  .validation-embedded .scale-options {
-    grid-template-columns: 1fr;
-  }
-
-  .validation-embedded .scale-option {
-    min-height: 48px;
-    flex-direction: row;
-    text-align: left;
-  }
-
-  .validation-embedded .scale-option > span:nth-child(2) {
-    text-align: left;
   }
 }
 

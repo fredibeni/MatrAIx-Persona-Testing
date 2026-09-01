@@ -13444,45 +13444,44 @@ function Ci({ survey: e, actor: t, run: n, agentRun: r, onSaveAnswer: i, onCompl
 				/* @__PURE__ */ (0, R.jsxs)("section", {
 					className: "question-card",
 					"data-question-id": f.id,
-					children: [
-						f.dimension && /* @__PURE__ */ (0, R.jsx)("p", {
+					children: [/* @__PURE__ */ (0, R.jsx)("div", {
+						className: "question-heading",
+						children: /* @__PURE__ */ (0, R.jsxs)("div", { children: [f.dimension && /* @__PURE__ */ (0, R.jsx)("p", {
 							className: "validation-question-dimension",
 							style: { color: e.ink },
 							children: f.dimension
-						}),
-						/* @__PURE__ */ (0, R.jsx)("h1", {
+						}), /* @__PURE__ */ (0, R.jsx)("h1", {
 							ref: _,
 							tabIndex: -1,
 							className: "validation-question-title outline-none",
 							children: f.prompt
-						}),
-						/* @__PURE__ */ (0, R.jsxs)("fieldset", {
-							className: `mt-8 ${e.kind === "scale" ? "scale-options" : "space-y-3"}`,
-							children: [/* @__PURE__ */ (0, R.jsx)("legend", {
-								className: "sr-only",
-								children: f.prompt
-							}), f.options.map((t) => {
-								let n = p === t.id;
-								return /* @__PURE__ */ (0, R.jsxs)("button", {
-									type: "button",
-									"aria-pressed": n,
-									onClick: () => b(t.id),
-									className: `answer-option focus-ring ${n ? "answer-selected" : ""} ${e.kind === "scale" ? "scale-option" : ""}`,
-									style: n ? di(e) : void 0,
-									children: [e.kind === "scale" ? /* @__PURE__ */ (0, R.jsx)("span", {
-										className: "option-key",
-										children: t.id
-									}) : /* @__PURE__ */ (0, R.jsx)("span", {
-										className: "option-radio",
-										"aria-hidden": "true"
-									}), /* @__PURE__ */ (0, R.jsx)("span", {
-										className: "flex-1 text-left",
-										children: t.label
-									})]
-								}, t.id);
-							})]
-						})
-					]
+						})] })
+					}), /* @__PURE__ */ (0, R.jsxs)("fieldset", {
+						className: `validation-answer-list ${e.kind === "scale" ? "scale-options" : ""}`,
+						children: [/* @__PURE__ */ (0, R.jsx)("legend", {
+							className: "sr-only",
+							children: f.prompt
+						}), f.options.map((t) => {
+							let n = p === t.id;
+							return /* @__PURE__ */ (0, R.jsxs)("button", {
+								type: "button",
+								"aria-pressed": n,
+								onClick: () => b(t.id),
+								className: `answer-option focus-ring ${n ? "answer-selected" : ""} ${e.kind === "scale" ? "scale-option" : ""}`,
+								style: n ? di(e) : void 0,
+								children: [e.kind === "scale" ? /* @__PURE__ */ (0, R.jsx)("span", {
+									className: "option-key",
+									children: t.id
+								}) : /* @__PURE__ */ (0, R.jsx)("span", {
+									className: "option-radio",
+									"aria-hidden": "true"
+								}), /* @__PURE__ */ (0, R.jsx)("span", {
+									className: "flex-1 text-left",
+									children: t.label
+								})]
+							}, t.id);
+						})]
+					})]
 				}),
 				/* @__PURE__ */ (0, R.jsxs)("div", {
 					className: "quiz-footer-actions",

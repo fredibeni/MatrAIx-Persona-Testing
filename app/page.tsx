@@ -687,24 +687,28 @@ function QuizView({
         </div>
 
         <section className="question-card" data-question-id={question.id}>
-          {question.dimension && (
-            <p
-              className="validation-question-dimension"
-              style={{ color: survey.ink }}
-            >
-              {question.dimension}
-            </p>
-          )}
-          <h1
-            ref={questionHeadingRef}
-            tabIndex={-1}
-            className="validation-question-title outline-none"
-          >
-            {question.prompt}
-          </h1>
+          <div className="question-heading">
+            <div>
+              {question.dimension && (
+                <p
+                  className="validation-question-dimension"
+                  style={{ color: survey.ink }}
+                >
+                  {question.dimension}
+                </p>
+              )}
+              <h1
+                ref={questionHeadingRef}
+                tabIndex={-1}
+                className="validation-question-title outline-none"
+              >
+                {question.prompt}
+              </h1>
+            </div>
+          </div>
 
           <fieldset
-            className={`mt-8 ${survey.kind === 'scale' ? 'scale-options' : 'space-y-3'}`}
+            className={`validation-answer-list ${survey.kind === 'scale' ? 'scale-options' : ''}`}
           >
             <legend className="sr-only">{question.prompt}</legend>
             {question.options.map((option) => {
