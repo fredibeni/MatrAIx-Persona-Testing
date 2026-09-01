@@ -1,0 +1,1035 @@
+{
+  "version": 1,
+  "surveys": {
+    "everyday": {
+      "id": "everyday",
+      "title": "Everyday Defaults",
+      "questions": [
+        {
+          "id": "free-saturday",
+          "prompt": "A completely free Saturday appears. What sounds best?",
+          "options": [
+            {
+              "id": "shared-plan",
+              "label": "Text someone and turn it into a shared plan"
+            },
+            {
+              "id": "short-plan",
+              "label": "Make a short plan for the day"
+            },
+            {
+              "id": "follow-mood",
+              "label": "Follow your mood and decide as you go"
+            },
+            {
+              "id": "try-new",
+              "label": "Try a place or activity you have not done before"
+            },
+            {
+              "id": "familiar-comforts",
+              "label": "Stay close to home with familiar comforts"
+            }
+          ]
+        },
+        {
+          "id": "restaurant",
+          "prompt": "How would you choose a restaurant?",
+          "options": [
+            {
+              "id": "known-place",
+              "label": "Pick somewhere familiar where you know what you like"
+            },
+            {
+              "id": "new-cuisine",
+              "label": "Choose a cuisine or place you have never tried"
+            },
+            {
+              "id": "compare-first",
+              "label": "Compare menus, prices, and reviews first"
+            },
+            {
+              "id": "group-choice",
+              "label": "Go wherever the group will enjoy most"
+            },
+            {
+              "id": "nearest-decent",
+              "label": "Choose the nearest decent option when hunger wins"
+            }
+          ]
+        },
+        {
+          "id": "packing",
+          "prompt": "How would you pack for a weekend away?",
+          "options": [
+            {
+              "id": "ask-group",
+              "label": "Ask what everyone else is bringing so the group is covered"
+            },
+            {
+              "id": "comfort-extras",
+              "label": "Pack comfortable favorites and a few reassuring extras"
+            },
+            {
+              "id": "last-minute",
+              "label": "Throw in the basics shortly before leaving"
+            },
+            {
+              "id": "checklist",
+              "label": "Use a checklist and pack ahead of time"
+            },
+            {
+              "id": "unexpected-detour",
+              "label": "Pack for an unexpected detour or adventure"
+            }
+          ]
+        },
+        {
+          "id": "buy-item",
+          "prompt": "You need to buy an everyday item. What do you do?",
+          "options": [
+            {
+              "id": "trusted-judgment",
+              "label": "Ask someone whose judgment you trust"
+            },
+            {
+              "id": "first-that-works",
+              "label": "Buy the first option that clearly does the job"
+            },
+            {
+              "id": "specs-reviews",
+              "label": "Compare specifications, reviews, and prices"
+            },
+            {
+              "id": "known-brand",
+              "label": "Choose a brand or model you already know"
+            },
+            {
+              "id": "newest-option",
+              "label": "Try the newest or most interesting option"
+            }
+          ]
+        },
+        {
+          "id": "after-demanding-day",
+          "prompt": "What sounds best after a demanding day?",
+          "options": [
+            {
+              "id": "change-scenery",
+              "label": "Get a change of scenery or do something different"
+            },
+            {
+              "id": "contact-someone",
+              "label": "Call, message, or meet someone"
+            },
+            {
+              "id": "favorite-routine",
+              "label": "Have your favorite food, show, or routine"
+            },
+            {
+              "id": "prepare-tomorrow",
+              "label": "Tidy up and prepare for tomorrow"
+            },
+            {
+              "id": "whatever-feels-good",
+              "label": "Do whatever sounds good in the moment"
+            }
+          ]
+        }
+      ]
+    },
+    "dials": {
+      "id": "dials",
+      "title": "Personal Dials",
+      "questions": [
+        {
+          "id": "structure",
+          "prompt": "I like to know what I am doing before the day begins.",
+          "options": [
+            {
+              "id": "1",
+              "label": "Not at all like me"
+            },
+            {
+              "id": "2",
+              "label": "A little like me"
+            },
+            {
+              "id": "3",
+              "label": "Somewhat like me"
+            },
+            {
+              "id": "4",
+              "label": "Very much like me"
+            },
+            {
+              "id": "5",
+              "label": "Exactly like me"
+            }
+          ]
+        },
+        {
+          "id": "social-recharge",
+          "prompt": "After a demanding week, spending time with other people usually restores my energy.",
+          "options": [
+            {
+              "id": "1",
+              "label": "Not at all like me"
+            },
+            {
+              "id": "2",
+              "label": "A little like me"
+            },
+            {
+              "id": "3",
+              "label": "Somewhat like me"
+            },
+            {
+              "id": "4",
+              "label": "Very much like me"
+            },
+            {
+              "id": "5",
+              "label": "Exactly like me"
+            }
+          ]
+        },
+        {
+          "id": "novelty",
+          "prompt": "Given a safe choice, I usually prefer a new experience to a dependable favorite.",
+          "options": [
+            {
+              "id": "1",
+              "label": "Not at all like me"
+            },
+            {
+              "id": "2",
+              "label": "A little like me"
+            },
+            {
+              "id": "3",
+              "label": "Somewhat like me"
+            },
+            {
+              "id": "4",
+              "label": "Very much like me"
+            },
+            {
+              "id": "5",
+              "label": "Exactly like me"
+            }
+          ]
+        },
+        {
+          "id": "decision-speed",
+          "prompt": "Once I have enough information, I make decisions quickly.",
+          "options": [
+            {
+              "id": "1",
+              "label": "Not at all like me"
+            },
+            {
+              "id": "2",
+              "label": "A little like me"
+            },
+            {
+              "id": "3",
+              "label": "Somewhat like me"
+            },
+            {
+              "id": "4",
+              "label": "Very much like me"
+            },
+            {
+              "id": "5",
+              "label": "Exactly like me"
+            }
+          ]
+        },
+        {
+          "id": "expressiveness",
+          "prompt": "People can usually tell how I am feeling without asking.",
+          "options": [
+            {
+              "id": "1",
+              "label": "Not at all like me"
+            },
+            {
+              "id": "2",
+              "label": "A little like me"
+            },
+            {
+              "id": "3",
+              "label": "Somewhat like me"
+            },
+            {
+              "id": "4",
+              "label": "Very much like me"
+            },
+            {
+              "id": "5",
+              "label": "Exactly like me"
+            }
+          ]
+        }
+      ]
+    },
+    "plot-twists": {
+      "id": "plot-twists",
+      "title": "Small Plot Twists",
+      "questions": [
+        {
+          "id": "cancelled-plans",
+          "prompt": "Your plans are cancelled an hour before they start. What do you do?",
+          "options": [
+            {
+              "id": "open-space",
+              "label": "Enjoy the open space and see where the day goes"
+            },
+            {
+              "id": "check-change",
+              "label": "Check what changed and compare the available options"
+            },
+            {
+              "id": "reliable-backup",
+              "label": "Switch to a dependable, low-effort backup"
+            },
+            {
+              "id": "ask-everyone",
+              "label": "Ask what everyone now feels like doing"
+            },
+            {
+              "id": "replace-plan",
+              "label": "Suggest a replacement plan immediately"
+            }
+          ]
+        },
+        {
+          "id": "stops-working",
+          "prompt": "Something you need suddenly stops working. What is your first move?",
+          "options": [
+            {
+              "id": "workaround",
+              "label": "Use a different tool or invent a workaround"
+            },
+            {
+              "id": "likely-causes",
+              "label": "Look up likely causes before touching anything"
+            },
+            {
+              "id": "repair-first",
+              "label": "Repair or restart the obvious parts first"
+            },
+            {
+              "id": "ask-expert",
+              "label": "Ask someone experienced to help"
+            },
+            {
+              "id": "make-safe",
+              "label": "Make the situation safe and avoid causing more damage"
+            }
+          ]
+        },
+        {
+          "id": "vague-help",
+          "prompt": "A friend asks for help but describes the problem vaguely. What do you do?",
+          "options": [
+            {
+              "id": "next-step",
+              "label": "Offer one concrete next step"
+            },
+            {
+              "id": "listen-first",
+              "label": "Listen first and make sure they feel understood"
+            },
+            {
+              "id": "clarify",
+              "label": "Ask questions until the real problem is clearer"
+            },
+            {
+              "id": "urgent-part",
+              "label": "Help them slow down and handle the most urgent part"
+            },
+            {
+              "id": "give-options",
+              "label": "Offer a few options and let them steer"
+            }
+          ]
+        },
+        {
+          "id": "day-trip",
+          "prompt": "Your group cannot choose a day trip. What do you do?",
+          "options": [
+            {
+              "id": "quick-vote",
+              "label": "Run a quick vote so everyone has a say"
+            },
+            {
+              "id": "easy-option",
+              "label": "Recommend the easiest reliable option"
+            },
+            {
+              "id": "adapt-to-winner",
+              "label": "Say you can adapt to whichever option wins"
+            },
+            {
+              "id": "compare-trip",
+              "label": "Compare travel time, cost, and what is open"
+            },
+            {
+              "id": "propose-one",
+              "label": "Choose one good option and propose it"
+            }
+          ]
+        },
+        {
+          "id": "extra-money",
+          "prompt": "You unexpectedly receive 100 euros. What are you most likely to do?",
+          "options": [
+            {
+              "id": "save-it",
+              "label": "Save it for a future need"
+            },
+            {
+              "id": "share-it",
+              "label": "Use some for a shared meal, outing, or gift"
+            },
+            {
+              "id": "useful-thing",
+              "label": "Put it toward something useful you have meant to get"
+            },
+            {
+              "id": "compare-options",
+              "label": "Compare saving, spending, and investing before deciding"
+            },
+            {
+              "id": "keep-available",
+              "label": "Keep it available until something catches your interest"
+            }
+          ]
+        }
+      ]
+    },
+    "internet-creature": {
+      "id": "internet-creature",
+      "title": "Internet Creature",
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "Your group chat is blowing up at midnight. You...",
+          "options": [
+            {
+              "id": "a",
+              "label": "Arrive with takes and a snack tier list"
+            },
+            {
+              "id": "b",
+              "label": "Read everything and respond with one perfect emoji"
+            },
+            {
+              "id": "c",
+              "label": "Mute until morning, then send a thesis"
+            },
+            {
+              "id": "d",
+              "label": "Start a poll to restore order"
+            }
+          ]
+        },
+        {
+          "id": "q2",
+          "prompt": "A new app drops and everyone pretends they always knew about it. You...",
+          "options": [
+            {
+              "id": "a",
+              "label": "Install immediately and become the tutorial person"
+            },
+            {
+              "id": "b",
+              "label": "Wait a week for the patch notes of society"
+            },
+            {
+              "id": "c",
+              "label": "Post a joke review before reading the terms"
+            },
+            {
+              "id": "d",
+              "label": "Research quietly, then drop a link like a bat signal"
+            }
+          ]
+        },
+        {
+          "id": "q3",
+          "prompt": "Your calendar looks like modern art. Your reaction is...",
+          "options": [
+            {
+              "id": "a",
+              "label": "Color-code until it becomes a personality"
+            },
+            {
+              "id": "b",
+              "label": "Ignore it and trust vibes (risky)"
+            },
+            {
+              "id": "c",
+              "label": "Cancel one thing to feel alive"
+            },
+            {
+              "id": "d",
+              "label": "Add a 'breathing' block like you're a firmware update"
+            }
+          ]
+        },
+        {
+          "id": "q4",
+          "prompt": "Someone is wrong on the internet (again). You...",
+          "options": [
+            {
+              "id": "a",
+              "label": "Debate with sources and screenshots"
+            },
+            {
+              "id": "b",
+              "label": "Close the tab and touch grass (metaphorically)"
+            },
+            {
+              "id": "c",
+              "label": "Quote tweet with a joke that ends careers"
+            },
+            {
+              "id": "d",
+              "label": "Send a private message like a diplomat"
+            }
+          ]
+        },
+        {
+          "id": "q5",
+          "prompt": "Your ideal weekend is...",
+          "options": [
+            {
+              "id": "a",
+              "label": "People, plans, and a little planned chaos"
+            },
+            {
+              "id": "b",
+              "label": "Solo project + playlist + zero obligations"
+            },
+            {
+              "id": "c",
+              "label": "Spontaneous trip because someone said 'what if'"
+            },
+            {
+              "id": "d",
+              "label": "Hosting: you bring the board games and boundaries"
+            }
+          ]
+        },
+        {
+          "id": "q6",
+          "prompt": "Notifications are...",
+          "options": [
+            {
+              "id": "a",
+              "label": "Dopamine slot machines (I'm fine)"
+            },
+            {
+              "id": "b",
+              "label": "A tax I pay to exist online"
+            },
+            {
+              "id": "c",
+              "label": "A to-do list written by gremlins"
+            },
+            {
+              "id": "d",
+              "label": "Managed like a small government"
+            }
+          ]
+        },
+        {
+          "id": "q7",
+          "prompt": "When you learn something new, you...",
+          "options": [
+            {
+              "id": "a",
+              "label": "Tell everyone immediately (education is sharing)"
+            },
+            {
+              "id": "b",
+              "label": "Take notes and forget where you saved them"
+            },
+            {
+              "id": "c",
+              "label": "Go deep until it's a personality trait"
+            },
+            {
+              "id": "d",
+              "label": "Build a system so you never learn it wrong again"
+            }
+          ]
+        },
+        {
+          "id": "q8",
+          "prompt": "Your relationship with deadlines is best described as...",
+          "options": [
+            {
+              "id": "a",
+              "label": "We're coworkers who respect each other"
+            },
+            {
+              "id": "b",
+              "label": "They're suggestions from a parallel universe"
+            },
+            {
+              "id": "c",
+              "label": "I finish early to flex emotionally"
+            },
+            {
+              "id": "d",
+              "label": "I need adrenaline to unlock literacy"
+            }
+          ]
+        },
+        {
+          "id": "q9",
+          "prompt": "A friend vents for 20 minutes. You...",
+          "options": [
+            {
+              "id": "a",
+              "label": "Match their energy and escalate supportively"
+            },
+            {
+              "id": "b",
+              "label": "Listen quietly and ask one sharp question"
+            },
+            {
+              "id": "c",
+              "label": "Offer solutions like a startup founder"
+            },
+            {
+              "id": "d",
+              "label": "Send memes until the vibe stabilizes"
+            }
+          ]
+        },
+        {
+          "id": "q10",
+          "prompt": "Your shopping cart is...",
+          "options": [
+            {
+              "id": "a",
+              "label": "A vision board with shipping fees"
+            },
+            {
+              "id": "b",
+              "label": "Curated, compared, and slightly haunted"
+            },
+            {
+              "id": "c",
+              "label": "Empty because I'm 'being good' (lying)"
+            },
+            {
+              "id": "d",
+              "label": "One weird item that explains my entire psyche"
+            }
+          ]
+        },
+        {
+          "id": "q11",
+          "prompt": "Conflict in a group project appears. You...",
+          "options": [
+            {
+              "id": "a",
+              "label": "Take the mic and propose a structure"
+            },
+            {
+              "id": "b",
+              "label": "Slip helpful notes like a ghost editor"
+            },
+            {
+              "id": "c",
+              "label": "Make a joke so nobody cries"
+            },
+            {
+              "id": "d",
+              "label": "Divide tasks like a benevolent warlord"
+            }
+          ]
+        },
+        {
+          "id": "q12",
+          "prompt": "Your aesthetic online is...",
+          "options": [
+            {
+              "id": "a",
+              "label": "Curated chaos with good lighting"
+            },
+            {
+              "id": "b",
+              "label": "Minimalist until you're not"
+            },
+            {
+              "id": "c",
+              "label": "Lore-heavy and slightly threatening"
+            },
+            {
+              "id": "d",
+              "label": "Friendly and approachable (weaponized)"
+            }
+          ]
+        },
+        {
+          "id": "q13",
+          "prompt": "When plans change last minute, you feel...",
+          "options": [
+            {
+              "id": "a",
+              "label": "Thrilled - new timeline unlocked"
+            },
+            {
+              "id": "b",
+              "label": "Annoyed but adaptable (silently)"
+            },
+            {
+              "id": "c",
+              "label": "Ready to negotiate like it's a sport"
+            },
+            {
+              "id": "d",
+              "label": "Relieved - I wanted an excuse to stay in"
+            }
+          ]
+        },
+        {
+          "id": "q14",
+          "prompt": "You get a compliment in public. You...",
+          "options": [
+            {
+              "id": "a",
+              "label": "Radiate like a lighthouse"
+            },
+            {
+              "id": "b",
+              "label": "Nod and evaporate"
+            },
+            {
+              "id": "c",
+              "label": "Deflect with humor (too fast)"
+            },
+            {
+              "id": "d",
+              "label": "Say thank you like you practiced in a mirror"
+            }
+          ]
+        },
+        {
+          "id": "q15",
+          "prompt": "Your notes app contains...",
+          "options": [
+            {
+              "id": "a",
+              "label": "Lists inside lists (inception)"
+            },
+            {
+              "id": "b",
+              "label": "Poetry and passwords (bad)"
+            },
+            {
+              "id": "c",
+              "label": "Half-baked ideas labeled 'later'"
+            },
+            {
+              "id": "d",
+              "label": "Nothing - I live in the moment (lie)"
+            }
+          ]
+        },
+        {
+          "id": "q16",
+          "prompt": "A trend is annoying but everywhere. You...",
+          "options": [
+            {
+              "id": "a",
+              "label": "Participate ironically until it's sincere"
+            },
+            {
+              "id": "b",
+              "label": "Observe from a distance like a scientist"
+            },
+            {
+              "id": "c",
+              "label": "Complain creatively"
+            },
+            {
+              "id": "d",
+              "label": "Ignore it until it dies naturally"
+            }
+          ]
+        },
+        {
+          "id": "q17",
+          "prompt": "Your dream collaboration is with...",
+          "options": [
+            {
+              "id": "a",
+              "label": "A crowd - more minds, more memes"
+            },
+            {
+              "id": "b",
+              "label": "One person who gets your weird"
+            },
+            {
+              "id": "c",
+              "label": "Future you (time travel budget pending)"
+            },
+            {
+              "id": "d",
+              "label": "A rival - healthy competition"
+            }
+          ]
+        },
+        {
+          "id": "q18",
+          "prompt": "When you're stressed, you...",
+          "options": [
+            {
+              "id": "a",
+              "label": "Talk it out until it's a podcast"
+            },
+            {
+              "id": "b",
+              "label": "Go quiet and fix things in silence"
+            },
+            {
+              "id": "c",
+              "label": "Make jokes to avoid feelings (works until it doesn't)"
+            },
+            {
+              "id": "d",
+              "label": "Make a plan so aggressive it calms you down"
+            }
+          ]
+        },
+        {
+          "id": "q19",
+          "prompt": "Your relationship with 'reply all' is...",
+          "options": [
+            {
+              "id": "a",
+              "label": "Weaponized joy"
+            },
+            {
+              "id": "b",
+              "label": "A crime scene I avoid"
+            },
+            {
+              "id": "c",
+              "label": "Situational comedy"
+            },
+            {
+              "id": "d",
+              "label": "Only if I'm saving everyone"
+            }
+          ]
+        },
+        {
+          "id": "q20",
+          "prompt": "You discover a new hyperfixation. It lasts...",
+          "options": [
+            {
+              "id": "a",
+              "label": "Until the next shiny object (beautiful)"
+            },
+            {
+              "id": "b",
+              "label": "Long enough to become an expert"
+            },
+            {
+              "id": "c",
+              "label": "Forever, quietly, in the background"
+            },
+            {
+              "id": "d",
+              "label": "Until I monetize it accidentally"
+            }
+          ]
+        },
+        {
+          "id": "q21",
+          "prompt": "Your ideal internet is...",
+          "options": [
+            {
+              "id": "a",
+              "label": "A party with good moderation"
+            },
+            {
+              "id": "b",
+              "label": "A library with jokes in the margins"
+            },
+            {
+              "id": "c",
+              "label": "An art project that occasionally bites"
+            },
+            {
+              "id": "d",
+              "label": "A calm feed and a chaotic alt"
+            }
+          ]
+        },
+        {
+          "id": "q22",
+          "prompt": "When you disagree with a friend, you...",
+          "options": [
+            {
+              "id": "a",
+              "label": "Say it plainly - love is honest"
+            },
+            {
+              "id": "b",
+              "label": "Soften it until it's a suggestion"
+            },
+            {
+              "id": "c",
+              "label": "Debate for sport, hug after"
+            },
+            {
+              "id": "d",
+              "label": "Write a draft and delete it (classic)"
+            }
+          ]
+        },
+        {
+          "id": "q23",
+          "prompt": "Your vibe at a party is...",
+          "options": [
+            {
+              "id": "a",
+              "label": "Center of gravity"
+            },
+            {
+              "id": "b",
+              "label": "Wallpaper that occasionally speaks"
+            },
+            {
+              "id": "c",
+              "label": "Kitchen hangout philosopher"
+            },
+            {
+              "id": "d",
+              "label": "Early exit, legendary exit line"
+            }
+          ]
+        },
+        {
+          "id": "q24",
+          "prompt": "You finish a big project. You celebrate by...",
+          "options": [
+            {
+              "id": "a",
+              "label": "Telling people (they need to know)"
+            },
+            {
+              "id": "b",
+              "label": "Disappearing into peace"
+            },
+            {
+              "id": "c",
+              "label": "Immediately starting the next thing (help)"
+            },
+            {
+              "id": "d",
+              "label": "One nice meal and zero screens"
+            }
+          ]
+        },
+        {
+          "id": "q25",
+          "prompt": "Your toxic trait (affectionate) is...",
+          "options": [
+            {
+              "id": "a",
+              "label": "Too online to log off"
+            },
+            {
+              "id": "b",
+              "label": "Too offline to explain"
+            },
+            {
+              "id": "c",
+              "label": "Too intense for small talk"
+            },
+            {
+              "id": "d",
+              "label": "Too organized to be spontaneous"
+            }
+          ]
+        },
+        {
+          "id": "q26",
+          "prompt": "If your brain had a UI, it would be...",
+          "options": [
+            {
+              "id": "a",
+              "label": "Neon and loud sliders"
+            },
+            {
+              "id": "b",
+              "label": "Clean monospace and secrets"
+            },
+            {
+              "id": "c",
+              "label": "A wiki that edits itself"
+            },
+            {
+              "id": "d",
+              "label": "A single button labeled 'do not'"
+            }
+          ]
+        },
+        {
+          "id": "q27",
+          "prompt": "You want feedback on something personal. You ask...",
+          "options": [
+            {
+              "id": "a",
+              "label": "The group chat (democracy)"
+            },
+            {
+              "id": "b",
+              "label": "One trusted human (precision)"
+            },
+            {
+              "id": "c",
+              "label": "The internet anonymously (bold)"
+            },
+            {
+              "id": "d",
+              "label": "Nobody - I iterate in silence"
+            }
+          ]
+        },
+        {
+          "id": "q28",
+          "prompt": "Finally: this whole silly type quiz is basically...",
+          "options": [
+            {
+              "id": "a",
+              "label": "A mirror with jokes"
+            },
+            {
+              "id": "b",
+              "label": "A toy for thinking, not a diagnosis"
+            },
+            {
+              "id": "c",
+              "label": "A way to tag my chaos for science (not science)"
+            },
+            {
+              "id": "d",
+              "label": "Fun - unless I'm losing, then it's rigged"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -21,7 +21,12 @@ export interface CategoryResult {
 export interface DialResult {
   kind: 'scale';
   title: string;
-  values: Array<{ id: string; dimension: string; value: number; label: string }>;
+  values: Array<{
+    id: string;
+    dimension: string;
+    value: number;
+    label: string;
+  }>;
 }
 
 export interface SillyResult {
@@ -58,24 +63,36 @@ export function answerLabel(question: SurveyQuestion, answerId: string) {
   return selectedOption(question, answerId)?.label ?? 'No answer';
 }
 
-function scoreCategories(survey: SurveyDefinition, answers: Answers): CategoryResult {
+function scoreCategories(
+  survey: SurveyDefinition,
+  answers: Answers,
+): CategoryResult {
   const categories = Array.from(
-    new Set(survey.questions.flatMap((question) => question.options.map((option) => option.category).filter(Boolean))),
+    new Set(
+      survey.questions.flatMap((question) =>
+        question.options.map((option) => option.category).filter(Boolean),
+      ),
+    ),
   ) as CategoryKey[];
-  const scores: Partial<Record<CategoryKey, number>> = Object.fromEntries(categories.map((category) => [category, 0]));
+  const scores: Partial<Record<CategoryKey, number>> = Object.fromEntries(
+    categories.map((category) => [category, 0]),
+  );
 
   survey.questions.forEach((question) => {
     const category = selectedOption(question, answers[question.id])?.category;
     if (category) scores[category] = (scores[category] ?? 0) + 1;
   });
 
-  const highest = Math.max(...categories.map((category) => scores[category] ?? 0));
+  const highest = Math.max(
+    ...categories.map((category) => scores[category] ?? 0),
+  );
   const leaders = categories.filter((category) => scores[category] === highest);
   if (leaders.length >= 3) {
     return {
       kind: 'categorical',
       title: 'Balanced mix',
-      description: 'Your choices spread across several styles, with no single default taking over.',
+      description:
+        'Your choices spread across several styles, with no single default taking over.',
       leaders,
       scores,
     };
@@ -100,7 +117,9 @@ function scoreCategories(survey: SurveyDefinition, answers: Answers): CategoryRe
 
 function scoreDials(survey: SurveyDefinition, answers: Answers): DialResult {
   const values = survey.questions.map((question) => {
-    const value = Number(selectedOption(question, answers[question.id])?.value ?? 3);
+    const value = Number(
+      selectedOption(question, answers[question.id])?.value ?? 3,
+    );
     return {
       id: question.id,
       dimension: question.dimension ?? question.id,
@@ -109,7 +128,8 @@ function scoreDials(survey: SurveyDefinition, answers: Answers): DialResult {
     };
   });
   const furthest = Math.max(...values.map((item) => Math.abs(item.value - 3)));
-  if (furthest === 0) return { kind: 'scale', title: 'Balanced settings', values };
+  if (furthest === 0)
+    return { kind: 'scale', title: 'Balanced settings', values };
   const headlineMap: Record<string, [string, string]> = {
     structure: ['Go-with-the-flow', 'Plan-first'],
     'social-recharge': ['Solo recharge', 'People-powered'],
@@ -127,34 +147,69 @@ function scoreDials(survey: SurveyDefinition, answers: Answers): DialResult {
 function scoreSilly(survey: SurveyDefinition, answers: Answers): SillyResult {
   const raw = [0, 0, 0, 0];
   survey.questions.forEach((question) => {
-    const weights = selectedOption(question, answers[question.id])?.weights ?? [0, 0, 0, 0];
+    const weights = selectedOption(question, answers[question.id])?.weights ?? [
+      0, 0, 0, 0,
+    ];
     weights.forEach((weight, index) => {
       raw[index] += weight;
     });
   });
   const maxPerAxis = survey.questions.length * 3;
-  const scores = raw.map((value) => Math.round(Math.max(0, Math.min(100, ((value + maxPerAxis) / (2 * maxPerAxis)) * 100)) * 10) / 10);
-  const code = scores.map((score, index) => (score >= 50 ? axisMeta[index].highLetter : axisMeta[index].lowLetter)).join('');
+  const scores = raw.map(
+    (value) =>
+      Math.round(
+        Math.max(
+          0,
+          Math.min(100, ((value + maxPerAxis) / (2 * maxPerAxis)) * 100),
+        ) * 10,
+      ) / 10,
+  );
+  const code = scores
+    .map((score, index) =>
+      score >= 50 ? axisMeta[index].highLetter : axisMeta[index].lowLetter,
+    )
+    .join('');
   const meta = sillyTypeMeta[code];
-  return { kind: 'silly', title: meta.name, description: meta.description, code, raw, scores };
+  return {
+    kind: 'silly',
+    title: meta.name,
+    description: meta.description,
+    code,
+    raw,
+    scores,
+  };
 }
 
-export function scoreSurvey(survey: SurveyDefinition, answers: Answers): SurveyResult {
+export function scoreSurvey(
+  survey: SurveyDefinition,
+  answers: Answers,
+): SurveyResult {
   if (survey.kind === 'categorical') return scoreCategories(survey, answers);
   if (survey.kind === 'scale') return scoreDials(survey, answers);
   return scoreSilly(survey, answers);
 }
 
-function categoricalProfileSimilarity(human: CategoryResult, persona: CategoryResult) {
-  const categories = Array.from(new Set([...Object.keys(human.scores), ...Object.keys(persona.scores)])) as CategoryKey[];
+function categoricalProfileSimilarity(
+  human: CategoryResult,
+  persona: CategoryResult,
+) {
+  const categories = Array.from(
+    new Set([...Object.keys(human.scores), ...Object.keys(persona.scores)]),
+  ) as CategoryKey[];
   const distance = categories.reduce(
-    (sum, category) => sum + Math.abs((human.scores[category] ?? 0) - (persona.scores[category] ?? 0)),
+    (sum, category) =>
+      sum +
+      Math.abs((human.scores[category] ?? 0) - (persona.scores[category] ?? 0)),
     0,
   );
   return 1 - distance / 10;
 }
 
-export function compareSurvey(survey: SurveyDefinition, human: Answers, persona: Answers): ComparisonResult {
+export function compareSurvey(
+  survey: SurveyDefinition,
+  human: Answers,
+  persona: Answers,
+): ComparisonResult {
   let exactMatches = 0;
   let withinOne = 0;
   const differences: Difference[] = [];
@@ -204,7 +259,8 @@ export function compareSurvey(survey: SurveyDefinition, human: Answers, persona:
     const personaResult = scoreSurvey(survey, persona) as SillyResult;
     profileSimilarity =
       humanResult.scores.reduce(
-        (sum, score, index) => sum + (1 - Math.abs(score - personaResult.scores[index]) / 100),
+        (sum, score, index) =>
+          sum + (1 - Math.abs(score - personaResult.scores[index]) / 100),
         0,
       ) / humanResult.scores.length;
   }

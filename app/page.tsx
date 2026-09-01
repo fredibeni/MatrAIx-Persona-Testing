@@ -2,12 +2,11 @@
 
 import {
   useEffect,
-  useMemo,
+  useEffectEvent,
   useRef,
   useState,
   type CSSProperties,
   type ReactNode,
-  type SyntheticEvent,
 } from 'react';
 import {
   ArrowLeft,
@@ -16,23 +15,16 @@ import {
   Check,
   CheckCircle2,
   ChevronRight,
-  Circle,
   ClipboardCheck,
-  Database,
   History,
   Home,
   Info,
-  Layers3,
-  LockKeyhole,
+  LoaderCircle,
   Plus,
   RotateCcw,
-  ShieldCheck,
-  Sparkles,
   TrendingUp,
   UserRound,
 } from 'lucide-react';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Input } from '@/components/ui/input';
 import {
   Table,
   TableBody,
@@ -44,20 +36,17 @@ import {
 } from '@/components/ui/table';
 import {
   activeAgentDraft,
+  bindPendingAgentRuns,
   completedAgentRuns,
   convergenceNarrative,
   convergencePoints,
   findAgentRun,
-  INVALID_STORAGE_BACKUP_KEY,
-  LEGACY_STORAGE_KEY,
-  loadStoredSurveyData,
   mergeSurveyStores,
-  serializeSurveyData,
-  STORAGE_KEY,
   surveyHistory,
   type AgentRun,
   type ConvergencePoint,
   type HumanBenchmark,
+  type PersonaAgentRef,
   type StoredRun,
   type SurveyHistory,
   type SurveyStore,
@@ -79,12 +68,36 @@ import {
   type SurveyDefinition,
   type SurveyId,
 } from '@/lib/surveys';
+import {
+  isValidationHostLayoutMessage,
+  isValidationNavigateMessage,
+  isValidationRequestStateMessage,
+  VALIDATION_COMMAND_EVENT,
+  VALIDATION_HOST_ORIGIN,
+  VALIDATION_STATE_EVENT,
+  validationStateMessage,
+} from '@/lib/validation-bridge';
+import {
+  loadValidationDiskState,
+  saveValidationDiskStateWithRetry,
+  surveyStoreFingerprint,
+  ValidationPersistenceError,
+  type ValidationDiskState,
+} from '@/lib/validation-persistence';
+import {
+  runValidationAgentSurvey,
+  ValidationAgentError,
+} from '@/lib/validation-agent';
 
 type Actor = 'human' | 'agent';
 
+type SaveNotice = {
+  kind: 'saving' | 'saved' | 'error';
+  message: string;
+};
+
 type View =
   | { name: 'home' }
-  | { name: 'agent-setup'; surveyId: SurveyId }
   | { name: 'quiz'; surveyId: SurveyId; actor: Actor; runId: string }
   | { name: 'result'; surveyId: SurveyId; actor: Actor; runId: string }
   | { name: 'comparison'; surveyId: SurveyId; runId: string }
@@ -95,6 +108,18 @@ const actorMeta = {
   human: { label: 'Human benchmark', shortLabel: 'Human', Icon: UserRound },
   agent: { label: 'Agent run', shortLabel: 'Agent', Icon: Bot },
 };
+
+const HOME_VIEW: View = { name: 'home' };
+const dateFormatter = new Intl.DateTimeFormat(undefined, {
+  month: 'short',
+  day: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+});
+const timeFormatter = new Intl.DateTimeFormat(undefined, {
+  hour: '2-digit',
+  minute: '2-digit',
+});
 
 function makeId(prefix: string) {
   const unique =
@@ -108,12 +133,32 @@ function formatDate(value?: string) {
   if (!value) return '';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return 'Date unavailable';
-  return new Intl.DateTimeFormat(undefined, {
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  }).format(date);
+  return dateFormatter.format(date);
+}
+
+function formatSavedTime(value: string | null) {
+  return value ? timeFormatter.format(new Date(value)) : null;
+}
+
+function surveyThemeStyle(survey: SurveyDefinition) {
+  return {
+    '--survey': survey.color,
+    '--pale': survey.pale,
+    '--ink': survey.ink,
+  } as CSSProperties;
+}
+
+function personaAgentLabel(personaAgent: PersonaAgentRef | null) {
+  return personaAgent
+    ? `Digital ${personaAgent.displayName}`
+    : 'Persona not recorded';
+}
+
+function samePersonaContext(
+  first: PersonaAgentRef | null,
+  second: PersonaAgentRef | null,
+) {
+  return !first || !second || first.contextId === second.contextId;
 }
 
 function runCompletionOrder(a: AgentRun, b: AgentRun) {
@@ -127,6 +172,40 @@ function runStatus(run?: StoredRun) {
   if (run?.completedAt) return 'complete';
   if (run && Object.keys(run.answers).length > 0) return 'in-progress';
   return 'not-started';
+}
+
+function resolveView(store: SurveyStore, view: View): View {
+  if (!('surveyId' in view)) return view;
+
+  const history = surveyHistory(store, view.surveyId);
+  if (view.name === 'quiz') {
+    const run =
+      view.actor === 'human'
+        ? history.human
+        : findAgentRun(history, view.runId);
+    return run ? view : HOME_VIEW;
+  }
+  if (view.name === 'result') {
+    const run =
+      view.actor === 'human'
+        ? history.human
+        : findAgentRun(history, view.runId);
+    return run?.completedAt ? view : HOME_VIEW;
+  }
+  if (view.name === 'comparison') {
+    const agentRun = findAgentRun(history, view.runId);
+    return history.human?.completedAt &&
+      agentRun?.completedAt &&
+      agentRun.benchmarkId === history.human.id &&
+      samePersonaContext(history.human.personaAgent, agentRun.personaAgent)
+      ? view
+      : HOME_VIEW;
+  }
+
+  return history.human?.completedAt &&
+    completedAgentRuns(history, history.human.id).length > 0
+    ? view
+    : HOME_VIEW;
 }
 
 function StatusPill({
@@ -156,20 +235,20 @@ function StatusPill({
 
 function Logo() {
   return (
-    <div className="flex items-center gap-3">
-      <div className="logo-mark" aria-hidden="true">
+    <span className="flex items-center gap-3">
+      <span className="logo-mark" aria-hidden="true">
         <span />
         <span />
-      </div>
-      <div>
-        <p className="font-display text-[18px] font-black leading-none tracking-[-0.03em]">
+      </span>
+      <span>
+        <span className="font-display block text-[18px] font-black leading-none tracking-[-0.03em]">
           Mirror Match
-        </p>
-        <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
+        </span>
+        <span className="mt-1 block text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
           Persona check
-        </p>
-      </div>
-    </div>
+        </span>
+      </span>
+    </span>
   );
 }
 
@@ -179,20 +258,26 @@ function Shell({
   simple = false,
 }: {
   children: ReactNode;
-  onHome: () => void;
+  onHome?: () => void;
   simple?: boolean;
 }) {
   return (
     <main className="min-h-screen">
       <header className="site-header">
-        <button
-          type="button"
-          onClick={onHome}
-          aria-label="Go to all surveys"
-          className="rounded-xl focus-ring"
-        >
-          <Logo />
-        </button>
+        {simple ? (
+          <div className="brand-button rounded-xl">
+            <Logo />
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={onHome}
+            aria-label="Go to all surveys"
+            className="brand-button rounded-xl focus-ring"
+          >
+            <Logo />
+          </button>
+        )}
         {!simple && (
           <button
             type="button"
@@ -214,56 +299,38 @@ function SurveyCard({
   onHuman,
   onAgent,
   onHistory,
+  agentRunning,
+  agentDisabled,
 }: {
   survey: SurveyDefinition;
   history: SurveyHistory;
   onHuman: () => void;
   onAgent: () => void;
   onHistory: () => void;
+  agentRunning: boolean;
+  agentDisabled: boolean;
 }) {
   const human = history.human;
   const humanStatus = runStatus(human);
-  const agentDraft = activeAgentDraft(history, human?.id);
+  const agentDraft = activeAgentDraft(history);
   const savedCompleted = completedAgentRuns(history).sort(runCompletionOrder);
-  const completed = completedAgentRuns(history, human?.id).sort(
-    runCompletionOrder,
-  );
-  const unpairedCount = savedCompleted.length - completed.length;
-  const latest = completed.at(-1);
-  const canStartAgent = Boolean(human?.completedAt);
-  const latestComparison =
-    human?.completedAt && latest
-      ? compareSurvey(survey, human.answers, latest.answers)
-      : undefined;
+  const completed = human?.completedAt
+    ? completedAgentRuns(history, human.id).sort(runCompletionOrder)
+    : [];
+  const canCompare = Boolean(human?.completedAt && completed.length);
 
   return (
-    <article
-      className="survey-card"
-      style={
-        {
-          '--survey': survey.color,
-          '--pale': survey.pale,
-          '--ink': survey.ink,
-        } as CSSProperties
-      }
-    >
+    <article className="survey-card" style={surveyThemeStyle(survey)}>
       <div className="card-stripe" aria-hidden="true" />
-      <div className="flex items-start justify-between gap-4">
-        <div className="survey-number" aria-hidden="true">
-          {String(surveys.indexOf(survey) + 1).padStart(2, '0')}
+      <div className="flex items-center justify-between gap-4">
+        <div className="min-w-0">
+          <h2 className="survey-title font-display min-w-0 text-[clamp(1.55rem,3vw,2.15rem)] font-black leading-[0.98] tracking-[-0.045em] text-slate-950">
+            {surveys.indexOf(survey) + 1}. {survey.title}
+          </h2>
         </div>
-        <span className="time-chip">{survey.time}</span>
+        <span className="time-chip shrink-0">{survey.time}</span>
       </div>
-      <p
-        className="mt-6 text-[11px] font-black uppercase tracking-[0.17em]"
-        style={{ color: survey.ink }}
-      >
-        {survey.eyebrow}
-      </p>
-      <h2 className="font-display mt-2 text-[clamp(1.55rem,3vw,2.15rem)] font-black leading-[0.98] tracking-[-0.045em] text-slate-950">
-        {survey.title}
-      </h2>
-      <p className="mt-3 min-h-[3.1rem] text-sm leading-6 text-slate-600">
+      <p className="survey-description mt-4 min-h-[3.1rem] text-sm leading-6 text-slate-600">
         {survey.description}
       </p>
 
@@ -276,13 +343,6 @@ function SurveyCard({
             <span className="block text-sm font-bold text-slate-900">
               Human benchmark
             </span>
-            <span className="block truncate text-xs text-slate-500">
-              {humanStatus === 'complete'
-                ? `Saved locally ${formatDate(human?.completedAt)}`
-                : humanStatus === 'in-progress'
-                  ? `${Object.keys(human?.answers ?? {}).length} of ${survey.questions.length} answered`
-                  : 'Set the answers Agent runs will match'}
-            </span>
           </span>
           <StatusPill status={humanStatus} />
           <ChevronRight size={17} className="text-slate-400" />
@@ -291,40 +351,38 @@ function SurveyCard({
         <button
           type="button"
           onClick={onAgent}
-          disabled={!canStartAgent}
+          disabled={agentDisabled}
+          aria-busy={agentRunning}
           className="run-row focus-ring"
         >
           <span className="run-icon">
-            <Bot size={18} />
+            {agentRunning ? (
+              <LoaderCircle size={18} className="animate-spin" />
+            ) : (
+              <Bot size={18} />
+            )}
           </span>
           <span className="min-w-0 flex-1 text-left">
             <span className="block text-sm font-bold text-slate-900">
-              Agent experiments
-            </span>
-            <span className="block truncate text-xs text-slate-500">
-              {!canStartAgent
-                ? 'Save the Human benchmark first'
-                : agentDraft
-                  ? `Resume run ${agentDraft.sequence} - ${Object.keys(agentDraft.answers).length} of ${survey.questions.length} answered`
-                  : latest && latestComparison
-                    ? `Latest: run ${latest.sequence}, ${latest.dimensionCount ?? 'unknown'} reported dimensions, ${percent(latestComparison.similarity)} match`
-                    : unpairedCount
-                      ? `${unpairedCount} imported ${unpairedCount === 1 ? 'run is' : 'runs are'} saved without a matching benchmark`
-                      : 'Start a blank Agent run in a fresh session'}
+              {agentRunning
+                ? 'Running Agent experiment...'
+                : 'Agent experiments'}
             </span>
           </span>
           <StatusPill
             status={
-              agentDraft
+              agentRunning || agentDraft
                 ? 'in-progress'
                 : savedCompleted.length
                   ? 'complete'
                   : 'not-started'
             }
             label={
-              savedCompleted.length
-                ? `${savedCompleted.length} saved`
-                : undefined
+              agentRunning
+                ? 'Running'
+                : savedCompleted.length
+                  ? `${savedCompleted.length} saved`
+                  : undefined
             }
           />
           <ChevronRight size={17} className="text-slate-400" />
@@ -334,18 +392,18 @@ function SurveyCard({
       <button
         type="button"
         onClick={onHistory}
-        disabled={savedCompleted.length === 0}
+        disabled={!canCompare}
         className="compare-button focus-ring"
       >
         <TrendingUp size={17} />
         {completed.length
           ? `View convergence - ${completed.length} ${completed.length === 1 ? 'run' : 'runs'}`
-          : unpairedCount
-            ? `View saved ${unpairedCount === 1 ? 'run' : 'runs'}`
-            : 'Complete an Agent run to compare'}
-        {savedCompleted.length > 0 && (
-          <ArrowRight size={16} className="ml-auto" />
-        )}
+          : savedCompleted.length && !human?.completedAt
+            ? 'Complete the Human benchmark to compare'
+            : human?.completedAt
+              ? 'Complete an Agent run to compare'
+              : 'Complete both records to compare'}
+        {canCompare && <ArrowRight size={16} className="ml-auto" />}
       </button>
     </article>
   );
@@ -357,74 +415,36 @@ function HomeView({
   onAgent,
   onHistory,
   onLicense,
+  runningAgentSurveyId,
 }: {
   store: SurveyStore;
   onHuman: (surveyId: SurveyId) => void;
   onAgent: (surveyId: SurveyId) => void;
   onHistory: (surveyId: SurveyId) => void;
   onLicense: () => void;
+  runningAgentSurveyId: SurveyId | null;
 }) {
-  const benchmarkCount = surveys.filter(
-    (survey) => surveyHistory(store, survey.id).human?.completedAt,
-  ).length;
-  const agentRunCount = surveys.reduce((sum, survey) => {
-    const history = surveyHistory(store, survey.id);
-    return sum + completedAgentRuns(history).length;
-  }, 0);
-
   return (
-    <Shell onHome={() => undefined} simple>
+    <Shell simple>
       <section className="hero-wrap">
         <div className="hero-orbit orbit-one" aria-hidden="true" />
         <div className="hero-orbit orbit-two" aria-hidden="true" />
         <div className="hero-grid">
           <div className="relative z-10 max-w-[790px]">
-            <div className="hero-kicker">
-              <Sparkles size={14} /> Watch a persona learn you
-            </div>
-            <h1 className="font-display mt-6 text-[clamp(3.25rem,8vw,7.1rem)] font-black leading-[0.84] tracking-[-0.07em] text-slate-950">
+            <h1 className="font-display text-[clamp(3.25rem,8vw,7.1rem)] font-black leading-[0.84] tracking-[-0.07em] text-slate-950">
               Does more <span className="ink-swipe">persona detail</span>{' '}
               improve the match?
             </h1>
             <p className="mt-7 max-w-[650px] text-[clamp(1rem,2vw,1.25rem)] leading-8 text-slate-600">
-              Save your answers once, then let the Agent take the same survey
-              repeatedly with different amounts of persona detail. Every run
-              stays separate and gets its own comparison.
+              Complete the Human benchmark and Agent experiment in either order,
+              then compare each run in its survey&apos;s convergence view.
+              Results are saved in this MatrAIx folder.
             </p>
-          </div>
-          <div className="hero-note relative z-10">
-            <p className="text-xs font-black uppercase tracking-[0.15em] text-slate-500">
-              Local experiment log
-            </p>
-            <p className="font-display mt-3 text-4xl font-black tracking-[-0.05em] text-slate-950">
-              {benchmarkCount}
-              <span className="text-xl text-slate-400"> / 4</span>
-            </p>
-            <p className="text-xs font-bold text-slate-600">
-              Human benchmarks set
-            </p>
-            <div className="my-4 h-px bg-slate-300/70" />
-            <p className="font-display text-3xl font-black tracking-[-0.05em] text-slate-950">
-              {agentRunCount}
-            </p>
-            <p className="text-xs font-bold text-slate-600">Agent runs saved</p>
           </div>
         </div>
       </section>
 
       <section className="mx-auto max-w-[1240px] px-5 pb-20 pt-16 sm:px-8 lg:px-10">
-        <div className="mb-9 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-          <div>
-            <p className="section-kicker">Four independent experiments</p>
-            <h2 className="font-display mt-2 text-3xl font-black tracking-[-0.04em] text-slate-950 sm:text-4xl">
-              Set a benchmark. Repeat the Agent.
-            </h2>
-          </div>
-          <p className="max-w-[430px] text-sm leading-6 text-slate-600">
-            Each survey has its own Human benchmark, Agent run history, and
-            convergence view. Results stay on this browser.
-          </p>
-        </div>
         <div className="grid gap-6 lg:grid-cols-2">
           {surveys.map((survey) => (
             <SurveyCard
@@ -434,6 +454,8 @@ function HomeView({
               onHuman={() => onHuman(survey.id)}
               onAgent={() => onAgent(survey.id)}
               onHistory={() => onHistory(survey.id)}
+              agentRunning={runningAgentSurveyId === survey.id}
+              agentDisabled={runningAgentSurveyId !== null}
             />
           ))}
         </div>
@@ -442,151 +464,12 @@ function HomeView({
           <button
             type="button"
             onClick={onLicense}
-            className="text-sm font-bold text-slate-600 underline decoration-slate-300 underline-offset-4 hover:text-slate-950"
+            className="quiet-button text-sm font-bold text-slate-600 hover:text-slate-950 focus-ring"
           >
             Sources and license
           </button>
         </div>
       </section>
-    </Shell>
-  );
-}
-
-function AgentSetupView({
-  survey,
-  nextSequence,
-  onStart,
-  onHome,
-}: {
-  survey: SurveyDefinition;
-  nextSequence: number;
-  onStart: (dimensionCount: number) => void;
-  onHome: () => void;
-}) {
-  const [dimensionText, setDimensionText] = useState('');
-  const [confirmed, setConfirmed] = useState(false);
-  const validDimensions =
-    /^\d+$/.test(dimensionText) && Number(dimensionText) <= 9999;
-
-  function submit(event: SyntheticEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!validDimensions || !confirmed) return;
-    onStart(Number(dimensionText));
-  }
-
-  return (
-    <Shell onHome={onHome}>
-      <div
-        className="setup-stage"
-        style={
-          {
-            '--survey': survey.color,
-            '--pale': survey.pale,
-            '--ink': survey.ink,
-          } as CSSProperties
-        }
-      >
-        <div className="setup-grid">
-          <section>
-            <div className="hero-kicker">
-              <Plus size={14} /> Agent run {nextSequence}
-            </div>
-            <h1 className="font-display mt-6 text-[clamp(2.8rem,7vw,5.8rem)] font-black leading-[0.9] tracking-[-0.06em] text-slate-950">
-              Start with a clean slate.
-            </h1>
-            <p className="mt-6 max-w-[610px] text-base leading-7 text-slate-600">
-              This app creates a new, empty answer record. To keep the Agent
-              from carrying earlier survey context, you must also use a new
-              external conversation or session.
-            </p>
-            <div className="mt-8 grid gap-3 sm:grid-cols-3">
-              <div className="protocol-card">
-                <Database size={19} />
-                <strong>New record</strong>
-                <span>No answers are copied forward</span>
-              </div>
-              <div className="protocol-card">
-                <LockKeyhole size={19} />
-                <strong>Fresh-session protocol</strong>
-                <span>Earlier Agent context stays outside the run</span>
-              </div>
-              <div className="protocol-card">
-                <Layers3 size={19} />
-                <strong>Frozen depth</strong>
-                <span>Your reported count cannot change later</span>
-              </div>
-            </div>
-          </section>
-
-          <form onSubmit={submit} className="setup-form">
-            <p className="section-kicker" style={{ color: survey.ink }}>
-              Run metadata
-            </p>
-            <label
-              htmlFor="dimension-count"
-              className="font-display mt-4 block text-xl font-black tracking-[-0.025em] text-slate-950"
-            >
-              How many persona dimensions are filled in for this run?
-            </label>
-            <p className="mt-2 text-sm leading-6 text-slate-600">
-              Enter your count of the populated persona fields available to the
-              Agent. This is self-reported metadata, and zero is allowed as a
-              baseline.
-            </p>
-            <Input
-              id="dimension-count"
-              type="number"
-              min="0"
-              max="9999"
-              step="1"
-              inputMode="numeric"
-              value={dimensionText}
-              onChange={(event) => setDimensionText(event.target.value)}
-              placeholder="For example, 12"
-              className="mt-5 h-14 rounded-xl border-slate-300 bg-white px-4 text-lg font-black"
-              required
-            />
-
-            <label
-              htmlFor="fresh-agent-session"
-              className="mt-6 flex cursor-pointer items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4"
-            >
-              <Checkbox
-                id="fresh-agent-session"
-                checked={confirmed}
-                onCheckedChange={(value) => setConfirmed(value === true)}
-                className="mt-1"
-              />
-              <span>
-                <strong className="block text-sm text-slate-900">
-                  I will use a fresh Agent conversation or session
-                </strong>
-                <span className="mt-1 block text-xs leading-5 text-slate-600">
-                  The browser can start a blank run, but it cannot erase the
-                  memory of an external Agent. Do not reuse an earlier
-                  conversation, response ID, or chat history.
-                </span>
-              </span>
-            </label>
-
-            <button
-              type="submit"
-              disabled={!validDimensions || !confirmed}
-              className="primary-button mt-6 w-full focus-ring"
-              style={{ backgroundColor: survey.color }}
-            >
-              Start blank Agent run <ArrowRight size={17} />
-            </button>
-            <button
-              type="button"
-              onClick={onHome}
-              className="secondary-button mt-3 w-full focus-ring"
-            >
-              <ArrowLeft size={16} /> All surveys
-            </button>
-          </form>
-        </div>
-      </div>
     </Shell>
   );
 }
@@ -598,16 +481,14 @@ function QuizView({
   agentRun,
   onSaveAnswer,
   onComplete,
-  onDiscard,
   onHome,
 }: {
   survey: SurveyDefinition;
   actor: Actor;
   run: StoredRun;
   agentRun?: AgentRun;
-  onSaveAnswer: (questionId: string, optionId: string) => void;
+  onSaveAnswer: (questionId: string, optionId: string | null) => void;
   onComplete: () => void;
-  onDiscard?: () => void;
   onHome: () => void;
 }) {
   const firstMissing = survey.questions.findIndex(
@@ -621,6 +502,25 @@ function QuizView({
   const progress = ((index + 1) / survey.questions.length) * 100;
   const meta = actorMeta[actor];
   const isLast = index === survey.questions.length - 1;
+  const questionHeadingRef = useRef<HTMLHeadingElement>(null);
+  const advancingRef = useRef(false);
+
+  useEffect(() => {
+    advancingRef.current = false;
+    questionHeadingRef.current?.focus({ preventScroll: true });
+  }, [index]);
+
+  function selectOption(optionId: string) {
+    if (selected === optionId) {
+      advancingRef.current = false;
+      onSaveAnswer(question.id, null);
+      return;
+    }
+    onSaveAnswer(question.id, optionId);
+    if (isLast || advancingRef.current) return;
+    advancingRef.current = true;
+    setIndex((value) => Math.min(value + 1, survey.questions.length - 1));
+  }
 
   function next() {
     if (!selected) return;
@@ -630,34 +530,28 @@ function QuizView({
 
   return (
     <Shell onHome={onHome}>
-      <div
-        className="quiz-stage"
-        style={
-          {
-            '--survey': survey.color,
-            '--pale': survey.pale,
-            '--ink': survey.ink,
-          } as CSSProperties
-        }
-      >
+      <div className="quiz-stage" style={surveyThemeStyle(survey)}>
         <div className="quiz-topline">
           <div>
             <p className="section-kicker" style={{ color: survey.ink }}>
               {survey.shortTitle}
             </p>
-            <div className="mt-2 flex flex-wrap items-center gap-2 text-sm font-bold text-slate-700">
+            <div className="validation-quiz-context">
               <meta.Icon size={17} />
               {actor === 'agent' && agentRun
                 ? `Agent run ${agentRun.sequence}`
                 : 'Human benchmark'}
               {actor === 'agent' && agentRun && (
                 <span className="run-metadata-chip">
-                  {agentRun.dimensionCount} reported persona dimensions
+                  {agentRun.dimensionCount} persona dimensions
                 </span>
               )}
+              <span className="run-metadata-chip">
+                Persona agent: {personaAgentLabel(run.personaAgent)}
+              </span>
             </div>
           </div>
-          <p className="text-right text-sm font-bold text-slate-500">
+          <p className="validation-question-count">
             Question {index + 1} of {survey.questions.length}
           </p>
         </div>
@@ -670,22 +564,20 @@ function QuizView({
           />
         </div>
 
-        <section className="question-card">
-          <div
-            className="question-bubble"
-            style={{ backgroundColor: survey.pale, color: survey.ink }}
-          >
-            {index + 1}
-          </div>
+        <section className="question-card" data-question-id={question.id}>
           {question.dimension && (
             <p
-              className="mb-3 text-xs font-black uppercase tracking-[0.16em]"
+              className="validation-question-dimension"
               style={{ color: survey.ink }}
             >
               {question.dimension}
             </p>
           )}
-          <h1 className="font-display max-w-[820px] text-[clamp(1.75rem,4vw,3.3rem)] font-black leading-[1.05] tracking-[-0.045em] text-slate-950">
+          <h1
+            ref={questionHeadingRef}
+            tabIndex={-1}
+            className="validation-question-title outline-none"
+          >
             {question.prompt}
           </h1>
 
@@ -693,81 +585,61 @@ function QuizView({
             className={`mt-8 ${survey.kind === 'scale' ? 'scale-options' : 'space-y-3'}`}
           >
             <legend className="sr-only">{question.prompt}</legend>
-            {question.options.map((option, optionIndex) => {
+            {question.options.map((option) => {
               const active = selected === option.id;
               return (
                 <button
                   type="button"
                   aria-pressed={active}
                   key={option.id}
-                  onClick={() => onSaveAnswer(question.id, option.id)}
+                  onClick={() => selectOption(option.id)}
                   className={`answer-option focus-ring ${active ? 'answer-selected' : ''} ${survey.kind === 'scale' ? 'scale-option' : ''}`}
-                  style={
-                    active
-                      ? ({
-                          '--survey': survey.color,
-                          '--pale': survey.pale,
-                          '--ink': survey.ink,
-                        } as CSSProperties)
-                      : undefined
-                  }
+                  style={active ? surveyThemeStyle(survey) : undefined}
                 >
-                  <span className="option-key">
-                    {survey.kind === 'scale'
-                      ? option.id
-                      : String.fromCharCode(65 + optionIndex)}
-                  </span>
+                  {survey.kind === 'scale' ? (
+                    <span className="option-key">{option.id}</span>
+                  ) : (
+                    <span className="option-radio" aria-hidden="true" />
+                  )}
                   <span className="flex-1 text-left">{option.label}</span>
-                  <span className="option-check">
-                    {active ? (
-                      <Check size={15} strokeWidth={3} />
-                    ) : (
-                      <Circle size={15} />
-                    )}
-                  </span>
                 </button>
               );
             })}
           </fieldset>
+        </section>
 
-          <div className="mt-9 flex items-center justify-between gap-4 border-t border-slate-200 pt-6">
+        <div className="quiz-footer-actions">
+          <div className="quiz-footer-secondary-actions">
             <button
               type="button"
-              onClick={() =>
-                index === 0 ? onHome() : setIndex((value) => value - 1)
-              }
+              onClick={() => setIndex((value) => Math.max(0, value - 1))}
+              disabled={index === 0}
               className="secondary-button focus-ring"
             >
-              <ArrowLeft size={17} /> {index === 0 ? 'All surveys' : 'Previous'}
+              <ArrowLeft size={17} /> Previous
             </button>
             <button
               type="button"
-              onClick={next}
-              disabled={!selected}
-              className="primary-button focus-ring"
-              style={{ backgroundColor: survey.color }}
+              onClick={onHome}
+              className="quiet-button focus-ring"
             >
-              {isLast ? 'Finish this run' : 'Next question'}{' '}
-              <ArrowRight size={17} />
+              All surveys
             </button>
           </div>
-        </section>
+          <button
+            type="button"
+            onClick={next}
+            disabled={!selected}
+            className="primary-button focus-ring"
+            style={{ backgroundColor: survey.color }}
+          >
+            {isLast ? 'Finish this run' : 'Next'} <ArrowRight size={17} />
+          </button>
+        </div>
         <p className="mx-auto mt-5 max-w-[720px] text-center text-xs leading-5 text-slate-500">
-          {actor === 'human'
-            ? 'These answers become the fixed benchmark for every Agent run in this survey.'
-            : 'This quiz view does not display Human answers or earlier Agent results. Context isolation still depends on using the fresh external session you confirmed.'}
+          These answers become the fixed benchmark for every Agent run in this
+          survey.
         </p>
-        {actor === 'agent' && onDiscard && (
-          <div className="mt-3 text-center">
-            <button
-              type="button"
-              onClick={onDiscard}
-              className="text-xs font-black text-slate-500 underline decoration-slate-300 underline-offset-4 hover:text-slate-900 focus-ring"
-            >
-              Discard this draft and start fresh
-            </button>
-          </div>
-        )}
       </div>
     </Shell>
   );
@@ -874,7 +746,7 @@ function SillyProfile({
           <div className="relative h-3 rounded-full bg-slate-100">
             <span className="absolute left-1/2 top-[-3px] h-[18px] w-px bg-slate-300" />
             <span
-              className="absolute top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-white shadow"
+              className="absolute top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full shadow"
               style={{
                 left: `${result.scores[index]}%`,
                 backgroundColor: survey.color,
@@ -916,6 +788,7 @@ function ResultView({
   actor,
   run,
   agentRun,
+  hasCompletedHuman,
   completedAgentCount,
   onPrimary,
   onHistory,
@@ -927,6 +800,7 @@ function ResultView({
   actor: Actor;
   run: StoredRun;
   agentRun?: AgentRun;
+  hasCompletedHuman: boolean;
   completedAgentCount: number;
   onPrimary: () => void;
   onHistory: () => void;
@@ -938,28 +812,23 @@ function ResultView({
   const isAgent = actor === 'agent' && agentRun;
   const meta = actorMeta[actor];
   const primaryTitle = isAgent
-    ? `Compare Agent run ${agentRun.sequence}`
+    ? hasCompletedHuman
+      ? `Compare Agent run ${agentRun.sequence}`
+      : 'Complete the Human benchmark'
     : completedAgentCount
       ? 'See how the Agent runs converge'
       : 'Start the first Agent run';
   const primaryCopy = isAgent
-    ? 'The Human benchmark and this run are now ready for their own question-level comparison.'
+    ? hasCompletedHuman
+      ? 'The Human benchmark and this run are now ready for their own question-level comparison.'
+      : 'This Agent run is saved. Complete the Human benchmark to unlock its question-level comparison.'
     : completedAgentCount
       ? `There ${completedAgentCount === 1 ? 'is' : 'are'} ${completedAgentCount} saved Agent ${completedAgentCount === 1 ? 'run' : 'runs'} against this fixed benchmark.`
       : 'The Human answers are saved locally. Every new Agent run will compare back to this benchmark.';
 
   return (
     <Shell onHome={onHome}>
-      <div
-        className="result-stage"
-        style={
-          {
-            '--survey': survey.color,
-            '--pale': survey.pale,
-            '--ink': survey.ink,
-          } as CSSProperties
-        }
-      >
+      <div className="result-stage" style={surveyThemeStyle(survey)}>
         <section className="result-hero">
           <div className="result-spark spark-a" aria-hidden="true">
             ✦
@@ -968,18 +837,20 @@ function ResultView({
             ●
           </div>
           <div className="relative z-10">
-            <div className="mx-auto flex w-fit items-center gap-2 rounded-full border border-white/80 bg-white/70 px-4 py-2 text-xs font-black uppercase tracking-[0.13em] text-slate-600 shadow-sm">
+            <div className="mx-auto flex w-fit items-center gap-2 rounded-full bg-white/70 px-4 py-2 text-xs font-black uppercase tracking-[0.13em] text-slate-600 shadow-sm">
               <meta.Icon size={15} />{' '}
               {isAgent ? `Agent run ${agentRun.sequence}` : 'Human benchmark'} -{' '}
               {survey.shortTitle}
             </div>
+            <div className="mx-auto mt-4 w-fit rounded-full bg-white/70 px-3 py-1.5 text-xs font-black text-slate-600 shadow-sm">
+              Persona agent: {personaAgentLabel(run.personaAgent)}
+            </div>
             {isAgent && (
               <div
-                className="mx-auto mt-4 w-fit rounded-full px-3 py-1.5 text-xs font-black"
+                className="mx-auto mt-2 w-fit rounded-full px-3 py-1.5 text-xs font-black"
                 style={{ backgroundColor: survey.color, color: 'white' }}
               >
-                {agentRun.dimensionCount ?? 'Unknown'} reported persona
-                dimensions
+                {agentRun.dimensionCount ?? 'Not recorded'} persona dimensions
               </div>
             )}
             <p
@@ -999,7 +870,7 @@ function ResultView({
           </div>
         </section>
 
-        <section className="mx-auto mt-7 max-w-[900px] rounded-[30px] border border-slate-200 bg-white p-6 shadow-sm sm:p-9">
+        <section className="mx-auto mt-7 max-w-[900px] rounded-[30px] bg-white p-6 shadow-sm sm:p-9">
           <div className="flex items-start justify-between gap-5">
             <div>
               <p className="section-kicker">Result detail</p>
@@ -1036,17 +907,21 @@ function ResultView({
           <button
             type="button"
             onClick={onPrimary}
-            className="mt-6 inline-flex h-12 items-center gap-2 rounded-xl bg-white px-5 text-sm font-black text-slate-950 transition hover:-translate-y-0.5 sm:ml-8 sm:mt-0 focus-ring"
+            className="result-primary-button mt-6 inline-flex h-12 items-center gap-2 rounded-xl bg-white px-5 text-sm font-black text-slate-950 transition hover:-translate-y-0.5 sm:ml-8 sm:mt-0 focus-ring"
           >
-            {isAgent ? (
+            {isAgent && hasCompletedHuman ? (
               <ClipboardCheck size={18} />
+            ) : isAgent ? (
+              <UserRound size={18} />
             ) : completedAgentCount ? (
               <TrendingUp size={18} />
             ) : (
               <Bot size={18} />
             )}
             {isAgent
-              ? 'Compare this run'
+              ? hasCompletedHuman
+                ? 'Compare this run'
+                : 'Set Human benchmark'
               : completedAgentCount
                 ? 'View convergence'
                 : 'Start Agent run'}
@@ -1064,13 +939,15 @@ function ResultView({
           </button>
           {isAgent ? (
             <>
-              <button
-                type="button"
-                onClick={onHistory}
-                className="secondary-button focus-ring"
-              >
-                <History size={16} /> Run history
-              </button>
+              {hasCompletedHuman && (
+                <button
+                  type="button"
+                  onClick={onHistory}
+                  className="secondary-button focus-ring"
+                >
+                  <History size={16} /> Run history
+                </button>
+              )}
               <button
                 type="button"
                 onClick={onNewAgent}
@@ -1160,16 +1037,7 @@ function ComparisonView({
 
   return (
     <Shell onHome={onHome}>
-      <div
-        className="comparison-stage"
-        style={
-          {
-            '--survey': survey.color,
-            '--pale': survey.pale,
-            '--ink': survey.ink,
-          } as CSSProperties
-        }
-      >
+      <div className="comparison-stage" style={surveyThemeStyle(survey)}>
         <section className="comparison-hero">
           <div className="comparison-label">
             <ClipboardCheck size={15} /> {survey.shortTitle} - Agent run{' '}
@@ -1200,8 +1068,12 @@ function ComparisonView({
           </p>
           <div className="mt-7 flex flex-wrap justify-center gap-3">
             <span className="metric-chip">
-              <strong>{agentRun.dimensionCount ?? 'N/A'}</strong> reported
-              persona dimensions
+              Persona agent:{' '}
+              <strong>{personaAgentLabel(agentRun.personaAgent)}</strong>
+            </span>
+            <span className="metric-chip">
+              <strong>{agentRun.dimensionCount ?? 'N/A'}</strong> persona
+              dimensions
             </span>
             <span className="metric-chip">
               <strong>{comparison.exactMatches}</strong> exact matches
@@ -1234,8 +1106,8 @@ function ComparisonView({
           <MiniResult survey={survey} actor="agent" result={agentResult} />
         </section>
 
-        <section className="mx-auto mt-8 max-w-[1080px] rounded-[30px] border border-slate-200 bg-white p-6 shadow-sm sm:p-9">
-          <div className="flex flex-col justify-between gap-4 border-b border-slate-200 pb-6 sm:flex-row sm:items-end">
+        <section className="mx-auto mt-8 max-w-[1080px] rounded-[30px] bg-white p-6 shadow-sm sm:p-9">
+          <div className="flex flex-col justify-between gap-4 pb-6 sm:flex-row sm:items-end">
             <div>
               <p className="section-kicker">Question-level audit</p>
               <h2 className="font-display mt-2 text-3xl font-black tracking-[-0.04em] text-slate-950">
@@ -1259,7 +1131,7 @@ function ComparisonView({
               </p>
             </div>
           ) : (
-            <div className="divide-y divide-slate-200">
+            <div>
               {comparison.differences.map((difference, index) => (
                 <article
                   key={difference.question.id}
@@ -1297,7 +1169,7 @@ function ComparisonView({
           )}
         </section>
 
-        <section className="mx-auto mt-6 max-w-[1080px] rounded-[24px] border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-950 sm:flex sm:items-start sm:gap-4 sm:p-6">
+        <section className="mx-auto mt-6 max-w-[1080px] rounded-[24px] bg-amber-50 p-5 text-sm leading-6 text-amber-950 sm:flex sm:items-start sm:gap-4 sm:p-6">
           <Info className="mb-3 shrink-0 text-amber-700 sm:mb-0" size={20} />
           <p>
             <strong>How to read this:</strong> This comparison belongs only to
@@ -1402,13 +1274,13 @@ function ConvergenceChart({
       aria-labelledby="convergence-chart-title convergence-chart-description"
     >
       <h3 id="convergence-chart-title" className="sr-only">
-        Reported persona dimensions and answer similarity
+        Persona dimensions and answer similarity
       </h3>
       <p id="convergence-chart-description" className="sr-only">
-        A scatter plot of Agent runs. Reported persona dimensions are on the
-        horizontal axis and answer similarity from zero to one hundred percent
-        is on the vertical axis. Exact overlaps are grouped, and the table below
-        contains every run.
+        A scatter plot of Agent runs. Persona dimensions are on the horizontal
+        axis and answer similarity from zero to one hundred percent is on the
+        vertical axis. Exact overlaps are grouped, and the table below contains
+        every run.
       </p>
       <div className="chart-scroll-controls" aria-label="Chart pan controls">
         <button
@@ -1501,7 +1373,7 @@ function ConvergenceChart({
             fill="#475569"
             fontWeight="800"
           >
-            Reported persona dimensions
+            Persona dimensions
           </text>
           {clusters.map((cluster) => {
             const runLabel = cluster.runs
@@ -1513,9 +1385,8 @@ function ConvergenceChart({
                 transform={`translate(${x(cluster.dimensionCount)} ${y(cluster.similarity)})`}
               >
                 <title>
-                  {runLabel}, {cluster.dimensionCount} reported persona
-                  dimensions, {Math.round(cluster.similarity * 100)} percent
-                  similarity
+                  {runLabel}, {cluster.dimensionCount} persona dimensions,{' '}
+                  {Math.round(cluster.similarity * 100)} percent similarity
                 </title>
                 <circle
                   r={cluster.runs.length > 1 ? 20 : 18}
@@ -1585,16 +1456,7 @@ function HistoryView({
 
   return (
     <Shell onHome={onHome}>
-      <div
-        className="history-stage"
-        style={
-          {
-            '--survey': survey.color,
-            '--pale': survey.pale,
-            '--ink': survey.ink,
-          } as CSSProperties
-        }
-      >
+      <div className="history-stage" style={surveyThemeStyle(survey)}>
         <section className="history-heading">
           <div className="comparison-label">
             <TrendingUp size={15} /> {survey.shortTitle} experiment
@@ -1608,6 +1470,10 @@ function HistoryView({
             whether the playful type name happened to match.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
+            <span className="history-stat">
+              <small>Persona agent</small>
+              <strong>{personaAgentLabel(human.personaAgent)}</strong>
+            </span>
             <span className="history-stat">
               <small>Agent runs</small>
               <strong>{runs.length}</strong>
@@ -1625,7 +1491,7 @@ function HistoryView({
               </strong>
             </span>
             <span className="history-stat">
-              <small>Latest reported depth</small>
+              <small>Latest persona depth</small>
               <strong>
                 {!latest ? (
                   '-'
@@ -1641,7 +1507,7 @@ function HistoryView({
           </div>
         </section>
 
-        <section className="mx-auto mt-8 max-w-[1120px] rounded-[30px] border border-slate-200 bg-white p-5 shadow-sm sm:p-9">
+        <section className="mx-auto mt-8 max-w-[1120px] rounded-[30px] bg-white p-5 shadow-sm sm:p-9">
           <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
             <div>
               <p className="section-kicker">Convergence view</p>
@@ -1681,8 +1547,8 @@ function HistoryView({
           )}
         </section>
 
-        <section className="mx-auto mt-8 max-w-[1120px] rounded-[30px] border border-slate-200 bg-white p-5 shadow-sm sm:p-9">
-          <div className="border-b border-slate-200 pb-6">
+        <section className="mx-auto mt-8 max-w-[1120px] rounded-[30px] bg-white p-5 shadow-sm sm:p-9">
+          <div className="pb-6">
             <p className="section-kicker">Local run log</p>
             <h2 className="font-display mt-2 text-3xl font-black tracking-[-0.04em] text-slate-950">
               Every Agent comparison
@@ -1693,14 +1559,15 @@ function HistoryView({
             </p>
           </div>
           {rows.length ? (
-            <Table className="mt-4 min-w-[760px]">
+            <Table className="mt-4 min-w-[900px]">
               <TableCaption className="sr-only">
                 Agent comparison runs in completion order
               </TableCaption>
               <TableHeader>
                 <TableRow>
                   <TableHead>Run</TableHead>
-                  <TableHead>Reported dimensions</TableHead>
+                  <TableHead>Persona agent</TableHead>
+                  <TableHead>Persona dimensions</TableHead>
                   <TableHead>Similarity</TableHead>
                   <TableHead>Exact matches</TableHead>
                   <TableHead>Completed</TableHead>
@@ -1715,6 +1582,7 @@ function HistoryView({
                     <TableCell className="font-black text-slate-950">
                       Run {run.sequence}
                     </TableCell>
+                    <TableCell>{personaAgentLabel(run.personaAgent)}</TableCell>
                     <TableCell>
                       {run.dimensionCount ?? 'Not recorded'}
                     </TableCell>
@@ -1737,7 +1605,7 @@ function HistoryView({
                       <button
                         type="button"
                         onClick={() => onComparison(run.id)}
-                        className="text-sm font-black underline decoration-slate-300 underline-offset-4 hover:text-slate-600 focus-ring"
+                        className="quiet-button text-sm font-black hover:text-slate-600 focus-ring"
                       >
                         View comparison
                       </button>
@@ -1753,12 +1621,12 @@ function HistoryView({
                 No comparable Agent runs yet
               </h3>
               <p className="mt-2 text-sm text-slate-600">
-                The Human benchmark is ready for a fresh experiment.
+                The Human benchmark is ready for another experiment.
               </p>
             </div>
           )}
           {unpairedRuns.length > 0 && (
-            <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-5">
+            <div className="mt-6 rounded-2xl bg-amber-50 p-5">
               <h3 className="font-display text-lg font-black text-amber-950">
                 Unpaired saved results
               </h3>
@@ -1779,6 +1647,7 @@ function HistoryView({
                         Run {run.sequence} - {result.title}
                       </span>
                       <span className="text-xs font-bold text-slate-500">
+                        {personaAgentLabel(run.personaAgent)} -{' '}
                         {formatDate(run.completedAt)}
                       </span>
                     </div>
@@ -1796,14 +1665,13 @@ function HistoryView({
           )}
         </section>
 
-        <section className="mx-auto mt-6 max-w-[1120px] rounded-[24px] border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-950 sm:flex sm:items-start sm:gap-4 sm:p-6">
+        <section className="mx-auto mt-6 max-w-[1120px] rounded-[24px] bg-amber-50 p-5 text-sm leading-6 text-amber-950 sm:flex sm:items-start sm:gap-4 sm:p-6">
           <Info className="mb-3 shrink-0 text-amber-700 sm:mb-0" size={20} />
           <p>
             <strong>Interpret with care:</strong> A higher score at greater
-            reported persona depth is a pattern consistent with convergence in
-            this survey. It is not proof of causation or general behavioral
-            fidelity. Repeated runs at the same depth can help reveal
-            variability.
+            persona depth is a pattern consistent with convergence in this
+            survey. It is not proof of causation or general behavioral fidelity.
+            Repeated runs at the same depth can help reveal variability.
           </p>
         </section>
 
@@ -1851,7 +1719,7 @@ function LicenseView({ onHome }: { onHome: () => void }) {
           A playful remix, with credit
         </h1>
         <p className="mt-6 text-base leading-7 text-slate-600">
-          The 28-question Internet Creature Index adapts the open-source Silly
+          The 28-question Internet Creature survey adapts the open-source Silly
           Big Type Indicator repository. It uses the repository&apos;s question
           bank, four-axis scoring method, and 16 type names under the MIT
           License. It is not the official sbti.ai experience.
@@ -1870,7 +1738,7 @@ function LicenseView({ onHome }: { onHome: () => void }) {
         >
           View the source repository <ArrowRight size={15} />
         </a>
-        <div className="mt-10 rounded-2xl bg-slate-950 p-6 font-mono text-xs leading-6 text-slate-300 sm:p-8">
+        <div className="mt-10 rounded-2xl bg-slate-950 p-6 text-xs leading-6 text-slate-300 sm:p-8">
           <p className="text-white">MIT License</p>
           <p className="mt-4">
             Copyright (c) 2026 Silly Big Type Indicator contributors
@@ -1904,131 +1772,238 @@ function LicenseView({ onHome }: { onHome: () => void }) {
   );
 }
 
-function LocalNotice({ message }: { message: string }) {
+function ValidationSaveStatus({ notice }: { notice: SaveNotice }) {
   return (
-    <output className="local-notice" aria-live="polite">
-      <ShieldCheck size={17} />
-      <span>{message}</span>
+    <output className="validation-save-status" aria-live="polite">
+      <span
+        className={`validation-save-dot ${notice.kind}`}
+        aria-hidden="true"
+      />
+      <span>{notice.message}</span>
     </output>
   );
 }
 
-export default function HomePage() {
+export function ValidationApp({ hosted = false }: { hosted?: boolean }) {
   const [store, setStore] = useState<SurveyStore>({});
-  const [view, setView] = useState<View>({ name: 'home' });
+  const [view, setView] = useState<View>(HOME_VIEW);
   const [hydrated, setHydrated] = useState(false);
-  const [localNotice, setLocalNotice] = useState('');
-  const skipNextSave = useRef(false);
+  const [embedded, setEmbedded] = useState(hosted);
+  const [saveNotice, setSaveNotice] = useState<SaveNotice | null>(null);
+  const [runningAgentSurveyId, setRunningAgentSurveyId] =
+    useState<SurveyId | null>(null);
+  const [saveRequest, setSaveRequest] = useState(0);
+  const storeRef = useRef<SurveyStore>({});
+  const diskStateRef = useRef<ValidationDiskState | null>(null);
+  const acknowledgedStoreRef = useRef<SurveyStore>({});
+  const saveTimerRef = useRef<number | undefined>(undefined);
+  const saveInFlightRef = useRef(false);
+  const saveQueuedRef = useRef(false);
+  const failedFingerprintRef = useRef<string | null>(null);
+  const agentRunInFlightRef = useRef(false);
+  const mountedRef = useRef(true);
 
   useEffect(() => {
-    const frame = window.requestAnimationFrame(() => {
-      try {
-        const loaded = loadStoredSurveyData(
-          window.localStorage.getItem(STORAGE_KEY),
-          window.localStorage.getItem(LEGACY_STORAGE_KEY),
-        );
-        skipNextSave.current = loaded.source !== 'legacy';
-        if (loaded.invalidV2Text) {
-          window.localStorage.setItem(
-            INVALID_STORAGE_BACKUP_KEY,
-            loaded.invalidV2Text,
-          );
-        }
-        setStore(loaded.store);
-        if (loaded.warning) setLocalNotice(loaded.warning);
-      } catch {
-        skipNextSave.current = true;
-        setLocalNotice(
-          'Results could not be loaded from this browser. New answers may not persist.',
-        );
-      }
-      setHydrated(true);
-    });
-    return () => window.cancelAnimationFrame(frame);
-  }, []);
+    storeRef.current = store;
+  }, [store]);
 
-  useEffect(() => {
-    if (!hydrated) return;
-    if (skipNextSave.current) {
-      skipNextSave.current = false;
+  const flushDiskSave = useEffectEvent(async () => {
+    const diskState = diskStateRef.current;
+    if (!diskState) return;
+    if (saveInFlightRef.current) {
+      saveQueuedRef.current = true;
       return;
     }
-    let noticeFrame: number | undefined;
-    let reconcileFrame: number | undefined;
+
+    let candidate = mergeSurveyStores(
+      acknowledgedStoreRef.current,
+      storeRef.current,
+    );
+    let attemptedFingerprint = surveyStoreFingerprint(candidate);
+    if (
+      attemptedFingerprint ===
+        surveyStoreFingerprint(acknowledgedStoreRef.current) ||
+      attemptedFingerprint === failedFingerprintRef.current
+    ) {
+      return;
+    }
+
+    saveInFlightRef.current = true;
+    setSaveNotice({ kind: 'saving', message: 'saving to disk...' });
+    let savedState: ValidationDiskState | null = null;
+
     try {
-      const saved = loadStoredSurveyData(
-        window.localStorage.getItem(STORAGE_KEY),
-        null,
-      );
-      const nextStore =
-        saved.source === 'v2' ? mergeSurveyStores(saved.store, store) : store;
-      window.localStorage.setItem(STORAGE_KEY, serializeSurveyData(nextStore));
-      if (JSON.stringify(nextStore) !== JSON.stringify(store)) {
-        skipNextSave.current = true;
-        reconcileFrame = window.requestAnimationFrame(() => {
-          setStore(nextStore);
-          setLocalNotice(
-            'Local changes from another tab were merged into this view.',
-          );
+      try {
+        savedState = await saveValidationDiskStateWithRetry(
+          diskState.contextId,
+          diskState.saveRevision,
+          candidate,
+        );
+      } catch (error) {
+        if (
+          !(error instanceof ValidationPersistenceError) ||
+          error.status !== 409 ||
+          !error.currentState
+        ) {
+          throw error;
+        }
+
+        const currentState = error.currentState;
+        if (currentState.contextId !== diskState.contextId) {
+          diskStateRef.current = currentState;
+          acknowledgedStoreRef.current = currentState.store;
+          storeRef.current = currentState.store;
+          failedFingerprintRef.current = null;
+          if (mountedRef.current) {
+            setStore(currentState.store);
+            setView(HOME_VIEW);
+            setSaveNotice({
+              kind: 'saved',
+              message:
+                'active persona changed - its results were loaded from disk.',
+            });
+          }
+          return;
+        }
+
+        candidate = mergeSurveyStores(currentState.store, storeRef.current);
+        attemptedFingerprint = surveyStoreFingerprint(candidate);
+        savedState =
+          attemptedFingerprint === surveyStoreFingerprint(currentState.store)
+            ? currentState
+            : await saveValidationDiskStateWithRetry(
+                currentState.contextId,
+                currentState.saveRevision,
+                candidate,
+              );
+      }
+
+      diskStateRef.current = savedState;
+      acknowledgedStoreRef.current = savedState.store;
+      failedFingerprintRef.current = null;
+
+      const reconciled = mergeSurveyStores(savedState.store, storeRef.current);
+      if (
+        surveyStoreFingerprint(reconciled) !==
+        surveyStoreFingerprint(storeRef.current)
+      ) {
+        storeRef.current = reconciled;
+        if (mountedRef.current) setStore(reconciled);
+      }
+
+      if (mountedRef.current) {
+        const savedTime = formatSavedTime(savedState.savedAt);
+        setSaveNotice({
+          kind: 'saved',
+          message: savedTime
+            ? `saved to disk at ${savedTime}`
+            : 'saved to disk',
         });
       }
     } catch {
-      noticeFrame = window.requestAnimationFrame(() =>
-        setLocalNotice(
-          'Results could not be saved on this device. Check browser storage settings before continuing.',
-        ),
-      );
+      failedFingerprintRef.current = attemptedFingerprint;
+      if (mountedRef.current) {
+        setSaveNotice({
+          kind: 'error',
+          message:
+            'changes are not saved to disk - check that the MatrAIx app is running.',
+        });
+      }
+    } finally {
+      saveInFlightRef.current = false;
+      const latestFingerprint = surveyStoreFingerprint(storeRef.current);
+      const needsAnotherSave =
+        latestFingerprint !==
+          surveyStoreFingerprint(acknowledgedStoreRef.current) &&
+        latestFingerprint !== failedFingerprintRef.current;
+      if (mountedRef.current && (saveQueuedRef.current || needsAnotherSave)) {
+        saveQueuedRef.current = false;
+        setSaveRequest((current) => current + 1);
+      }
     }
-    return () => {
-      if (noticeFrame !== undefined) window.cancelAnimationFrame(noticeFrame);
-      if (reconcileFrame !== undefined)
-        window.cancelAnimationFrame(reconcileFrame);
-    };
-  }, [store, hydrated]);
+  });
 
   useEffect(() => {
-    function syncFromAnotherTab(event: StorageEvent) {
-      if (event.key !== STORAGE_KEY) return;
-      if (!event.newValue) {
-        skipNextSave.current = true;
-        setStore({});
-        setView({ name: 'home' });
-        setLocalNotice(
-          'Local results were cleared in another tab. This view was reset.',
-        );
-        return;
-      }
-      const loaded = loadStoredSurveyData(event.newValue, null);
-      if (loaded.source !== 'v2') {
-        if (loaded.invalidV2Text) {
-          try {
-            window.localStorage.setItem(
-              INVALID_STORAGE_BACKUP_KEY,
-              loaded.invalidV2Text,
-            );
-          } catch {
-            // Keep the active in-memory results when the remote value is invalid.
-          }
-        }
-        setLocalNotice(
-          'Another tab wrote an invalid results record. The current view was kept.',
-        );
-        return;
-      }
-      skipNextSave.current = true;
-      setStore(loaded.store);
-      setLocalNotice(
-        'Local results changed in another tab. The latest saved version was loaded.',
+    mountedRef.current = true;
+    const embeddedFrame = window.requestAnimationFrame(() => {
+      setEmbedded(
+        hosted ||
+          new URLSearchParams(window.location.search).get('embedded') === '1',
       );
-    }
-    window.addEventListener('storage', syncFromAnotherTab);
-    return () => window.removeEventListener('storage', syncFromAnotherTab);
-  }, []);
+    });
+    let cancelled = false;
 
-  const activeSurvey = useMemo(
-    () => ('surveyId' in view ? surveyById[view.surveyId] : undefined),
-    [view],
-  );
+    async function hydrateFromDisk() {
+      try {
+        const diskState = await loadValidationDiskState();
+        const savedTime = formatSavedTime(diskState.savedAt);
+        const notice: SaveNotice = savedTime
+          ? {
+              kind: 'saved',
+              message: `saved to disk at ${savedTime}`,
+            }
+          : {
+              kind: 'saved',
+              message: 'ready - autosave saves to disk',
+            };
+
+        if (cancelled) return;
+        diskStateRef.current = diskState;
+        acknowledgedStoreRef.current = diskState.store;
+        storeRef.current = diskState.store;
+        setStore(diskState.store);
+        setSaveNotice(notice);
+      } catch {
+        if (cancelled) return;
+        setSaveNotice({
+          kind: 'error',
+          message:
+            'results could not be loaded from disk - new answers will not be saved.',
+        });
+      }
+      setHydrated(true);
+    }
+
+    void hydrateFromDisk();
+    return () => {
+      cancelled = true;
+      mountedRef.current = false;
+      window.cancelAnimationFrame(embeddedFrame);
+      if (saveTimerRef.current !== undefined) {
+        window.clearTimeout(saveTimerRef.current);
+      }
+    };
+  }, [hosted]);
+
+  useEffect(() => {
+    if (!hydrated || !diskStateRef.current) return;
+    const fingerprint = surveyStoreFingerprint(store);
+    if (
+      fingerprint === surveyStoreFingerprint(acknowledgedStoreRef.current) ||
+      fingerprint === failedFingerprintRef.current
+    ) {
+      return;
+    }
+
+    if (saveTimerRef.current !== undefined) {
+      window.clearTimeout(saveTimerRef.current);
+    }
+    saveTimerRef.current = window.setTimeout(() => {
+      saveTimerRef.current = undefined;
+      void flushDiskSave();
+    }, 300);
+
+    return () => {
+      if (saveTimerRef.current !== undefined) {
+        window.clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = undefined;
+      }
+    };
+  }, [store, hydrated, saveRequest]);
+
+  const resolvedView = resolveView(store, view);
+  const activeSurvey =
+    'surveyId' in view ? surveyById[view.surveyId] : undefined;
 
   function updateSurvey(
     surveyId: SurveyId,
@@ -2041,8 +2016,62 @@ export default function HomePage() {
   }
 
   function goHome() {
-    setView({ name: 'home' });
+    setView(HOME_VIEW);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function activePersonaAgent() {
+    const personaAgent = diskStateRef.current?.personaAgent;
+    if (!personaAgent) {
+      setSaveNotice({
+        kind: 'error',
+        message:
+          'active persona identity is unavailable - reload Validation before starting a run.',
+      });
+      return null;
+    }
+    return { ...personaAgent };
+  }
+
+  async function refreshActivePersonaForAgent() {
+    try {
+      const refreshed = await loadValidationDiskState();
+      const previous = diskStateRef.current;
+
+      if (previous && refreshed.contextId !== previous.contextId) {
+        diskStateRef.current = refreshed;
+        acknowledgedStoreRef.current = refreshed.store;
+        storeRef.current = refreshed.store;
+        failedFingerprintRef.current = null;
+        setStore(refreshed.store);
+        setView(HOME_VIEW);
+        setSaveNotice({
+          kind: 'saved',
+          message:
+            'active persona changed - its results were loaded from disk.',
+        });
+        return null;
+      }
+
+      const reconciled = mergeSurveyStores(refreshed.store, storeRef.current);
+      diskStateRef.current = refreshed;
+      acknowledgedStoreRef.current = refreshed.store;
+      storeRef.current = reconciled;
+      failedFingerprintRef.current = null;
+      if (
+        surveyStoreFingerprint(reconciled) !== surveyStoreFingerprint(store)
+      ) {
+        setStore(reconciled);
+      }
+      return refreshed;
+    } catch {
+      setSaveNotice({
+        kind: 'error',
+        message:
+          'the active persona YAML could not be read - reload Validation before starting a run.',
+      });
+      return null;
+    }
   }
 
   function openHuman(surveyId: SurveyId) {
@@ -2062,10 +2091,13 @@ export default function HomePage() {
         runId: history.human.id,
       });
     else {
+      const personaAgent = activePersonaAgent();
+      if (!personaAgent) return;
       const human: HumanBenchmark = {
         id: makeId('human'),
         answers: {},
         startedAt: new Date().toISOString(),
+        personaAgent,
       };
       updateSurvey(surveyId, (current) => ({ ...current, human }));
       setView({ name: 'quiz', surveyId, actor: 'human', runId: human.id });
@@ -2073,77 +2105,83 @@ export default function HomePage() {
     window.scrollTo({ top: 0 });
   }
 
-  function openAgent(surveyId: SurveyId) {
-    const history = surveyHistory(store, surveyId);
-    if (!history.human?.completedAt) {
-      openHuman(surveyId);
-      return;
-    }
-    const draft = activeAgentDraft(history, history.human.id);
-    setView(
-      draft
-        ? { name: 'quiz', surveyId, actor: 'agent', runId: draft.id }
-        : { name: 'agent-setup', surveyId },
-    );
-    window.scrollTo({ top: 0 });
-  }
-
-  function createAgentRun(surveyId: SurveyId, dimensionCount: number) {
-    const history = surveyHistory(store, surveyId);
-    if (!history.human?.completedAt) return;
-    const existingDraft = activeAgentDraft(history, history.human.id);
-    if (existingDraft) {
-      setView({
-        name: 'quiz',
-        surveyId,
-        actor: 'agent',
-        runId: existingDraft.id,
-      });
-      return;
-    }
-    const nextSequence =
-      Math.max(0, ...history.agentRuns.map((run) => run.sequence)) + 1;
-    const now = new Date().toISOString();
-    const run: AgentRun = {
-      id: makeId('agent'),
-      sequence: nextSequence,
-      dimensionCount,
-      answers: {},
-      startedAt: now,
-      freshSessionAttestedAt: now,
-      benchmarkId: history.human.id,
-    };
-    updateSurvey(surveyId, (current) => ({
-      ...current,
-      agentRuns: [...current.agentRuns, run],
-    }));
-    setView({ name: 'quiz', surveyId, actor: 'agent', runId: run.id });
-    window.scrollTo({ top: 0 });
-  }
-
-  function discardAgentDraft(surveyId: SurveyId, runId: string) {
-    if (
-      !window.confirm(
-        'Discard this unfinished Agent run? Completed runs and the Human benchmark will stay saved.',
-      )
-    )
-      return;
-    updateSurvey(surveyId, (history) => {
-      const target = history.agentRuns.find((run) => run.id === runId);
-      if (!target || target.completedAt) return history;
-      return {
-        ...history,
-        agentRuns: history.agentRuns.filter((run) => run.id !== runId),
-        deletedAgentRuns: [
-          ...(history.deletedAgentRuns ?? []).filter(
-            (deletion) => deletion.id !== runId,
-          ),
-          { id: runId, deletedAt: new Date().toISOString() },
-        ],
-      };
+  async function runAgentSurvey(surveyId: SurveyId) {
+    if (agentRunInFlightRef.current) return;
+    agentRunInFlightRef.current = true;
+    setRunningAgentSurveyId(surveyId);
+    setSaveNotice({
+      kind: 'saving',
+      message: `running ${surveyById[surveyId].shortTitle} with a clean Agent context...`,
     });
-    setView({ name: 'agent-setup', surveyId });
-    window.scrollTo({ top: 0 });
+
+    try {
+      const refreshed = await refreshActivePersonaForAgent();
+      if (!refreshed) return;
+      const survey = surveyById[surveyId];
+      const result = await runValidationAgentSurvey(
+        survey,
+        refreshed.contextId,
+        refreshed.personaRevision,
+      );
+      if (!mountedRef.current) return;
+
+      const history = surveyHistory(storeRef.current, surveyId);
+      const existingDraft = activeAgentDraft(history);
+      const sequence =
+        existingDraft?.sequence ??
+        Math.max(0, ...history.agentRuns.map((run) => run.sequence)) + 1;
+      const run: AgentRun = {
+        id: existingDraft?.id ?? makeId('agent'),
+        sequence,
+        dimensionCount: result.dimensionCount,
+        answers: result.answers,
+        startedAt: result.startedAt,
+        completedAt: result.completedAt,
+        freshSessionAttestedAt: result.startedAt,
+        benchmarkId: history.human?.completedAt ? history.human.id : null,
+        personaAgent: result.personaAgent,
+      };
+
+      setStore((current) => {
+        const currentHistory = surveyHistory(current, surveyId);
+        const nextHistory = existingDraft
+          ? {
+              ...currentHistory,
+              agentRuns: currentHistory.agentRuns.map((candidate) =>
+                candidate.id === existingDraft.id ? run : candidate,
+              ),
+            }
+          : {
+              ...currentHistory,
+              agentRuns: [...currentHistory.agentRuns, run],
+            };
+        const next = { ...current, [surveyId]: nextHistory };
+        storeRef.current = next;
+        return next;
+      });
+      setView(
+        history.human?.completedAt
+          ? { name: 'comparison', surveyId, runId: run.id }
+          : { name: 'result', surveyId, actor: 'agent', runId: run.id },
+      );
+      setSaveNotice({
+        kind: 'saved',
+        message: 'Agent run complete - saving to disk.',
+      });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (error) {
+      if (!mountedRef.current) return;
+      setSaveNotice({
+        kind: 'error',
+        message:
+          error instanceof ValidationAgentError
+            ? `${error.message} No Agent result was saved.`
+            : 'The Agent run could not be completed. No result was saved.',
+      });
+    } finally {
+      agentRunInFlightRef.current = false;
+      if (mountedRef.current) setRunningAgentSurveyId(null);
+    }
   }
 
   function saveAnswer(
@@ -2151,8 +2189,23 @@ export default function HomePage() {
     actor: Actor,
     runId: string,
     questionId: string,
-    optionId: string,
+    optionId: string | null,
   ) {
+    const nextAnswerState = (run: StoredRun) => {
+      const answers = { ...run.answers };
+      const clearedAnswers = new Set(run.clearedAnswers ?? []);
+      if (optionId === null) {
+        delete answers[questionId];
+        clearedAnswers.add(questionId);
+      } else {
+        answers[questionId] = optionId;
+        clearedAnswers.delete(questionId);
+      }
+      return {
+        answers,
+        clearedAnswers: clearedAnswers.size ? [...clearedAnswers] : undefined,
+      };
+    };
     updateSurvey(surveyId, (history) => {
       if (actor === 'human') {
         if (
@@ -2165,7 +2218,7 @@ export default function HomePage() {
           ...history,
           human: {
             ...history.human,
-            answers: { ...history.human.answers, [questionId]: optionId },
+            ...nextAnswerState(history.human),
           },
         };
       }
@@ -2173,7 +2226,7 @@ export default function HomePage() {
         ...history,
         agentRuns: history.agentRuns.map((run) =>
           run.id === runId && !run.completedAt
-            ? { ...run, answers: { ...run.answers, [questionId]: optionId } }
+            ? { ...run, ...nextAnswerState(run) }
             : run,
         ),
       };
@@ -2190,16 +2243,18 @@ export default function HomePage() {
     const completedAt = new Date().toISOString();
     updateSurvey(surveyId, (current) =>
       actor === 'human'
-        ? {
-            ...current,
-            human:
-              current.human?.id === runId
-                ? {
-                    ...current.human,
-                    completedAt: current.human.completedAt ?? completedAt,
-                  }
-                : current.human,
-          }
+        ? current.human?.id === runId
+          ? bindPendingAgentRuns(
+              {
+                ...current,
+                human: {
+                  ...current.human,
+                  completedAt: current.human.completedAt ?? completedAt,
+                },
+              },
+              runId,
+            )
+          : current
         : {
             ...current,
             agentRuns: current.agentRuns.map((agentRun) =>
@@ -2220,13 +2275,16 @@ export default function HomePage() {
     const history = surveyHistory(store, surveyId);
     const hasAgentHistory = history.agentRuns.length > 0;
     const message = hasAgentHistory
-      ? 'Reset this survey? This removes its Human benchmark and every Agent run from this browser. Other surveys are not affected.'
+      ? 'Reset this survey? This removes its Human benchmark and every Agent run from disk. Other surveys are not affected.'
       : 'Retake this Human benchmark? Its current answers will be replaced.';
     if (!window.confirm(message)) return;
+    const personaAgent = activePersonaAgent();
+    if (!personaAgent) return;
     const human: HumanBenchmark = {
       id: makeId('human'),
       answers: {},
       startedAt: new Date().toISOString(),
+      personaAgent,
     };
     setStore((current) => ({
       ...current,
@@ -2241,52 +2299,133 @@ export default function HomePage() {
     window.scrollTo({ top: 0 });
   }
 
+  const navigateFromValidationHost = useEffectEvent(
+    (target: {
+      name: 'home' | 'human' | 'agent' | 'history';
+      surveyId?: SurveyId;
+    }) => {
+      if (target.name === 'home') {
+        goHome();
+        return;
+      }
+      if (!target.surveyId) return;
+      if (target.name === 'human') {
+        openHuman(target.surveyId);
+        return;
+      }
+      if (target.name === 'agent') {
+        void runAgentSurvey(target.surveyId);
+        return;
+      }
+
+      const surveyId = target.surveyId;
+      const history = surveyHistory(store, surveyId);
+      const comparableRuns = history.human?.completedAt
+        ? completedAgentRuns(history, history.human.id)
+        : [];
+      if (comparableRuns.length) {
+        setView({ name: 'history', surveyId });
+        window.scrollTo({ top: 0 });
+      } else if (!history.human?.completedAt) {
+        openHuman(surveyId);
+      } else {
+        void runAgentSurvey(surveyId);
+      }
+    },
+  );
+
+  useEffect(() => {
+    if (!embedded || !hydrated) return;
+
+    function publishState() {
+      const message = validationStateMessage(store, resolvedView);
+      if (hosted) {
+        window.dispatchEvent(
+          new CustomEvent(VALIDATION_STATE_EVENT, { detail: message }),
+        );
+        return;
+      }
+      window.parent.postMessage(message, VALIDATION_HOST_ORIGIN);
+    }
+
+    function receiveCommand(message: unknown) {
+      if (isValidationHostLayoutMessage(message)) {
+        document.documentElement.dataset.validationHostViewport =
+          message.viewport;
+        document
+          .getElementById('validation-root')
+          ?.setAttribute('data-validation-host-viewport', message.viewport);
+        return;
+      }
+      if (isValidationRequestStateMessage(message)) {
+        publishState();
+        return;
+      }
+      if (!isValidationNavigateMessage(message)) return;
+
+      const target = message.target;
+      navigateFromValidationHost(target);
+    }
+
+    function receiveNativeCommand(event: Event) {
+      if (!(event instanceof CustomEvent)) return;
+      receiveCommand(event.detail);
+    }
+
+    function receiveHostMessage(event: MessageEvent) {
+      if (
+        event.origin !== VALIDATION_HOST_ORIGIN ||
+        event.source !== window.parent
+      ) {
+        return;
+      }
+      receiveCommand(event.data);
+    }
+
+    if (hosted) {
+      window.addEventListener(VALIDATION_COMMAND_EVENT, receiveNativeCommand);
+    } else {
+      window.addEventListener('message', receiveHostMessage);
+    }
+    publishState();
+    return () => {
+      if (hosted) {
+        window.removeEventListener(
+          VALIDATION_COMMAND_EVENT,
+          receiveNativeCommand,
+        );
+      } else {
+        window.removeEventListener('message', receiveHostMessage);
+      }
+    };
+  }, [embedded, hosted, hydrated, store, resolvedView]);
+
+  function homeScreen() {
+    return (
+      <HomeView
+        store={store}
+        onHuman={openHuman}
+        onAgent={runAgentSurvey}
+        onHistory={(surveyId) => setView({ name: 'history', surveyId })}
+        onLicense={() => setView({ name: 'license' })}
+        runningAgentSurveyId={runningAgentSurveyId}
+      />
+    );
+  }
+
   function screen(): ReactNode {
-    if (!hydrated) return <div className="min-h-screen bg-[#f8f7f4]" />;
-    if (view.name === 'home')
-      return (
-        <HomeView
-          store={store}
-          onHuman={openHuman}
-          onAgent={openAgent}
-          onHistory={(surveyId) => setView({ name: 'history', surveyId })}
-          onLicense={() => setView({ name: 'license' })}
-        />
-      );
+    if (!hydrated) return <div className="validation-loading min-h-screen" />;
+    if (view.name === 'home') return homeScreen();
     if (view.name === 'license') return <LicenseView onHome={goHome} />;
     if (!activeSurvey) return null;
     const history = surveyHistory(store, activeSurvey.id);
-
-    if (view.name === 'agent-setup') {
-      const nextSequence =
-        Math.max(0, ...history.agentRuns.map((run) => run.sequence)) + 1;
-      return (
-        <AgentSetupView
-          survey={activeSurvey}
-          nextSequence={nextSequence}
-          onStart={(dimensionCount) =>
-            createAgentRun(view.surveyId, dimensionCount)
-          }
-          onHome={goHome}
-        />
-      );
-    }
 
     if (view.name === 'quiz') {
       const run =
         view.actor === 'human'
           ? history.human
           : findAgentRun(history, view.runId);
-      if (!run)
-        return (
-          <HomeView
-            store={store}
-            onHuman={openHuman}
-            onAgent={openAgent}
-            onHistory={(surveyId) => setView({ name: 'history', surveyId })}
-            onLicense={() => setView({ name: 'license' })}
-          />
-        );
+      if (!run) return homeScreen();
       return (
         <QuizView
           key={view.runId}
@@ -2304,11 +2443,6 @@ export default function HomePage() {
             )
           }
           onComplete={() => completeRun(view.surveyId, view.actor, view.runId)}
-          onDiscard={
-            view.actor === 'agent'
-              ? () => discardAgentDraft(view.surveyId, view.runId)
-              : undefined
-          }
           onHome={goHome}
         />
       );
@@ -2319,42 +2453,40 @@ export default function HomePage() {
         view.actor === 'human'
           ? history.human
           : findAgentRun(history, view.runId);
-      if (!run?.completedAt)
-        return (
-          <HomeView
-            store={store}
-            onHuman={openHuman}
-            onAgent={openAgent}
-            onHistory={(surveyId) => setView({ name: 'history', surveyId })}
-            onLicense={() => setView({ name: 'license' })}
-          />
-        );
-      const completedCount = completedAgentRuns(
-        history,
-        history.human?.id,
-      ).length;
+      if (!run?.completedAt) return homeScreen();
+      const hasCompletedHuman = Boolean(
+        history.human?.completedAt &&
+        (view.actor === 'human' ||
+          samePersonaContext(history.human.personaAgent, run.personaAgent)),
+      );
+      const completedCount = hasCompletedHuman
+        ? completedAgentRuns(history, history.human!.id).length
+        : 0;
       return (
         <ResultView
           survey={activeSurvey}
           actor={view.actor}
           run={run}
           agentRun={view.actor === 'agent' ? (run as AgentRun) : undefined}
+          hasCompletedHuman={hasCompletedHuman}
           completedAgentCount={completedCount}
           onPrimary={() =>
             view.actor === 'agent'
-              ? setView({
-                  name: 'comparison',
-                  surveyId: view.surveyId,
-                  runId: view.runId,
-                })
+              ? hasCompletedHuman
+                ? setView({
+                    name: 'comparison',
+                    surveyId: view.surveyId,
+                    runId: view.runId,
+                  })
+                : openHuman(view.surveyId)
               : completedCount
                 ? setView({ name: 'history', surveyId: view.surveyId })
-                : openAgent(view.surveyId)
+                : void runAgentSurvey(view.surveyId)
           }
           onHistory={() =>
             setView({ name: 'history', surveyId: view.surveyId })
           }
-          onNewAgent={() => openAgent(view.surveyId)}
+          onNewAgent={() => void runAgentSurvey(view.surveyId)}
           onHumanChange={() => changeHumanBenchmark(view.surveyId)}
           onHome={goHome}
         />
@@ -2366,17 +2498,10 @@ export default function HomePage() {
       if (
         !history.human?.completedAt ||
         !agentRun?.completedAt ||
-        agentRun.benchmarkId !== history.human.id
+        agentRun.benchmarkId !== history.human.id ||
+        !samePersonaContext(history.human.personaAgent, agentRun.personaAgent)
       )
-        return (
-          <HomeView
-            store={store}
-            onHuman={openHuman}
-            onAgent={openAgent}
-            onHistory={(surveyId) => setView({ name: 'history', surveyId })}
-            onLicense={() => setView({ name: 'license' })}
-          />
-        );
+        return homeScreen();
       return (
         <ComparisonView
           survey={activeSurvey}
@@ -2393,22 +2518,17 @@ export default function HomePage() {
           onHistory={() =>
             setView({ name: 'history', surveyId: view.surveyId })
           }
-          onNewAgent={() => openAgent(view.surveyId)}
+          onNewAgent={() => void runAgentSurvey(view.surveyId)}
           onHome={goHome}
         />
       );
     }
 
-    if (!history.human?.completedAt)
-      return (
-        <HomeView
-          store={store}
-          onHuman={openHuman}
-          onAgent={openAgent}
-          onHistory={(surveyId) => setView({ name: 'history', surveyId })}
-          onLicense={() => setView({ name: 'license' })}
-        />
-      );
+    if (
+      !history.human?.completedAt ||
+      completedAgentRuns(history, history.human.id).length === 0
+    )
+      return homeScreen();
     return (
       <HistoryView
         survey={activeSurvey}
@@ -2416,7 +2536,7 @@ export default function HomePage() {
         onComparison={(runId) =>
           setView({ name: 'comparison', surveyId: view.surveyId, runId })
         }
-        onNewAgent={() => openAgent(view.surveyId)}
+        onNewAgent={() => void runAgentSurvey(view.surveyId)}
         onHumanResult={() =>
           setView({
             name: 'result',
@@ -2430,10 +2550,23 @@ export default function HomePage() {
     );
   }
 
+  const showSaveStatus =
+    hydrated && resolvedView.name !== 'license' && saveNotice !== null;
+  const rootClassName = [
+    embedded ? 'validation-embedded' : '',
+    showSaveStatus ? 'validation-save-visible' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
   return (
-    <>
+    <div className={rootClassName || undefined}>
       {screen()}
-      {localNotice && <LocalNotice message={localNotice} />}
-    </>
+      {showSaveStatus && <ValidationSaveStatus notice={saveNotice} />}
+    </div>
   );
+}
+
+export default function HomePage() {
+  return <ValidationApp />;
 }

@@ -6,9 +6,19 @@ export const LEGACY_STORAGE_KEY = 'mirror-match-surveys-v1';
 export const INVALID_STORAGE_BACKUP_KEY =
   'mirror-match-surveys-v2-invalid-backup';
 
+export interface PersonaAgentRef {
+  contextId: string;
+  personaId: string;
+  displayName: string;
+  baselineSha256: string;
+  revisionSha256: string | null;
+}
+
 export interface StoredRun {
   answers: Answers;
+  clearedAnswers?: string[];
   completedAt?: string;
+  personaAgent: PersonaAgentRef | null;
 }
 
 export interface HumanBenchmark extends StoredRun {
@@ -84,6 +94,32 @@ function nonEmptyString(value: unknown) {
   return typeof value === 'string' && value.trim() ? value : undefined;
 }
 
+function normalizePersonaAgent(value: unknown): PersonaAgentRef | null {
+  if (!isRecord(value)) return null;
+  const contextId = nonEmptyString(value.contextId);
+  const personaId = nonEmptyString(value.personaId);
+  const displayName = nonEmptyString(value.displayName);
+  const baselineSha256 = nonEmptyString(value.baselineSha256);
+  const revisionSha256 =
+    value.revisionSha256 === null ? null : nonEmptyString(value.revisionSha256);
+  if (
+    !contextId ||
+    !personaId ||
+    !displayName ||
+    !baselineSha256 ||
+    revisionSha256 === undefined
+  ) {
+    return null;
+  }
+  return {
+    contextId,
+    personaId,
+    displayName,
+    baselineSha256,
+    revisionSha256,
+  };
+}
+
 function sanitizeAnswers(surveyId: SurveyId, value: unknown): Answers {
   if (!isRecord(value)) return {};
   const survey = surveyById[surveyId];
@@ -98,6 +134,21 @@ function sanitizeAnswers(surveyId: SurveyId, value: unknown): Answers {
   );
 }
 
+function sanitizeClearedAnswers(surveyId: SurveyId, value: unknown) {
+  if (!Array.isArray(value)) return [];
+  const questionIds = new Set(
+    surveyById[surveyId].questions.map((question) => question.id),
+  );
+  return [
+    ...new Set(
+      value.filter(
+        (questionId): questionId is string =>
+          typeof questionId === 'string' && questionIds.has(questionId),
+      ),
+    ),
+  ];
+}
+
 function answersAreComplete(surveyId: SurveyId, answers: Answers) {
   return surveyById[surveyId].questions.every((question) =>
     question.options.some((option) => option.id === answers[question.id]),
@@ -110,9 +161,13 @@ function normalizeRun(
 ): StoredRun | undefined {
   if (!isRecord(value) || !isRecord(value.answers)) return undefined;
   const answers = sanitizeAnswers(surveyId, value.answers);
+  const clearedAnswers = sanitizeClearedAnswers(surveyId, value.clearedAnswers);
+  clearedAnswers.forEach((questionId) => delete answers[questionId]);
   const completedAt = validTimestamp(value.completedAt);
   return {
     answers,
+    clearedAnswers: clearedAnswers.length ? clearedAnswers : undefined,
+    personaAgent: normalizePersonaAgent(value.personaAgent),
     completedAt:
       completedAt && answersAreComplete(surveyId, answers)
         ? completedAt
@@ -196,7 +251,7 @@ function normalizeAgentCollection(
     (run) =>
       !run.completedAt &&
       run.dimensionCount !== null &&
-      Boolean(run.freshSessionAttestedAt && run.benchmarkId),
+      Boolean(run.freshSessionAttestedAt),
   );
   const activeDraft = eligibleDrafts.at(-1);
   const invalidDraft = [...normalized]
@@ -208,7 +263,10 @@ function normalizeAgentCollection(
       (run) => Boolean(run.completedAt) || run.id === activeDraft?.id,
     ),
     recoveredDraft: invalidDraft
-      ? { answers: invalidDraft.answers }
+      ? {
+          answers: invalidDraft.answers,
+          personaAgent: invalidDraft.personaAgent,
+        }
       : undefined,
   };
 }
@@ -378,6 +436,32 @@ export function serializeSurveyData(surveys: SurveyStore) {
   } satisfies PersistedSurveyStore);
 }
 
+function mergePersonaAgent(
+  saved: PersonaAgentRef | null,
+  incoming: PersonaAgentRef | null,
+) {
+  return saved ?? incoming;
+}
+
+function mergeAnswerState(saved: StoredRun, incoming: StoredRun) {
+  const answers = { ...saved.answers, ...incoming.answers };
+  const clearedAnswers = new Set(saved.clearedAnswers ?? []);
+
+  Object.keys(incoming.answers).forEach((questionId) => {
+    clearedAnswers.delete(questionId);
+  });
+  (incoming.clearedAnswers ?? []).forEach((questionId) => {
+    delete answers[questionId];
+    clearedAnswers.add(questionId);
+  });
+  clearedAnswers.forEach((questionId) => delete answers[questionId]);
+
+  return {
+    answers,
+    clearedAnswers: clearedAnswers.size ? [...clearedAnswers] : undefined,
+  };
+}
+
 function mergeHumanBenchmarks(
   saved?: HumanBenchmark,
   incoming?: HumanBenchmark,
@@ -385,25 +469,67 @@ function mergeHumanBenchmarks(
   if (!saved) return incoming;
   if (!incoming) return saved;
   if (saved.id !== incoming.id) return incoming;
-  if (saved.completedAt) return saved;
-  if (incoming.completedAt) return incoming;
+  if (saved.completedAt) {
+    return {
+      ...saved,
+      personaAgent: mergePersonaAgent(
+        saved.personaAgent,
+        incoming.personaAgent,
+      ),
+    };
+  }
+  if (incoming.completedAt) {
+    return {
+      ...incoming,
+      id: saved.id,
+      startedAt: saved.startedAt,
+      personaAgent: mergePersonaAgent(
+        saved.personaAgent,
+        incoming.personaAgent,
+      ),
+    };
+  }
   return {
     ...saved,
     ...incoming,
     id: saved.id,
-    answers: { ...saved.answers, ...incoming.answers },
+    ...mergeAnswerState(saved, incoming),
     startedAt: saved.startedAt,
+    personaAgent: mergePersonaAgent(saved.personaAgent, incoming.personaAgent),
   };
 }
 
 function mergeAgentCollections(saved: AgentRun[], incoming: AgentRun[]) {
-  const merged = saved.map((run) => ({ ...run, answers: { ...run.answers } }));
+  const merged: AgentRun[] = saved.map((run) => ({
+    ...run,
+    answers: { ...run.answers },
+    clearedAnswers: run.clearedAnswers ? [...run.clearedAnswers] : undefined,
+  }));
   const usedSequences = new Set(merged.map((run) => run.sequence));
   incoming.forEach((candidate) => {
     const existingIndex = merged.findIndex((run) => run.id === candidate.id);
     if (existingIndex >= 0) {
       const existing = merged[existingIndex];
-      if (existing.completedAt) return;
+      if (existing.completedAt) {
+        const personaAgent = mergePersonaAgent(
+          existing.personaAgent,
+          candidate.personaAgent,
+        );
+        if (
+          existing.benchmarkId === null &&
+          !existing.migrated &&
+          candidate.benchmarkId
+        ) {
+          merged[existingIndex] = {
+            ...existing,
+            benchmarkId: candidate.benchmarkId,
+            personaAgent,
+          };
+        } else if (personaAgent !== existing.personaAgent) {
+          merged[existingIndex] = { ...existing, personaAgent };
+        }
+        return;
+      }
       if (candidate.completedAt) {
         merged[existingIndex] = {
           ...candidate,
@@ -413,7 +539,13 @@ function mergeAgentCollections(saved: AgentRun[], incoming: AgentRun[]) {
           startedAt: existing.startedAt,
           freshSessionAttestedAt:
             existing.freshSessionAttestedAt ?? candidate.freshSessionAttestedAt,
-          benchmarkId: existing.benchmarkId,
+          benchmarkId:
+            existing.benchmarkId ??
+            (existing.migrated ? null : candidate.benchmarkId),
+          personaAgent: mergePersonaAgent(
+            existing.personaAgent,
+            candidate.personaAgent,
+          ),
           answers: { ...candidate.answers },
         };
         return;
@@ -427,8 +559,14 @@ function mergeAgentCollections(saved: AgentRun[], incoming: AgentRun[]) {
         startedAt: existing.startedAt,
         freshSessionAttestedAt:
           existing.freshSessionAttestedAt ?? candidate.freshSessionAttestedAt,
-        benchmarkId: existing.benchmarkId,
-        answers: { ...existing.answers, ...candidate.answers },
+        benchmarkId:
+          existing.benchmarkId ??
+          (existing.migrated ? null : candidate.benchmarkId),
+        personaAgent: mergePersonaAgent(
+          existing.personaAgent,
+          candidate.personaAgent,
+        ),
+        ...mergeAnswerState(existing, candidate),
       };
       return;
     }
@@ -436,7 +574,14 @@ function mergeAgentCollections(saved: AgentRun[], incoming: AgentRun[]) {
     let sequence = candidate.sequence;
     while (usedSequences.has(sequence)) sequence += 1;
     usedSequences.add(sequence);
-    merged.push({ ...candidate, sequence, answers: { ...candidate.answers } });
+    merged.push({
+      ...candidate,
+      sequence,
+      answers: { ...candidate.answers },
+      clearedAnswers: candidate.clearedAnswers
+        ? [...candidate.clearedAnswers]
+        : undefined,
+    });
   });
   return merged;
 }
@@ -486,12 +631,16 @@ export function mergeSurveyStores(
       recoveredLegacyDraft:
         savedDraft || incomingDraft
           ? {
-              answers: {
-                ...savedDraft?.answers,
-                ...incomingDraft?.answers,
-              },
+              ...(savedDraft ?? incomingDraft!),
+              ...(savedDraft && incomingDraft
+                ? mergeAnswerState(savedDraft, incomingDraft)
+                : {}),
               completedAt:
                 savedDraft?.completedAt ?? incomingDraft?.completedAt,
+              personaAgent: mergePersonaAgent(
+                savedDraft?.personaAgent ?? null,
+                incomingDraft?.personaAgent ?? null,
+              ),
             }
           : undefined,
       generation: savedGeneration,
@@ -518,9 +667,13 @@ export function completedAgentRuns(
   history: SurveyHistory,
   benchmarkId?: string,
 ) {
+  const humanPersona = history.human?.personaAgent;
   return history.agentRuns.filter(
     (run) =>
       Boolean(run.completedAt) &&
+      (!humanPersona ||
+        !run.personaAgent ||
+        run.personaAgent.contextId === humanPersona.contextId) &&
       (benchmarkId === undefined || run.benchmarkId === benchmarkId),
   );
 }
@@ -539,6 +692,61 @@ export function activeAgentDraft(history: SurveyHistory, benchmarkId?: string) {
 
 export function findAgentRun(history: SurveyHistory, runId: string) {
   return history.agentRuns.find((run) => run.id === runId);
+}
+
+export function bindPendingAgentRuns(
+  history: SurveyHistory,
+  benchmarkId: string,
+): SurveyHistory {
+  const humanPersona = history.human?.personaAgent;
+  let changed = false;
+  const agentRuns = history.agentRuns.map((run) => {
+    if (run.benchmarkId !== null || run.migrated) return run;
+    if (
+      humanPersona &&
+      run.personaAgent &&
+      humanPersona.contextId !== run.personaAgent.contextId
+    ) {
+      return run;
+    }
+    changed = true;
+    return { ...run, benchmarkId };
+  });
+  return changed ? { ...history, agentRuns } : history;
+}
+
+export function backfillSurveyStorePersonaAgent(
+  store: SurveyStore,
+  personaAgent: PersonaAgentRef,
+): SurveyStore {
+  return Object.fromEntries(
+    Object.entries(store).map(([surveyId, history]) => {
+      if (!history) return [surveyId, history];
+      return [
+        surveyId,
+        {
+          ...history,
+          human: history.human
+            ? {
+                ...history.human,
+                personaAgent: history.human.personaAgent ?? personaAgent,
+              }
+            : undefined,
+          agentRuns: history.agentRuns.map((run) => ({
+            ...run,
+            personaAgent: run.personaAgent ?? personaAgent,
+          })),
+          recoveredLegacyDraft: history.recoveredLegacyDraft
+            ? {
+                ...history.recoveredLegacyDraft,
+                personaAgent:
+                  history.recoveredLegacyDraft.personaAgent ?? personaAgent,
+              }
+            : undefined,
+        },
+      ];
+    }),
+  ) as SurveyStore;
 }
 
 export function convergencePoints(
@@ -598,7 +806,7 @@ export function convergenceNarrative(points: ConvergencePoint[]) {
     return {
       title: 'No measured Agent runs yet',
       detail:
-        'Complete a fresh Agent run with a recorded dimension count to start the convergence view.',
+        'Complete an Agent run with a recorded dimension count to start the convergence view.',
     };
   }
   if (points.length === 1) {
@@ -613,7 +821,7 @@ export function convergenceNarrative(points: ConvergencePoint[]) {
   if (groups.length === 1) {
     return {
       title: 'Same detail level so far',
-      detail: `All measured runs used ${groups[0].dimensionCount} reported persona dimensions. Try another dimension count to test convergence.`,
+      detail: `All measured runs used ${groups[0].dimensionCount} persona dimensions. Try another dimension count to test convergence.`,
     };
   }
 
@@ -634,6 +842,6 @@ export function convergenceNarrative(points: ConvergencePoint[]) {
         : `fell by ${Math.abs(delta)} points`;
   return {
     title: `Similarity ${direction}`,
-    detail: `Average similarity at ${first.dimensionCount} reported dimensions is ${Math.round(first.similarity * 100)}%, compared with ${Math.round(last.similarity * 100)}% at ${last.dimensionCount}.${uneven ? ' The path across recorded depths was uneven.' : ''} This is descriptive, not proof that added dimensions caused the change.`,
+    detail: `Average similarity at ${first.dimensionCount} persona dimensions is ${Math.round(first.similarity * 100)}%, compared with ${Math.round(last.similarity * 100)}% at ${last.dimensionCount}.${uneven ? ' The path across recorded depths was uneven.' : ''} This is descriptive, not proof that added dimensions caused the change.`,
   };
 }

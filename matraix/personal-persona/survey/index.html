@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#181818" />
+    <title>Chat - MatrAIx persona</title>
+    <link rel="stylesheet" href="/validation-assets/validation.css" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="workspace-header-card">
+          <div class="brand">
+            <div>
+              <div id="persona-brand-name" class="eyebrow">MatrAIx Persona</div>
+            </div>
+          </div>
+
+          <nav
+            class="workspace-nav"
+            aria-label="Persona workspace"
+            role="tablist"
+          >
+            <button
+              id="chat-tab"
+              class="workspace-tab active"
+              type="button"
+              role="tab"
+              aria-selected="true"
+              aria-controls="chat-view"
+              data-view="chat"
+            >
+              <span>Chat</span>
+            </button>
+            <button
+              id="survey-tab"
+              class="workspace-tab"
+              type="button"
+              role="tab"
+              aria-selected="false"
+              aria-controls="survey-view"
+              data-view="survey"
+            >
+              <span>Update persona</span>
+            </button>
+            <button
+              id="validation-tab"
+              class="workspace-tab"
+              type="button"
+              role="tab"
+              aria-selected="false"
+              aria-controls="validation-view"
+              data-view="validation"
+            >
+              <span>Validation</span>
+            </button>
+          </nav>
+        </div>
+
+        <div id="sidebar-workspace-body" class="sidebar-workspace-body" hidden>
+          <section id="survey-sidebar" class="sidebar-view" hidden>
+            <div class="overall-progress" aria-live="polite">
+              <div class="survey-stats" aria-label="Survey completion summary">
+                <div class="survey-stat">
+                  <span>Estimated time left</span>
+                  <strong id="remaining-time">Loading...</strong>
+                </div>
+                <div class="survey-stat">
+                  <span>Dimensions answered</span>
+                  <strong
+                    ><span id="dimensions-answered">0</span><small> of </small
+                    ><span id="dimensions-total">...</span></strong
+                  >
+                </div>
+              </div>
+              <div class="progress-copy">
+                <span>Overall progress</span>
+                <strong id="overall-percent">0%</strong>
+              </div>
+              <div class="progress-track">
+                <div id="overall-bar" class="progress-bar"></div>
+              </div>
+              <p id="overall-detail">Loading your saved responses...</p>
+            </div>
+
+            <nav
+              id="module-nav"
+              class="module-nav"
+              aria-label="Survey sections"
+            ></nav>
+          </section>
+
+          <section id="validation-sidebar" class="sidebar-view" hidden>
+            <div
+              class="overall-progress validation-progress"
+              aria-live="polite"
+            >
+              <div class="survey-stats" aria-label="Validation summary">
+                <div class="survey-stat">
+                  <span>Human benchmarks</span>
+                  <strong
+                    ><span id="validation-benchmarks">0</span
+                    ><small> of 4</small></strong
+                  >
+                </div>
+                <div class="survey-stat">
+                  <span>Agent runs</span>
+                  <strong id="validation-agent-runs">0</strong>
+                </div>
+              </div>
+            </div>
+
+            <nav
+              id="validation-survey-nav"
+              class="module-nav validation-survey-nav"
+              aria-label="Validation surveys"
+            ></nav>
+          </section>
+        </div>
+      </aside>
+
+      <main
+        id="chat-view"
+        class="chat-panel"
+        role="tabpanel"
+        aria-labelledby="chat-tab"
+      >
+        <header class="chat-topbar">
+          <div class="chat-topbar-actions">
+            <div class="model-picker">
+              <div class="model-select-shell">
+                <select id="chat-model" aria-label="GPT model" disabled>
+                  <option value="">Loading models...</option>
+                </select>
+                <span
+                  id="chat-model-selected"
+                  class="model-selected-label"
+                  aria-hidden="true"
+                  >Loading models...</span
+                >
+              </div>
+            </div>
+            <button
+              id="chat-reset"
+              class="secondary-button compact-button"
+              type="button"
+              disabled
+            >
+              Reset chat
+            </button>
+            <div
+              id="chat-connection"
+              class="connection-chip pending"
+              role="status"
+            >
+              <span class="connection-dot" aria-hidden="true"></span>
+              <span>connecting</span>
+            </div>
+          </div>
+        </header>
+
+        <section
+          id="chat-surface"
+          class="chat-surface"
+          aria-label="Conversation with persona"
+        >
+          <div
+            id="chat-messages"
+            class="chat-messages"
+            aria-live="polite"
+            aria-relevant="additions"
+          >
+            <div id="chat-welcome" class="chat-welcome">
+              <h2>Start a conversation</h2>
+              <p>The reply will follow the traits in your persona YAML.</p>
+              <p id="chat-privacy-note" class="chat-privacy-note">
+                Messages are sent through your ChatGPT subscription.&#10;No chat
+                history is retained.
+              </p>
+            </div>
+          </div>
+
+          <form id="chat-form" class="chat-composer">
+            <div class="composer-input-row">
+              <label id="chat-input-label" class="sr-only" for="chat-input"
+                >Message persona</label
+              >
+              <textarea
+                id="chat-input"
+                rows="1"
+                maxlength="8000"
+                placeholder="Message persona..."
+                disabled
+              ></textarea>
+              <button
+                id="chat-send"
+                class="primary-button send-button"
+                type="submit"
+                disabled
+              >
+                Send
+              </button>
+            </div>
+          </form>
+        </section>
+      </main>
+
+      <main
+        id="survey-view"
+        class="main-panel"
+        role="tabpanel"
+        aria-labelledby="survey-tab"
+        hidden
+      >
+        <header class="topbar">
+          <div class="topbar-meta">
+            <div id="module-kicker" class="eyebrow">Local and private</div>
+            <div class="save-cluster" role="status" aria-live="polite">
+              <span id="save-dot" class="save-dot" aria-hidden="true"></span>
+              <span id="save-status">loading</span>
+            </div>
+          </div>
+          <h1 id="module-title">Loading survey</h1>
+        </header>
+
+        <section id="module-summary" class="module-summary"></section>
+        <form id="questions" class="questions" autocomplete="off"></form>
+
+        <footer class="footer-actions">
+          <button id="previous-button" class="secondary-button" type="button">
+            Previous
+          </button>
+          <div class="footer-right">
+            <button id="next-button" class="primary-button" type="button">
+              Next section
+            </button>
+          </div>
+        </footer>
+      </main>
+
+      <section
+        id="validation-view"
+        class="validation-panel"
+        role="tabpanel"
+        aria-labelledby="validation-tab"
+        hidden
+      >
+        <div id="validation-root" class="validation-root"></div>
+      </section>
+    </div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <script src="/app.js" defer></script>
+    <script src="/chat.js" defer></script>
+    <script type="module" src="/validation-assets/validation.js"></script>
+  </body>
+</html>

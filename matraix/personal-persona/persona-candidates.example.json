@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "persona": {
+    "persona_id": "example-persona",
+    "display_name": "Example Persona",
+    "version": "1.0"
+  },
+  "source_coverage": {
+    "generated_at": "2026-09-01T00:00:00Z",
+    "sources": [
+      {
+        "id": "memory-summary",
+        "type": "memory",
+        "description": "A memory summary supplied to the current Codex task.",
+        "items_reviewed": 1,
+        "start_date": null,
+        "end_date": "2026-09-01",
+        "limitations": [
+          "The summary is selective and is not a complete copy of ChatGPT history."
+        ]
+      }
+    ],
+    "schema_categories_reviewed": [
+      "*"
+    ],
+    "limitations": [
+      "Only sources actually available in the current task were reviewed."
+    ]
+  },
+  "candidates": [
+    {
+      "id": "cog_verbosity",
+      "value": "Concise",
+      "confidence": "stated",
+      "evidence": "The user explicitly asked for concise responses.",
+      "source_refs": [
+        "memory-summary"
+      ],
+      "as_of": "2026-09-01",
+      "runtime_included": true
+    }
+  ]
+}
