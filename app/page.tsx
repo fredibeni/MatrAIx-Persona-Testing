@@ -322,23 +322,15 @@ function SurveyCard({
 
   return (
     <article className="survey-card" style={surveyThemeStyle(survey)}>
-      <div className="flex items-center justify-between gap-4">
-        <div className="min-w-0">
-          <h2 className="survey-title font-display min-w-0 text-[clamp(1.55rem,3vw,2.15rem)] font-black leading-[0.98] tracking-[-0.045em] text-slate-950">
-            {surveys.indexOf(survey) + 1}. {survey.title}
-          </h2>
-        </div>
-      </div>
-      <p className="survey-description mt-4 min-h-[3.1rem] text-sm leading-6 text-slate-600">
-        {survey.description}
-      </p>
-
-      <div className="mt-6">
+      <div className="survey-card-header">
+        <h2 className="survey-title font-display min-w-0 text-[clamp(1.55rem,3vw,2.15rem)] font-black leading-[0.98] tracking-[-0.045em] text-slate-950">
+          {surveys.indexOf(survey) + 1}. {survey.title}
+        </h2>
         <button
           type="button"
           onClick={onHuman}
           disabled={interactionDisabled}
-          className="run-row focus-ring"
+          className="run-row survey-human-run focus-ring"
         >
           <span className="run-icon">
             <UserRound size={18} />
@@ -352,6 +344,9 @@ function SurveyCard({
           <ChevronRight size={17} className="text-slate-400" />
         </button>
       </div>
+      <p className="survey-description mt-4 min-h-[3.1rem] text-sm leading-6 text-slate-600">
+        {survey.description}
+      </p>
 
       {hasResults && (
         <details className="validation-question-details">

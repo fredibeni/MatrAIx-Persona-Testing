@@ -320,6 +320,13 @@ button:disabled {
   transform: translateY(-3px);
   box-shadow: 0 16px 34px rgba(15, 23, 42, 0.075);
 }
+.survey-card-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
 .run-row {
   display: flex;
   width: 100%;
@@ -332,6 +339,11 @@ button:disabled {
   transition:
     border-color 150ms ease,
     background 150ms ease;
+}
+.survey-human-run {
+  width: fit-content;
+  flex: 0 0 auto;
+  margin-left: auto;
 }
 .run-row:hover {
   background: var(--pale);
@@ -948,6 +960,14 @@ button:disabled {
 }
 
 @media (max-width: 780px) {
+  .survey-card-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .survey-human-run {
+    width: 100%;
+    margin-left: 0;
+  }
   .hero-grid {
     grid-template-columns: 1fr;
     gap: 3rem;
@@ -1569,10 +1589,6 @@ button:disabled {
   margin-top: 12px !important;
   color: var(--validation-muted) !important;
   line-height: 1.5;
-}
-
-.validation-embedded .survey-card > .mt-6 {
-  margin-top: 14px !important;
 }
 
 .validation-embedded :is(.run-row, .answer-option, .chart-pan-button) {

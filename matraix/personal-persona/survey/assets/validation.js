@@ -13185,31 +13185,20 @@ function mi({ survey: e, history: t, onHuman: n, aggregate: r, interactionDisabl
 		className: "survey-card",
 		style: ai(e),
 		children: [
-			/* @__PURE__ */ (0, z.jsx)("div", {
-				className: "flex items-center justify-between gap-4",
-				children: /* @__PURE__ */ (0, z.jsx)("div", {
-					className: "min-w-0",
-					children: /* @__PURE__ */ (0, z.jsxs)("h2", {
-						className: "survey-title font-display min-w-0 text-[clamp(1.55rem,3vw,2.15rem)] font-black leading-[0.98] tracking-[-0.045em] text-slate-950",
-						children: [
-							Gt.indexOf(e) + 1,
-							". ",
-							e.title
-						]
-					})
-				})
-			}),
-			/* @__PURE__ */ (0, z.jsx)("p", {
-				className: "survey-description mt-4 min-h-[3.1rem] text-sm leading-6 text-slate-600",
-				children: e.description
-			}),
-			/* @__PURE__ */ (0, z.jsx)("div", {
-				className: "mt-6",
-				children: /* @__PURE__ */ (0, z.jsxs)("button", {
+			/* @__PURE__ */ (0, z.jsxs)("div", {
+				className: "survey-card-header",
+				children: [/* @__PURE__ */ (0, z.jsxs)("h2", {
+					className: "survey-title font-display min-w-0 text-[clamp(1.55rem,3vw,2.15rem)] font-black leading-[0.98] tracking-[-0.045em] text-slate-950",
+					children: [
+						Gt.indexOf(e) + 1,
+						". ",
+						e.title
+					]
+				}), /* @__PURE__ */ (0, z.jsxs)("button", {
 					type: "button",
 					onClick: n,
 					disabled: i,
-					className: "run-row focus-ring",
+					className: "run-row survey-human-run focus-ring",
 					children: [
 						/* @__PURE__ */ (0, z.jsx)("span", {
 							className: "run-icon",
@@ -13228,7 +13217,11 @@ function mi({ survey: e, history: t, onHuman: n, aggregate: r, interactionDisabl
 							className: "text-slate-400"
 						})
 					]
-				})
+				})]
+			}),
+			/* @__PURE__ */ (0, z.jsx)("p", {
+				className: "survey-description mt-4 min-h-[3.1rem] text-sm leading-6 text-slate-600",
+				children: e.description
 			}),
 			s && /* @__PURE__ */ (0, z.jsxs)("details", {
 				className: "validation-question-details",

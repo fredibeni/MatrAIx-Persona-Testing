@@ -115,6 +115,46 @@ const validationStylesSource = readFileSync(
   new URL('../app/globals.css', import.meta.url),
   'utf8',
 );
+const surveyCardStart = validationPageSource.indexOf('function SurveyCard(');
+const surveyCardEnd = validationPageSource.indexOf(
+  'function QuestionAggregateRow(',
+  surveyCardStart,
+);
+const surveyCardSource = validationPageSource.slice(
+  surveyCardStart,
+  surveyCardEnd,
+);
+assert.match(
+  surveyCardSource,
+  /<div className="survey-card-header">\s*<h2 className="survey-title[^"]*"[\s\S]*?<\/h2>\s*<button[\s\S]*?className="run-row survey-human-run focus-ring"[\s\S]*?<\/button>\s*<\/div>\s*<p className="survey-description/,
+  'each Human benchmark control must share the survey title row',
+);
+const surveyCardHeaderRule = validationStylesSource.match(
+  /(?:^|\n)\.survey-card-header\s*\{([^}]*)\}/,
+);
+assert.match(
+  surveyCardHeaderRule?.[1] ?? '',
+  /display:\s*flex;/,
+  'the survey header must lay out its title and benchmark control side by side',
+);
+assert.match(
+  surveyCardHeaderRule?.[1] ?? '',
+  /justify-content:\s*space-between;/,
+  'the Human benchmark control must align to the right of the survey title',
+);
+const surveyHumanRunRule = validationStylesSource.match(
+  /(?:^|\n)\.survey-human-run\s*\{([^}]*)\}/,
+);
+assert.match(
+  surveyHumanRunRule?.[1] ?? '',
+  /width:\s*fit-content;/,
+  'the Human benchmark control must use its content width on wide layouts',
+);
+assert.match(
+  validationStylesSource,
+  /@media \(max-width: 780px\) \{[\s\S]*?\.survey-card-header\s*\{[\s\S]*?flex-direction:\s*column;[\s\S]*?\}[\s\S]*?\.survey-human-run\s*\{[\s\S]*?width:\s*100%;[\s\S]*?\}/,
+  'compact survey cards must stack a full-width Human benchmark control',
+);
 const quizViewStart = validationPageSource.indexOf('function QuizView(');
 const quizViewEnd = validationPageSource.indexOf(
   'function CategoryProfile(',
