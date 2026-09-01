@@ -13305,7 +13305,7 @@ function pi({ store: e, onHuman: t, onRunAll: n, onLicense: r, runningExperiment
 							})]
 						}), /* @__PURE__ */ (0, z.jsx)("p", {
 							className: "mt-7 max-w-[650px] text-[clamp(1rem,2vw,1.25rem)] leading-8 text-slate-600",
-							children: "Run one experiment across all four surveys, then compare the 10 Agent responses per survey with each other and with any completed Human benchmarks."
+							children: "Fill in the 4 surveys, then compare your results with your digital twin's"
 						})]
 					}), /* @__PURE__ */ (0, z.jsxs)("div", {
 						className: "validation-batch-action",

@@ -489,9 +489,8 @@ function ResultsView({
               Validation <span className="ink-swipe">results</span>
             </h1>
             <p className="mt-7 max-w-[650px] text-[clamp(1rem,2vw,1.25rem)] leading-8 text-slate-600">
-              Run one experiment across all four surveys, then compare the 10
-              Agent responses per survey with each other and with any completed
-              Human benchmarks.
+              Fill in the 4 surveys, then compare your results with your digital
+              twin&apos;s
             </p>
           </div>
           <div className="validation-batch-action">
