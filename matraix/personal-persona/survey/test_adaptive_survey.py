@@ -9,6 +9,7 @@ from unittest.mock import patch
 
 import server
 import yaml
+from adaptive_survey import adapt_definition
 
 
 def write_persona(
@@ -33,6 +34,43 @@ def write_persona(
 
 
 class AdaptiveSurveyTests(unittest.TestCase):
+    @staticmethod
+    def adapted_ranking(answer: list[object]) -> dict:
+        definition = {
+            "modules": [
+                {
+                    "id": "values",
+                    "estimated_minutes": 2,
+                    "questions": [
+                        {
+                            "id": "top_values",
+                            "type": "rank_dimensions",
+                            "max_rank": 2,
+                            "derived_dimension_id": "values_priority",
+                            "entries": [
+                                {"dimension_id": "val_family", "label": "Family"},
+                                {"dimension_id": "val_health", "label": "Health"},
+                            ],
+                        }
+                    ],
+                }
+            ],
+            "coverage": {},
+        }
+        schema_dimensions = [
+            {"id": "val_family"},
+            {"id": "val_health"},
+            {"id": "values_priority"},
+        ]
+        return adapt_definition(
+            definition,
+            {"persona_id": "test", "display_name": "Test", "dimensions": {}},
+            {"answers": {"top_values": answer}},
+            schema_dimensions,
+            persona_session_key="test-context",
+            persona_revision="test-revision",
+        )
+
     def patched_store(self, directory: Path, active_path: Path):
         return (
             patch.object(server, "DATA_DIR", directory),
@@ -176,6 +214,27 @@ class AdaptiveSurveyTests(unittest.TestCase):
             self.assertEqual(current["state"]["persona_id"], "second")
             self.assertEqual(current["state"]["save_revision"], 0)
             self.assertEqual(current["state"]["answers"], {})
+
+    def test_unknown_ranking_value_does_not_complete_question(self) -> None:
+        adapted = self.adapted_ranking(["val_family", "val_not_in_question"])
+
+        self.assertEqual(len(adapted["modules"]), 1)
+        self.assertEqual(adapted["modules"][0]["questions"][0]["id"], "top_values")
+
+    def test_malformed_ranking_values_do_not_complete_question(self) -> None:
+        adapted = self.adapted_ranking(
+            [{"dimension_id": "val_family"}, ["val_health"], 42, None]
+        )
+
+        self.assertEqual(len(adapted["modules"]), 1)
+        self.assertEqual(adapted["modules"][0]["questions"][0]["id"], "top_values")
+
+    def test_allowed_ranking_values_complete_question(self) -> None:
+        adapted = self.adapted_ranking(
+            ["val_family", "val_health", "val_not_in_question"]
+        )
+
+        self.assertEqual(adapted["modules"], [])
 
 
 if __name__ == "__main__":

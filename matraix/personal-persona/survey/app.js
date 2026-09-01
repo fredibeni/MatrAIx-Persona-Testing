@@ -83,7 +83,7 @@ function isAnswered(question) {
     );
   }
   if (question.type === 'rank_dimensions') {
-    return Array.isArray(answer) && answer.some(Boolean);
+    return normaliseQuestionRankingValues(question, answer).length > 0;
   }
   if (question.type === 'free_text') {
     return typeof answer === 'string' && answer.trim().length > 0;
@@ -179,8 +179,7 @@ function questionAnsweredUnits(question) {
     }).length;
   }
   if (question.type === 'rank_dimensions') {
-    if (!Array.isArray(answer)) return 0;
-    return Math.min(question.max_rank, new Set(answer.filter(Boolean)).size);
+    return normaliseQuestionRankingValues(question, answer).length;
   }
   return isAnswered(question) ? 1 : 0;
 }
@@ -250,14 +249,10 @@ function dimensionCoverage() {
         likertByDimension.get(question.dimension_id).push(question);
       } else if (question.type === 'rank_dimensions') {
         const answer = app.state.answers[question.id];
-        if (Array.isArray(answer)) {
-          answer
-            .filter(Boolean)
-            .slice(0, question.max_rank)
-            .forEach((dimId) => completed.add(dimId));
-          if (answer.some(Boolean) && question.derived_dimension_id) {
-            completed.add(question.derived_dimension_id);
-          }
+        const selected = normaliseQuestionRankingValues(question, answer);
+        selected.forEach((dimId) => completed.add(dimId));
+        if (selected.length && question.derived_dimension_id) {
+          completed.add(question.derived_dimension_id);
         }
       }
     });
@@ -443,22 +438,91 @@ function renderSingleChoice(question) {
   `;
 }
 
-function renderRanking(question) {
-  const values = Array.isArray(app.state.answers[question.id])
-    ? app.state.answers[question.id].filter(Boolean).slice(0, question.max_rank)
-    : [];
-  const selectedLabels = new Map(
+function normaliseRankingValues(values, maxRank, allowedValues = null) {
+  if (!Array.isArray(values) || !Number.isInteger(maxRank) || maxRank < 1)
+    return [];
+  const seen = new Set();
+  const selected = [];
+  for (const value of values) {
+    if (
+      typeof value !== 'string' ||
+      !value.trim() ||
+      seen.has(value) ||
+      (allowedValues && !allowedValues.has(value))
+    )
+      continue;
+    seen.add(value);
+    selected.push(value);
+    if (selected.length === maxRank) break;
+  }
+  return selected;
+}
+
+function normaliseQuestionRankingValues(question, values) {
+  return normaliseRankingValues(
+    values,
+    question.max_rank,
+    new Set(question.entries.map((entry) => entry.dimension_id)),
+  );
+}
+
+function moveRankingValue(values, fromIndex, toIndex, maxRank) {
+  const selected = normaliseRankingValues(values, maxRank);
+  if (
+    !Number.isInteger(fromIndex) ||
+    !Number.isInteger(toIndex) ||
+    fromIndex < 0 ||
+    toIndex < 0 ||
+    fromIndex >= selected.length ||
+    toIndex >= selected.length ||
+    fromIndex === toIndex
+  ) {
+    return selected;
+  }
+  const reordered = [...selected];
+  const [moved] = reordered.splice(fromIndex, 1);
+  reordered.splice(toIndex, 0, moved);
+  return reordered;
+}
+
+function rankingSlotsMarkup(question, values) {
+  const selected = normaliseQuestionRankingValues(question, values);
+  const labels = new Map(
     question.entries.map((entry) => [entry.dimension_id, entry.label]),
   );
-  const slots = Array.from({ length: question.max_rank }, (_, rankIndex) => {
-    const value = values[rankIndex];
+  return Array.from({ length: question.max_rank }, (_, rankIndex) => {
+    const value = selected[rankIndex];
+    if (!value) {
+      return `
+        <li class="rank-slot" data-rank-slot-index="${rankIndex}" role="presentation" aria-hidden="true">
+          <strong>${rankIndex + 1}</strong>
+          <span class="rank-slot-label">Select a value</span>
+        </li>
+      `;
+    }
+    const label = labels.get(value) || value;
     return `
-      <span class="rank-slot${value ? ' filled' : ''}">
-        <strong>${rankIndex + 1}</strong>
-        ${escapeHtml(value ? selectedLabels.get(value) || value : 'Select a value')}
-      </span>
+      <li
+        class="rank-slot filled"
+        data-rank-slot-index="${rankIndex}"
+        data-rank-slot-value="${escapeHtml(value)}"
+        data-rank-draggable
+        tabindex="0"
+        aria-label="${escapeHtml(`${label}, rank ${rankIndex + 1} of ${question.max_rank}. ${selected.length} values selected. Drag to reorder or use the arrow keys.`)}"
+      >
+        <strong aria-hidden="true">${rankIndex + 1}</strong>
+        <span class="rank-slot-label">${escapeHtml(label)}</span>
+      </li>
     `;
   }).join('');
+}
+
+function renderRanking(question) {
+  const values = normaliseQuestionRankingValues(
+    question,
+    app.state.answers[question.id],
+  );
+  const slots = rankingSlotsMarkup(question, values);
   const choices = question.entries
     .map((entry) => {
       const rank = values.indexOf(entry.dimension_id) + 1;
@@ -468,6 +532,7 @@ function renderRanking(question) {
           type="button"
           data-rank-value="${escapeHtml(entry.dimension_id)}"
           aria-pressed="${rank > 0 ? 'true' : 'false'}"
+          aria-label="${escapeHtml(rank > 0 ? `${entry.label}, selected at rank ${rank}` : entry.label)}"
         >
           <span class="rank-choice-position">${rank || ''}</span>
           <span>${escapeHtml(entry.label)}</span>
@@ -479,8 +544,9 @@ function renderRanking(question) {
     <article class="question-card" data-question-id="${escapeHtml(question.id)}">
       ${questionHeading(question)}
       <div class="ranking" data-answer-type="rank_dimensions" data-max-rank="${question.max_rank}">
-        <p class="ranking-help">Choose values in order. Select a chosen value again to remove it.</p>
-        <div class="ranking-slots" aria-live="polite">${slots}</div>
+        <p class="ranking-help">Choose values in order. Drag a selected value to reorder it, or focus it and use the arrow keys. Select a chosen value again to remove it.</p>
+        <ol class="ranking-slots" aria-label="Selected values in rank order">${slots}</ol>
+        <p class="sr-only" data-rank-status role="status" aria-live="polite" aria-atomic="true"></p>
         <div class="rank-choice-list">${choices}</div>
       </div>
     </article>
@@ -590,27 +656,212 @@ function syncGridControlValue(card, dimensionId, value) {
 }
 
 function syncRankingControls(card, question, values) {
-  const selected = values.filter(Boolean).slice(0, question.max_rank);
-  const labels = new Map(
-    question.entries.map((entry) => [entry.dimension_id, entry.label]),
-  );
-  const slots = Array.from({ length: question.max_rank }, (_, rankIndex) => {
-    const value = selected[rankIndex];
-    return `
-      <span class="rank-slot${value ? ' filled' : ''}">
-        <strong>${rankIndex + 1}</strong>
-        ${escapeHtml(value ? labels.get(value) || value : 'Select a value')}
-      </span>
-    `;
-  }).join('');
+  const selected = normaliseQuestionRankingValues(question, values);
   const slotContainer = card.querySelector('.ranking-slots');
-  if (slotContainer) slotContainer.innerHTML = slots;
+  if (slotContainer)
+    slotContainer.innerHTML = rankingSlotsMarkup(question, selected);
   card.querySelectorAll('[data-rank-value]').forEach((button) => {
     const rank = selected.indexOf(button.dataset.rankValue) + 1;
     button.setAttribute('aria-pressed', String(rank > 0));
+    const entry = question.entries.find(
+      (candidate) => candidate.dimension_id === button.dataset.rankValue,
+    );
+    const label = entry?.label || button.dataset.rankValue;
+    button.setAttribute(
+      'aria-label',
+      rank > 0 ? `${label}, selected at rank ${rank}` : label,
+    );
     const badge = button.querySelector('.rank-choice-position');
     if (badge) badge.textContent = rank ? String(rank) : '';
   });
+}
+
+function applyRankingReorder(
+  card,
+  question,
+  questionId,
+  movedValue,
+  toIndex,
+  restoreFocus = false,
+) {
+  const selected = normaliseQuestionRankingValues(
+    question,
+    app.state.answers[questionId],
+  );
+  const fromIndex = selected.indexOf(movedValue);
+  const reordered = moveRankingValue(
+    selected,
+    fromIndex,
+    toIndex,
+    question.max_rank,
+  );
+  if (
+    selected.length === reordered.length &&
+    selected.every((value, index) => reordered[index] === value)
+  )
+    return false;
+  const movedLabel =
+    question.entries.find((entry) => entry.dimension_id === movedValue)
+      ?.label || movedValue;
+  syncRankingControls(card, question, reordered);
+  setAnswer(questionId, reordered);
+  const status = card.querySelector('[data-rank-status]');
+  if (status)
+    status.textContent = `Moved ${movedLabel} to rank ${toIndex + 1} of ${question.max_rank}.`;
+  if (restoreFocus) {
+    window.requestAnimationFrame(() => {
+      card
+        .querySelector(`.rank-slot.filled[data-rank-slot-index="${toIndex}"]`)
+        ?.focus({ preventScroll: true });
+    });
+  }
+  return true;
+}
+
+function bindRankingReorderEvents(card, question, questionId) {
+  const slotContainer = card.querySelector('.ranking-slots');
+  if (!slotContainer) return;
+  let pointerDrag = null;
+
+  const selectedValues = () =>
+    normaliseQuestionRankingValues(question, app.state.answers[questionId]);
+  const slotForValue = (value) =>
+    Array.from(
+      slotContainer.querySelectorAll('.rank-slot.filled[data-rank-slot-value]'),
+    ).find((slot) => slot.dataset.rankSlotValue === value);
+  const dropIndexForTarget = (target) => {
+    const slot = target?.closest?.('[data-rank-slot-index]');
+    const selectedCount = selectedValues().length;
+    if (!slot || !selectedCount) return -1;
+    const rawIndex = Number(slot.dataset.rankSlotIndex);
+    if (!Number.isInteger(rawIndex) || rawIndex < 0) return -1;
+    return Math.min(rawIndex, selectedCount - 1);
+  };
+  const clearDragStyles = () => {
+    slotContainer
+      .querySelectorAll('.dragging, .drop-target')
+      .forEach((slot) => slot.classList.remove('dragging', 'drop-target'));
+  };
+  const markDropTarget = (targetIndex) => {
+    slotContainer
+      .querySelectorAll('.drop-target')
+      .forEach((slot) => slot.classList.remove('drop-target'));
+    slotContainer
+      .querySelector(`[data-rank-slot-index="${targetIndex}"]`)
+      ?.classList.add('drop-target');
+  };
+  slotContainer.addEventListener('keydown', (event) => {
+    const slot = event.target?.closest?.('.rank-slot.filled');
+    if (!slot) return;
+    const movedValue = slot.dataset.rankSlotValue;
+    const fromIndex = selectedValues().indexOf(movedValue);
+    const direction =
+      event.key === 'ArrowLeft' || event.key === 'ArrowUp'
+        ? -1
+        : event.key === 'ArrowRight' || event.key === 'ArrowDown'
+          ? 1
+          : 0;
+    if (fromIndex < 0 || !direction) return;
+    event.preventDefault();
+    applyRankingReorder(
+      card,
+      question,
+      questionId,
+      movedValue,
+      fromIndex + direction,
+      true,
+    );
+  });
+
+  slotContainer.addEventListener('pointerdown', (event) => {
+    if (pointerDrag || (event.pointerType === 'mouse' && event.button !== 0))
+      return;
+    const slot = event.target?.closest?.('.rank-slot.filled');
+    if (!slot) return;
+    const movedValue = slot.dataset.rankSlotValue;
+    if (!movedValue) return;
+    const restoreFocus =
+      event.pointerType === 'mouse' || document.activeElement === slot;
+    if (event.pointerType === 'mouse') slot.focus({ preventScroll: true });
+    const rect = slot.getBoundingClientRect();
+    pointerDrag = {
+      pointerId: event.pointerId,
+      movedValue,
+      startX: event.clientX,
+      startY: event.clientY,
+      offsetX: event.clientX - rect.left,
+      offsetY: event.clientY - rect.top,
+      width: rect.width,
+      ghost: null,
+      restoreFocus,
+      active: false,
+    };
+    slot.setPointerCapture?.(event.pointerId);
+    event.preventDefault();
+  });
+  slotContainer.addEventListener('pointermove', (event) => {
+    if (!pointerDrag || pointerDrag.pointerId !== event.pointerId) return;
+    if (!pointerDrag.active) {
+      const distance = Math.hypot(
+        event.clientX - pointerDrag.startX,
+        event.clientY - pointerDrag.startY,
+      );
+      if (distance < 6) return;
+      pointerDrag.active = true;
+      slotForValue(pointerDrag.movedValue)?.classList.add('dragging');
+      const ghost = slotForValue(pointerDrag.movedValue)?.cloneNode(true);
+      if (ghost) {
+        ghost.classList.remove('dragging', 'drop-target');
+        ghost.classList.add('rank-drag-ghost');
+        ghost.removeAttribute('tabindex');
+        ghost.setAttribute('aria-hidden', 'true');
+        ghost.style.width = `${pointerDrag.width}px`;
+        document.body.appendChild(ghost);
+        pointerDrag.ghost = ghost;
+      }
+    }
+    if (pointerDrag.ghost) {
+      pointerDrag.ghost.style.transform = `translate3d(${event.clientX - pointerDrag.offsetX}px, ${event.clientY - pointerDrag.offsetY}px, 0)`;
+    }
+    const target = document.elementFromPoint?.(event.clientX, event.clientY);
+    const targetIndex = dropIndexForTarget(target);
+    if (targetIndex < 0) {
+      markDropTarget(-1);
+      return;
+    }
+    markDropTarget(targetIndex);
+    event.preventDefault();
+  });
+  const finishPointerDrag = (event, cancelled = false) => {
+    if (!pointerDrag || pointerDrag.pointerId !== event.pointerId) return;
+    const targetIndex = cancelled
+      ? -1
+      : dropIndexForTarget(
+          document.elementFromPoint?.(event.clientX, event.clientY),
+        );
+    const { movedValue, active, restoreFocus } = pointerDrag;
+    pointerDrag.ghost?.remove();
+    pointerDrag = null;
+    clearDragStyles();
+    if (active && targetIndex >= 0)
+      applyRankingReorder(
+        card,
+        question,
+        questionId,
+        movedValue,
+        targetIndex,
+        restoreFocus,
+      );
+  };
+  slotContainer.addEventListener('pointerup', (event) =>
+    finishPointerDrag(event),
+  );
+  slotContainer.addEventListener('pointercancel', (event) =>
+    finishPointerDrag(event, true),
+  );
+  slotContainer.addEventListener('lostpointercapture', (event) =>
+    finishPointerDrag(event, true),
+  );
 }
 
 function bindToggleableRadioInputs(
@@ -682,15 +933,18 @@ function bindQuestionEvents() {
       questionId,
       pageId,
     );
+    const rankingQuestion = currentQuestionPage()?.question;
+    if (rankingQuestion?.type === 'rank_dimensions') {
+      bindRankingReorderEvents(card, rankingQuestion, questionId);
+    }
     card.querySelectorAll('[data-rank-value]').forEach((button) => {
       button.addEventListener('click', () => {
         const question = currentQuestionPage()?.question;
         if (!question || question.type !== 'rank_dimensions') return;
-        const values = Array.isArray(app.state.answers[questionId])
-          ? app.state.answers[questionId]
-              .filter(Boolean)
-              .slice(0, question.max_rank)
-          : [];
+        const values = normaliseQuestionRankingValues(
+          question,
+          app.state.answers[questionId],
+        );
         const value = button.dataset.rankValue;
         const existingIndex = values.indexOf(value);
         if (existingIndex >= 0) values.splice(existingIndex, 1);

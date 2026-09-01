@@ -39,6 +39,96 @@ def evidence_record(persona: dict, dimension_id: str) -> dict:
 
 
 class PersonaAutosaveTests(unittest.TestCase):
+    def test_ranking_reorder_survives_persistence_and_persona_compilation(
+        self,
+    ) -> None:
+        original_ranking = ["val_family", "val_adventure", "val_tradition"]
+        reordered_ranking = [
+            "val_obsolete",
+            "val_adventure",
+            "val_family",
+            "val_tradition",
+        ]
+
+        with tempfile.TemporaryDirectory(
+            prefix="matraix-ranking-autosave-test-"
+        ) as temp_dir:
+            data_dir = Path(temp_dir)
+            responses_path = data_dir / "responses.json"
+            events_path = data_dir / "response-events.jsonl"
+            derived_path = data_dir / "derived-dimensions.json"
+            active_path = data_dir / "persona.yaml"
+            persona_store = data_dir / "personas"
+            registry_path = data_dir / "persona-registry.json"
+            active_path.write_text(
+                EXAMPLE_PERSONA_PATH.read_text(encoding="utf-8"),
+                encoding="utf-8",
+            )
+            patches = (
+                patch.object(server, "DATA_DIR", data_dir),
+                patch.object(server, "RESPONSES_PATH", responses_path),
+                patch.object(server, "EVENTS_PATH", events_path),
+                patch.object(server, "DERIVED_PATH", derived_path),
+                patch.object(server, "ACTIVE_PERSONA_PATH", active_path),
+                patch.object(server, "PERSONA_STORE_DIR", persona_store),
+                patch.object(server, "PERSONA_REGISTRY_PATH", registry_path),
+            )
+            for active_patch in patches:
+                active_patch.start()
+                self.addCleanup(active_patch.stop)
+
+            first_state, _, _ = server.save_answers_and_rebuild(
+                {"top_values": original_ranking},
+                ["values_quick"],
+            )
+            second_state, second_changes, _ = server.save_answers_and_rebuild(
+                {"top_values": reordered_ranking},
+                ["values_quick"],
+            )
+
+            registry = server.load_persona_registry()
+            context = server.context_from_entry(
+                second_state["context_id"],
+                registry["contexts"][second_state["context_id"]],
+            )
+            saved_json = json.loads(
+                context.responses_path.read_text(encoding="utf-8")
+            )
+            reloaded_state = server.load_state(context)
+            history = [
+                json.loads(line)
+                for line in context.events_path.read_text(
+                    encoding="utf-8"
+                ).splitlines()
+                if line.strip()
+            ]
+            compiled = load_yaml(active_path)
+
+            self.assertEqual(first_state["answers"]["top_values"], original_ranking)
+            self.assertEqual(second_state["save_revision"], 2)
+            self.assertEqual(
+                saved_json["answers"]["top_values"], reordered_ranking
+            )
+            self.assertEqual(
+                reloaded_state["answers"]["top_values"], reordered_ranking
+            )
+            self.assertEqual(len(second_changes), 1)
+            self.assertEqual(second_changes[0]["question_id"], "top_values")
+            self.assertEqual(second_changes[0]["old_value"], original_ranking)
+            self.assertEqual(second_changes[0]["new_value"], reordered_ranking)
+            self.assertEqual(history[-1]["question_id"], "top_values")
+            self.assertEqual(history[-1]["old_value"], original_ranking)
+            self.assertEqual(history[-1]["new_value"], reordered_ranking)
+            self.assertEqual(
+                evidence_record(compiled, "val_adventure")["value"], "Core value"
+            )
+            self.assertEqual(
+                evidence_record(compiled, "val_family")["value"], "Important"
+            )
+            self.assertEqual(
+                evidence_record(compiled, "values_priority")["value"], "Novelty"
+            )
+
     def test_autosave_updates_active_persona_and_clearing_reverts_to_baseline(
         self,
     ) -> None:

@@ -232,16 +232,28 @@ def direct_updates(
                 )
 
         elif question_type == "rank_dimensions" and isinstance(answer, list):
-            ranked = [value for value in answer if value]
+            allowed_ids = {
+                dimension_id
+                for entry in question.get("entries", [])
+                if isinstance(entry, dict)
+                and isinstance((dimension_id := entry.get("dimension_id")), str)
+                and dimension_id in by_id
+                and dimension_id.startswith("val_")
+            }
             seen: set[str] = set()
-            for index, dim_id in enumerate(ranked[: int(question.get("max_rank", 5))]):
+            ranked: list[str] = []
+            for dim_id in answer:
                 if (
-                    dim_id in seen
-                    or dim_id not in by_id
-                    or not dim_id.startswith("val_")
+                    not isinstance(dim_id, str)
+                    or dim_id in seen
+                    or dim_id not in allowed_ids
                 ):
                     continue
                 seen.add(dim_id)
+                ranked.append(dim_id)
+                if len(ranked) >= int(question.get("max_rank", 5)):
+                    break
+            for index, dim_id in enumerate(ranked):
                 value = "Core value" if index == 0 else "Important"
                 updates.append(
                     {

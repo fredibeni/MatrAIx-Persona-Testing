@@ -719,7 +719,8 @@ input:focus-visible {
 @media (prefers-reduced-motion: reduce) {
   .thinking-dots span,
   .progress-bar,
-  .question-progress-bar {
+  .question-progress-bar,
+  .rank-slot.filled {
     animation: none;
     transition: none;
   }
@@ -1160,6 +1161,9 @@ h1 {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 7px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
 .rank-slot {
@@ -1173,6 +1177,11 @@ h1 {
   color: var(--muted);
   background: var(--control-surface);
   font-size: 11px;
+}
+
+.rank-slot-label {
+  min-width: 0;
+  line-height: 1.25;
 }
 
 .rank-slot strong,
@@ -1191,6 +1200,43 @@ h1 {
 .rank-slot.filled {
   color: var(--ink);
   background: var(--control-surface-selected);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  transition:
+    opacity 140ms ease,
+    background-color 140ms ease;
+}
+
+.rank-slot.filled:active {
+  cursor: grabbing;
+}
+
+.rank-slot.filled.dragging {
+  cursor: grabbing;
+  opacity: 0.3;
+}
+
+.rank-drag-ghost {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+  margin: 0;
+  pointer-events: none;
+  opacity: 0.96;
+  box-shadow: none;
+  transition: none;
+  will-change: transform;
+}
+
+.rank-slot.drop-target {
+  background: var(--surface-hover);
+}
+
+.rank-slot.filled:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
 }
 
 .rank-choice-list {

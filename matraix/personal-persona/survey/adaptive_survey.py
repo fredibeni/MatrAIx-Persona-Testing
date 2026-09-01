@@ -104,7 +104,18 @@ def _complete_ranking(question: dict[str, Any], answers: dict[str, Any]) -> bool
     answer = answers.get(question.get("id"))
     if not isinstance(answer, list):
         return False
-    unique = {value for value in answer if isinstance(value, str) and value}
+    allowed_ids = {
+        dimension_id
+        for entry in question.get("entries", [])
+        if isinstance(entry, dict)
+        and isinstance((dimension_id := entry.get("dimension_id")), str)
+        and dimension_id
+    }
+    unique = {
+        value
+        for value in answer
+        if isinstance(value, str) and value in allowed_ids
+    }
     return len(unique) >= int(question.get("max_rank", 1))
 
 

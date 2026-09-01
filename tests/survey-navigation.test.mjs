@@ -76,6 +76,133 @@ const source = readFileSync(
 );
 vm.runInContext(source, context, { filename: 'survey/app.js' });
 
+const originalRanking = ['adventure', 'tradition', 'achievement'];
+const rankingMoveResult = JSON.parse(
+  vm.runInContext(
+    `(() => {
+      const input = ${JSON.stringify(originalRanking)};
+      const result = moveRankingValue(input, 0, 2, 5);
+      return JSON.stringify({ input, result });
+    })()`,
+    context,
+  ),
+);
+assert.deepEqual(
+  rankingMoveResult.result,
+  ['tradition', 'achievement', 'adventure'],
+  'Dragging the first selected value to the third slot must preserve every value in the new order',
+);
+assert.deepEqual(
+  rankingMoveResult.input,
+  ['adventure', 'tradition', 'achievement'],
+  'Reordering must not mutate the stored input array',
+);
+assert.deepEqual(
+  JSON.parse(
+    vm.runInContext(
+      `JSON.stringify(moveRankingValue(${JSON.stringify(originalRanking)}, 2, 0, 5))`,
+      context,
+    ),
+  ),
+  ['achievement', 'adventure', 'tradition'],
+  'Dragging the last selected value to the first slot must work',
+);
+assert.deepEqual(
+  JSON.parse(
+    vm.runInContext(
+      `JSON.stringify(moveRankingValue(${JSON.stringify(originalRanking)}, 1, 8, 5))`,
+      context,
+    ),
+  ),
+  originalRanking,
+  'An invalid drop position must leave the ranking unchanged',
+);
+assert.deepEqual(
+  JSON.parse(
+    vm.runInContext(
+      `JSON.stringify(normaliseRankingValues(['adventure', '', 'adventure', 'tradition', 'achievement'], 2))`,
+      context,
+    ),
+  ),
+  ['adventure', 'tradition'],
+  'Ranking normalization must remove blanks and duplicates while respecting the maximum rank',
+);
+assert.deepEqual(
+  JSON.parse(
+    vm.runInContext(
+      `JSON.stringify(normaliseRankingValues(
+        ['adventure', {}, 1, 'missing', 'tradition'],
+        5,
+        new Set(['adventure', 'tradition']),
+      ))`,
+      context,
+    ),
+  ),
+  ['adventure', 'tradition'],
+  'Ranking normalization must discard malformed and unknown values',
+);
+const rankingProgress = JSON.parse(
+  vm.runInContext(
+    `(() => {
+      const previousState = app.state;
+      const question = {
+        id: 'test_ranking',
+        type: 'rank_dimensions',
+        max_rank: 2,
+        entries: [
+          { dimension_id: 'adventure', label: 'Adventure' },
+          { dimension_id: 'tradition', label: 'Tradition' },
+        ],
+      };
+      app.state = {
+        answers: {
+          test_ranking: ['adventure', 'unknown', {}, 'adventure'],
+        },
+      };
+      const result = {
+        answered: questionAnsweredUnits(question),
+        complete: isQuestionPageAnswered({ question, entry: null }),
+      };
+      app.state = previousState;
+      return JSON.stringify(result);
+    })()`,
+    context,
+  ),
+);
+assert.deepEqual(
+  rankingProgress,
+  { answered: 1, complete: false },
+  'Unknown and malformed ranking values must not count toward progress or completion',
+);
+const rankingSlots = vm.runInContext(
+  `rankingSlotsMarkup(
+    {
+      max_rank: 3,
+      entries: [
+        { dimension_id: 'adventure', label: 'Adventure' },
+        { dimension_id: 'tradition', label: 'Tradition' },
+      ],
+    },
+    ['adventure', 'tradition'],
+  )`,
+  context,
+);
+assert.match(
+  rankingSlots,
+  /class="rank-slot filled"[\s\S]*data-rank-draggable[\s\S]*tabindex="0"/,
+  'The entire selected-value pill must be draggable and keyboard focusable',
+);
+assert.match(
+  rankingSlots,
+  /Adventure, rank 1 of 3\. 2 values selected\. Drag to reorder or use the arrow keys\./,
+  'A selected pill must expose its rank and keyboard interaction',
+);
+assert.doesNotMatch(
+  rankingSlots,
+  /rank-move-button|rank-drag-handle|&#8593;|&#8595;|&#8942;/,
+  'Selected pills must not render separate arrow buttons or drag handles',
+);
+
 vm.runInContext(
   `
     const testQuestion = (id) => ({
@@ -380,5 +507,5 @@ assert.equal(
 );
 
 console.log(
-  'Survey section boundary and completion navigation fixtures passed.',
+  'Survey ranking, section boundary, and completion navigation fixtures passed.',
 );
