@@ -83,6 +83,12 @@ input {
   font: inherit;
 }
 
+button,
+[role='button'] {
+  box-shadow: none !important;
+  text-shadow: none;
+}
+
 select,
 option,
 textarea,
@@ -1265,7 +1271,6 @@ h1 {
   color: var(--on-green);
   border: 0;
   background: var(--green-strong);
-  box-shadow: 0 8px 18px rgba(214, 182, 91, 0.24);
 }
 
 .primary-button:hover {

@@ -55,10 +55,13 @@ button,
 a {
   -webkit-tap-highlight-color: transparent;
 }
-button {
+button,
+[role='button'] {
   border: 0;
   background: var(--secondary);
+  box-shadow: none !important;
   cursor: pointer;
+  text-shadow: none;
 }
 button:disabled {
   cursor: not-allowed;
@@ -188,7 +191,6 @@ button:disabled {
   border: 0;
   background: #111827;
   color: #fff;
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.14);
 }
 .primary-button:hover:not(:disabled) {
   transform: translateY(-1px);
@@ -1428,7 +1430,6 @@ button:disabled {
   border-radius: 11px;
   color: var(--validation-on-gold) !important;
   background: var(--validation-gold) !important;
-  box-shadow: 0 8px 18px rgba(214, 182, 91, 0.2);
 }
 
 .validation-embedded
