@@ -170,6 +170,11 @@ assert.doesNotMatch(
   />\s*Results\s*</,
   'mid-survey question pages must not render a Results button',
 );
+assert.doesNotMatch(
+  quizViewSource,
+  /These answers become the fixed benchmark/,
+  'survey question pages must not render the removed fixed-benchmark note',
+);
 assert.match(
   quizViewSource,
   /onClick=\{\(\) => setIndex\(\(value\) => Math\.max\(0, value - 1\)\)\}[\s\S]*?<ArrowLeft[\s\S]*?Previous/,

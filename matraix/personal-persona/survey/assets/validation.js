@@ -13506,10 +13506,6 @@ function _i({ survey: e, actor: t, run: n, agentRun: r, onSaveAnswer: i, onCompl
 							/* @__PURE__ */ (0, z.jsx)(O, { size: 17 })
 						]
 					})]
-				}),
-				/* @__PURE__ */ (0, z.jsx)("p", {
-					className: "mx-auto mt-5 max-w-[720px] text-center text-xs leading-5 text-slate-500",
-					children: "These answers become the fixed benchmark for every Agent run in this survey."
 				})
 			]
 		})

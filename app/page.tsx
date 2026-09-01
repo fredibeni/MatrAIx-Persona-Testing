@@ -743,10 +743,6 @@ function QuizView({
             {isLast ? 'Finish this run' : 'Next'} <ArrowRight size={17} />
           </button>
         </div>
-        <p className="mx-auto mt-5 max-w-[720px] text-center text-xs leading-5 text-slate-500">
-          These answers become the fixed benchmark for every Agent run in this
-          survey.
-        </p>
       </div>
     </Shell>
   );
