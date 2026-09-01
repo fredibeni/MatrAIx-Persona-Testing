@@ -250,8 +250,10 @@ input:focus-visible {
 }
 
 .survey-stat {
+  display: flex;
   min-width: 0;
   padding: 9px 10px;
+  flex-direction: column;
   border-radius: 11px;
   background: var(--green-soft);
 }
@@ -270,6 +272,7 @@ input:focus-visible {
 .survey-stat strong {
   display: block;
   overflow: hidden;
+  margin-top: auto;
   color: var(--ink);
   font-size: 17px;
   line-height: 1.15;
