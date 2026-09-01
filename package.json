@@ -11,7 +11,7 @@
     "build": "vite build --config vite.validation.config.ts",
     "lint": "oxlint app components lib vite.validation.config.ts matraix/personal-persona/survey/app.js matraix/personal-persona/survey/chat.js",
     "typecheck": "tsc --noEmit --incremental false",
-    "test": "node --experimental-strip-types tests/scoring.test.mjs && node tests/survey-navigation.test.mjs",
+    "test": "node --experimental-strip-types tests/scoring.test.mjs && node --experimental-strip-types tests/validation-agent-batch.test.mjs && node --experimental-strip-types tests/validation-batch-store.test.mjs && node tests/survey-navigation.test.mjs",
     "test:python": "env PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=matraix:matraix/src:matraix/environment/agents matraix/.venv/bin/python -m unittest discover -s matraix/personal-persona/survey -p 'test_*.py' -v",
     "test:all": "npm test && npm run test:python",
     "check:release": "python3 scripts/check_release.py",

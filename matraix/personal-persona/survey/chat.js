@@ -290,7 +290,7 @@ function renderValidationNavigation(snapshot) {
 
   workspaceElements.validationSurveyNav.append(
     createValidationNavItem({
-      title: 'All surveys',
+      title: 'Results',
       active: !activeSurveyId,
       complete: false,
       onClick: () => navigateValidation('home'),
@@ -304,11 +304,7 @@ function renderValidationNavigation(snapshot) {
         title: `${index + 1}. ${summary?.title ?? 'Survey'}`,
         active: activeSurveyId === surveyId,
         complete: summary?.humanStatus === 'complete',
-        onClick: () =>
-          navigateValidation(
-            typeof summary?.agentDraftAnswered === 'number' ? 'agent' : 'human',
-            surveyId,
-          ),
+        onClick: () => navigateValidation('human', surveyId),
       }),
     );
   });

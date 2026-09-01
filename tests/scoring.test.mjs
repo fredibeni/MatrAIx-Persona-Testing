@@ -26,6 +26,10 @@ import {
   VALIDATION_AGENT_ENDPOINT,
 } from '../lib/validation-agent.ts';
 import {
+  aggregateValidationExperiment,
+  validationExperimentOptions,
+} from '../lib/validation-results.ts';
+import {
   browserMigrationCandidate,
   diskStateAcceptsBrowserMigration,
   loadValidationDiskState,
@@ -302,6 +306,74 @@ assert.deepEqual(
 assert.deepEqual(
   identifiedRoundTrip.everyday.agentRuns[0].personaAgent,
   alfredPersona,
+);
+
+const experimentMetadata = {
+  id: 'experiment-round-trip',
+  startedAt: '2026-01-01T09:59:00.000Z',
+  responseIndex: 1,
+  responsesPerSurvey: 10,
+  surveyIds: surveys.map((survey) => survey.id),
+};
+const experimentRoundTrip = parseStoredSurveyData(
+  serializeSurveyData({
+    everyday: {
+      agentRuns: [
+        {
+          ...identifiedStore.everyday.agentRuns[0],
+          experiment: experimentMetadata,
+        },
+      ],
+    },
+  }),
+  null,
+);
+assert.deepEqual(
+  experimentRoundTrip.everyday.agentRuns[0].experiment,
+  experimentMetadata,
+);
+const invalidExperimentRoundTrip = parseStoredSurveyData(
+  serializeSurveyData({
+    everyday: {
+      agentRuns: [
+        {
+          ...identifiedStore.everyday.agentRuns[0],
+          experiment: { ...experimentMetadata, responseIndex: 11 },
+        },
+      ],
+    },
+  }),
+  null,
+);
+assert.equal(
+  invalidExperimentRoundTrip.everyday.agentRuns[0].experiment,
+  undefined,
+);
+
+const experimentBackfillMerge = mergeSurveyStores(
+  {
+    everyday: {
+      agentRuns: [identifiedStore.everyday.agentRuns[0]],
+      generation: 0,
+      deletedAgentRuns: [],
+    },
+  },
+  {
+    everyday: {
+      agentRuns: [
+        {
+          ...identifiedStore.everyday.agentRuns[0],
+          experiment: experimentMetadata,
+        },
+      ],
+      generation: 0,
+      deletedAgentRuns: [],
+    },
+  },
+);
+assert.deepEqual(
+  experimentBackfillMerge.everyday.agentRuns[0].experiment,
+  experimentMetadata,
 );
 
 const backfilledLegacyIdentity = backfillSurveyStorePersonaAgent(migrated, {
@@ -621,6 +693,282 @@ const unevenNarrative = convergenceNarrative([
   { ...points[2], dimensionCount: 9, similarity: 0.8 },
 ]);
 assert.match(unevenNarrative.detail, /path across recorded depths was uneven/);
+
+function experimentRun({
+  id,
+  sequence,
+  survey,
+  answers,
+  dimensionCount,
+  completedAt,
+  experiment,
+  benchmarkId = null,
+}) {
+  return {
+    id,
+    sequence,
+    dimensionCount,
+    answers,
+    startedAt: completedAt,
+    completedAt,
+    freshSessionAttestedAt: completedAt,
+    benchmarkId,
+    personaAgent: alfredPersona,
+    ...(experiment
+      ? {
+          experiment: {
+            ...experiment,
+            responseIndex: sequence,
+            surveyIds: experiment.surveyIds ?? [survey.id],
+          },
+        }
+      : {}),
+  };
+}
+
+const groupedExperimentBase = {
+  id: 'batch-190-first',
+  startedAt: '2026-02-01T09:00:00.000Z',
+  responsesPerSurvey: 2,
+  surveyIds: ['everyday', 'dials'],
+};
+const groupedExperimentSecond = {
+  ...groupedExperimentBase,
+  id: 'batch-190-second',
+  startedAt: '2026-02-02T09:00:00.000Z',
+};
+const groupedExperimentsStore = {
+  everyday: {
+    agentRuns: [
+      experimentRun({
+        id: 'batch-first-everyday-1',
+        sequence: 1,
+        survey: everyday,
+        answers: everydayA,
+        dimensionCount: 190,
+        completedAt: '2026-02-01T09:01:00.000Z',
+        experiment: groupedExperimentBase,
+      }),
+      experimentRun({
+        id: 'batch-first-everyday-duplicate-slot',
+        sequence: 1,
+        survey: everyday,
+        answers: everydayB,
+        dimensionCount: 190,
+        completedAt: '2026-02-01T09:02:00.000Z',
+        experiment: groupedExperimentBase,
+      }),
+      experimentRun({
+        id: 'batch-second-everyday-1',
+        sequence: 1,
+        survey: everyday,
+        answers: everydayA,
+        dimensionCount: 190,
+        completedAt: '2026-02-02T09:01:00.000Z',
+        experiment: groupedExperimentSecond,
+      }),
+    ],
+  },
+  dials: {
+    agentRuns: [
+      experimentRun({
+        id: 'batch-first-dials-1',
+        sequence: 1,
+        survey: dials,
+        answers: lowDials,
+        dimensionCount: 190,
+        completedAt: '2026-02-01T09:01:00.000Z',
+        experiment: groupedExperimentBase,
+      }),
+    ],
+  },
+};
+const groupedExperimentOptions = validationExperimentOptions(
+  groupedExperimentsStore,
+);
+assert.deepEqual(
+  groupedExperimentOptions.map((option) => option.label),
+  ['190 dim, #2', '190 dim'],
+);
+assert.equal(groupedExperimentOptions[1].completedRuns, 2);
+assert.equal(groupedExperimentOptions[1].expectedRuns, 4);
+assert.equal(groupedExperimentOptions[1].status, 'partial');
+
+const legacyExperimentOptions = validationExperimentOptions({
+  everyday: {
+    agentRuns: [
+      experimentRun({
+        id: 'legacy-everyday',
+        sequence: 1,
+        survey: everyday,
+        answers: everydayA,
+        dimensionCount: 190,
+        completedAt: '2026-01-01T09:00:00.000Z',
+      }),
+    ],
+  },
+  dials: {
+    agentRuns: [
+      experimentRun({
+        id: 'legacy-dials',
+        sequence: 1,
+        survey: dials,
+        answers: lowDials,
+        dimensionCount: 190,
+        completedAt: '2026-01-02T09:00:00.000Z',
+      }),
+    ],
+  },
+});
+assert.equal(legacyExperimentOptions.length, 2);
+assert.deepEqual(
+  legacyExperimentOptions.map((option) => option.label),
+  ['190 dim, #2', '190 dim'],
+);
+assert.deepEqual(
+  legacyExperimentOptions.map((option) => option.completedRuns),
+  [1, 1],
+);
+
+const consistencyBatch = {
+  id: 'consistency-only',
+  startedAt: '2026-03-01T09:00:00.000Z',
+  responsesPerSurvey: 10,
+  surveyIds: ['everyday'],
+};
+const consistencyOnlyStore = {
+  everyday: {
+    agentRuns: Array.from({ length: 10 }, (_, index) =>
+      experimentRun({
+        id: `consistency-${index + 1}`,
+        sequence: index + 1,
+        survey: everyday,
+        answers: index < 7 ? everydayA : everydayB,
+        dimensionCount: 190,
+        completedAt: `2026-03-01T09:00:${String(index + 1).padStart(2, '0')}.000Z`,
+        experiment: consistencyBatch,
+      }),
+    ),
+  },
+};
+const consistencyOnly = aggregateValidationExperiment(
+  consistencyOnlyStore,
+  consistencyBatch.id,
+);
+assert.equal(consistencyOnly.experiment.status, 'complete');
+assert.equal(consistencyOnly.overall.completedRuns, 10);
+assert.equal(consistencyOnly.overall.humanBenchmarkCount, 0);
+assert.equal(consistencyOnly.overall.benchmarkSimilarity, null);
+assert.equal(consistencyOnly.overall.exactBenchmarkMatchRate, null);
+assert.equal(consistencyOnly.overall.consistency, 0.7);
+assert.equal(consistencyOnly.surveys[0].questions[0].consistency, 0.7);
+assert.deepEqual(
+  consistencyOnly.surveys[0].questions[0].distribution.map(
+    ({ count, share }) => [count, share],
+  ),
+  [
+    [7, 0.7],
+    [3, 0.3],
+  ],
+);
+
+const aggregateBatch = {
+  id: 'aggregate-with-benchmarks',
+  startedAt: '2026-04-01T09:00:00.000Z',
+  responsesPerSurvey: 3,
+  surveyIds: ['everyday', 'dials'],
+};
+const aggregateStore = {
+  everyday: {
+    human: {
+      id: 'aggregate-human-everyday',
+      answers: everydayA,
+      startedAt: '2026-03-31T09:00:00.000Z',
+      completedAt: '2026-03-31T09:05:00.000Z',
+      personaAgent: alfredPersona,
+    },
+    agentRuns: [everydayA, everydayA, everydayB].map((answers, index) =>
+      experimentRun({
+        id: `aggregate-everyday-${index + 1}`,
+        sequence: index + 1,
+        survey: everyday,
+        answers,
+        dimensionCount: 191,
+        completedAt: `2026-04-01T09:01:0${index}.000Z`,
+        experiment: aggregateBatch,
+        benchmarkId: 'aggregate-human-everyday',
+      }),
+    ),
+  },
+  dials: {
+    human: {
+      id: 'aggregate-human-dials',
+      answers: lowDials,
+      startedAt: '2026-03-31T09:00:00.000Z',
+      completedAt: '2026-03-31T09:05:00.000Z',
+      personaAgent: alfredPersona,
+    },
+    agentRuns: [lowDials, highDials].map((answers, index) =>
+      experimentRun({
+        id: `aggregate-dials-${index + 1}`,
+        sequence: index + 1,
+        survey: dials,
+        answers,
+        dimensionCount: 191,
+        completedAt: `2026-04-01T09:02:0${index}.000Z`,
+        experiment: aggregateBatch,
+        benchmarkId: 'aggregate-human-dials',
+      }),
+    ),
+  },
+};
+const aggregated = aggregateValidationExperiment(
+  aggregateStore,
+  aggregateBatch.id,
+);
+assert.equal(aggregated.experiment.completedRuns, 5);
+assert.equal(aggregated.experiment.expectedRuns, 6);
+assert.equal(aggregated.experiment.status, 'partial');
+assert.equal(aggregated.overall.humanBenchmarkCount, 2);
+assert.equal(aggregated.overall.benchmarkedSurveyCount, 2);
+assert.equal(aggregated.overall.benchmarkComparisons, 25);
+assert.ok(Math.abs(aggregated.overall.consistency - 0.6) < 1e-12);
+assert.ok(Math.abs(aggregated.overall.benchmarkSimilarity - 0.6) < 1e-12);
+assert.ok(Math.abs(aggregated.overall.exactBenchmarkMatchRate - 0.6) < 1e-12);
+assert.ok(Math.abs(aggregated.surveys[0].benchmarkSimilarity - 2 / 3) < 1e-12);
+assert.equal(aggregated.surveys[1].benchmarkSimilarity, 0.5);
+assert.equal(
+  aggregated.surveys[0].questions[0].consensusAnswerId,
+  everyday.questions[0].options[0].id,
+);
+assert.equal(aggregated.surveys[0].questions[0].exactBenchmarkMatchRate, 2 / 3);
+
+const mismatchedBenchmarkStore = structuredClone(aggregateStore);
+mismatchedBenchmarkStore.everyday.human.personaAgent = secondPersona;
+const mismatchedBenchmark = aggregateValidationExperiment(
+  mismatchedBenchmarkStore,
+  aggregateBatch.id,
+);
+assert.equal(mismatchedBenchmark.overall.humanBenchmarkCount, 1);
+assert.equal(mismatchedBenchmark.overall.benchmarkedSurveyCount, 1);
+assert.equal(mismatchedBenchmark.overall.benchmarkComparisons, 10);
+assert.equal(mismatchedBenchmark.surveys[0].hasHumanBenchmark, false);
+assert.equal(mismatchedBenchmark.surveys[0].benchmarkSimilarity, null);
+assert.equal(mismatchedBenchmark.surveys[0].exactBenchmarkMatchRate, null);
+assert.equal(
+  mismatchedBenchmark.surveys[0].questions[0].humanAnswerLabel,
+  null,
+);
+assert.ok(Math.abs(mismatchedBenchmark.surveys[0].consistency - 2 / 3) < 1e-12);
+assert.deepEqual(
+  mismatchedBenchmark.surveys[0].questions[0].distribution.map(
+    ({ count, share }) => [count, share],
+  ),
+  [
+    [2, 2 / 3],
+    [1, 1 / 3],
+  ],
+);
 
 const sidebarState = buildValidationSidebarState(
   { everyday: convergenceHistory },

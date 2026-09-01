@@ -16,14 +16,15 @@ import sys
 import tempfile
 import threading
 import webbrowser
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from types import ModuleType
-from typing import Any
-from urllib.parse import urlparse
+from typing import Any, Callable
+from urllib.parse import parse_qs, urlparse
 
 import yaml
 from adaptive_survey import adapt_definition, persona_identity
@@ -71,15 +72,25 @@ DEFAULT_CHAT_MODEL = "gpt-5.6-luna"
 VALIDATION_RESULTS_FILENAME = "validation-results.json"
 VALIDATION_RESULTS_SCHEMA_VERSION = 1
 VALIDATION_STORE_VERSION = 2
-VALIDATION_SURVEY_IDS = frozenset(
-    {"everyday", "dials", "plot-twists", "internet-creature"}
+VALIDATION_SURVEY_ORDER = (
+    "everyday",
+    "dials",
+    "plot-twists",
+    "internet-creature",
 )
+VALIDATION_SURVEY_IDS = frozenset(VALIDATION_SURVEY_ORDER)
+VALIDATION_BATCH_RUNS_PER_SURVEY = 10
+VALIDATION_BATCH_MAX_WORKERS = 40
+VALIDATION_BATCH_JOURNAL_SCHEMA_VERSION = 1
+VALIDATION_BATCH_JOURNAL_DIRNAME = "validation-agent-batches"
 VALIDATION_ALLOWED_ORIGINS = frozenset(
     {"http://127.0.0.1:8767", "http://localhost:8767"}
 )
 STATE_LOCK = threading.RLock()
 CHAT_LOCK = threading.Lock()
 VALIDATION_AGENT_LOCK = threading.Lock()
+VALIDATION_AGENT_BATCH_THREADS_LOCK = threading.Lock()
+VALIDATION_AGENT_BATCH_THREADS: dict[str, threading.Thread] = {}
 CHAT_HISTORY_LOCK = threading.Lock()
 CHAT_MESSAGES: list[dict[str, str]] = []
 CHAT_HELPERS: ModuleType | None = None
@@ -96,6 +107,16 @@ class ChatBackend:
 
 
 CHAT_BACKEND: ChatBackend | None = None
+
+
+@dataclass(frozen=True)
+class ValidationAgentContext:
+    backend: ChatBackend
+    helpers: Any
+    identity: str
+    persona_display_name: str
+    snapshot: dict[str, Any]
+    results_directory: Path
 
 
 class ChatUnavailableError(RuntimeError):
@@ -700,6 +721,34 @@ def validate_validation_agent_request(
     return survey_id, context_id, persona_revision
 
 
+def validate_validation_agent_batch_request(
+    payload: dict[str, Any],
+) -> tuple[str, str, int]:
+    required = {"context_id", "persona_revision", "runs_per_survey"}
+    if set(payload) != required:
+        raise TypeError(
+            "Expected only context_id, persona_revision, and runs_per_survey fields"
+        )
+    context_id = payload.get("context_id")
+    persona_revision = payload.get("persona_revision")
+    runs_per_survey = payload.get("runs_per_survey")
+    if not isinstance(context_id, str) or not context_id.strip():
+        raise ValueError("context_id must be a non-empty string")
+    if not isinstance(persona_revision, str) or not re.fullmatch(
+        r"[0-9a-f]{64}", persona_revision
+    ):
+        raise ValueError("persona_revision must be a SHA-256 digest")
+    if (
+        not isinstance(runs_per_survey, int)
+        or isinstance(runs_per_survey, bool)
+        or runs_per_survey != VALIDATION_BATCH_RUNS_PER_SURVEY
+    ):
+        raise ValueError(
+            f"runs_per_survey must be exactly {VALIDATION_BATCH_RUNS_PER_SURVEY}"
+        )
+    return context_id, persona_revision, runs_per_survey
+
+
 def validation_agent_output_schema(survey: dict[str, Any]) -> dict[str, Any]:
     answer_properties = {
         question["id"]: {
@@ -782,6 +831,105 @@ def parse_validation_agent_answers(
     return {question_id: str(answer) for question_id, answer in answers.items()}
 
 
+def prepare_validation_agent_context(
+    expected_context_id: str,
+    expected_revision: str,
+) -> ValidationAgentContext:
+    backend = CHAT_BACKEND
+    if backend is None:
+        raise ChatUnavailableError(
+            CHAT_SETUP_ERROR or "The local Codex backend is unavailable."
+        )
+    helpers = load_chat_helpers()
+    with STATE_LOCK:
+        context = synchronize_active_persona_context_unlocked()
+        if context is None:
+            raise FileNotFoundError("No active persona is available")
+        revision = sha256_path(ACTIVE_PERSONA_PATH)
+        if context.context_id != expected_context_id or revision != expected_revision:
+            raise PersonaContextChangedError(
+                "The active persona changed before the Agent run started"
+            )
+        persona, identity = helpers.load_persona_identity(ACTIVE_PERSONA_PATH)
+        dimension_count = active_persona_dimension_count()
+        snapshot = {
+            "context_id": context.context_id,
+            "persona_id": context.persona_id,
+            "persona_display_name": context.display_name,
+            "baseline_sha256": context.baseline_sha256,
+            "persona_revision": revision,
+            "persona_dimension_count": dimension_count,
+        }
+    name = getattr(persona, "display_name", None) or context.display_name
+    return ValidationAgentContext(
+        backend=backend,
+        helpers=helpers,
+        identity=str(identity),
+        persona_display_name=str(name),
+        snapshot=snapshot,
+        results_directory=context.responses_path.parent,
+    )
+
+
+def assert_validation_agent_context_unchanged(
+    prepared: ValidationAgentContext,
+) -> None:
+    with STATE_LOCK:
+        current = synchronize_active_persona_context_unlocked()
+        current_revision = (
+            sha256_path(ACTIVE_PERSONA_PATH)
+            if ACTIVE_PERSONA_PATH.is_file()
+            else None
+        )
+        if (
+            current is None
+            or current.context_id != prepared.snapshot["context_id"]
+            or current_revision != prepared.snapshot["persona_revision"]
+        ):
+            raise PersonaContextChangedError(
+                "The active persona changed while the Agent run was in progress"
+            )
+
+
+def generate_validation_agent_run_unlocked(
+    survey_id: str,
+    survey: dict[str, Any],
+    prepared: ValidationAgentContext,
+) -> dict[str, Any]:
+    started_at = utc_now()
+    backend = prepared.backend
+    if backend.fake_reply is not None:
+        raw_reply = backend.fake_reply
+    else:
+        raw_reply = prepared.helpers.codex_task_reply(
+            codex=backend.codex,
+            model=backend.model,
+            reasoning_effort=backend.reasoning_effort,
+            identity=prepared.identity,
+            task=validation_agent_task(survey),
+            output_schema=validation_agent_output_schema(survey),
+            timeout=backend.timeout,
+        )
+    answers = parse_validation_agent_answers(raw_reply, survey)
+    return {
+        "ok": True,
+        "survey_id": survey_id,
+        "answers": answers,
+        **prepared.snapshot,
+        "persona_display_name": prepared.persona_display_name,
+        "model": backend.model,
+        "reasoning_effort": backend.reasoning_effort,
+        "started_at": started_at,
+        "completed_at": utc_now(),
+        "execution": {
+            "mode": "codex-ephemeral",
+            "prior_conversation_messages": 0,
+            "memory": "disabled",
+            "tools": "disabled",
+        },
+    }
+
+
 def generate_validation_agent_run(payload: dict[str, Any]) -> dict[str, Any]:
     survey_id, expected_context_id, expected_revision = (
         validate_validation_agent_request(payload)
@@ -791,89 +939,548 @@ def generate_validation_agent_run(payload: dict[str, Any]) -> dict[str, Any]:
         raise ValidationAgentBusyError(
             "Another Validation Agent run is already in progress."
         )
-    started_at = utc_now()
     try:
-        backend = CHAT_BACKEND
-        if backend is None:
-            raise ChatUnavailableError(
-                CHAT_SETUP_ERROR or "The local Codex backend is unavailable."
-            )
-        helpers = load_chat_helpers()
-        with STATE_LOCK:
-            context = synchronize_active_persona_context_unlocked()
-            if context is None:
-                raise FileNotFoundError("No active persona is available")
-            revision = sha256_path(ACTIVE_PERSONA_PATH)
-            if (
-                context.context_id != expected_context_id
-                or revision != expected_revision
-            ):
-                raise PersonaContextChangedError(
-                    "The active persona changed before the Agent run started"
-                )
-            persona, identity = helpers.load_persona_identity(ACTIVE_PERSONA_PATH)
-            dimension_count = active_persona_dimension_count()
-            snapshot = {
-                "context_id": context.context_id,
-                "persona_id": context.persona_id,
-                "persona_display_name": context.display_name,
-                "baseline_sha256": context.baseline_sha256,
-                "persona_revision": revision,
-                "persona_dimension_count": dimension_count,
-            }
-
-        if backend.fake_reply is not None:
-            raw_reply = backend.fake_reply
-        else:
-            raw_reply = helpers.codex_task_reply(
-                codex=backend.codex,
-                model=backend.model,
-                reasoning_effort=backend.reasoning_effort,
-                identity=identity,
-                task=validation_agent_task(survey),
-                output_schema=validation_agent_output_schema(survey),
-                timeout=backend.timeout,
-            )
-        answers = parse_validation_agent_answers(raw_reply, survey)
-
-        with STATE_LOCK:
-            current = synchronize_active_persona_context_unlocked()
-            current_revision = (
-                sha256_path(ACTIVE_PERSONA_PATH)
-                if ACTIVE_PERSONA_PATH.is_file()
-                else None
-            )
-            if (
-                current is None
-                or current.context_id != snapshot["context_id"]
-                or current_revision != snapshot["persona_revision"]
-            ):
-                raise PersonaContextChangedError(
-                    "The active persona changed while the Agent run was in progress"
-                )
-
-        name = getattr(persona, "display_name", None) or snapshot[
-            "persona_display_name"
-        ]
-        return {
-            "ok": True,
-            "survey_id": survey_id,
-            "answers": answers,
-            **snapshot,
-            "persona_display_name": str(name),
-            "model": backend.model,
-            "reasoning_effort": backend.reasoning_effort,
-            "started_at": started_at,
-            "completed_at": utc_now(),
-            "execution": {
-                "mode": "codex-ephemeral",
-                "prior_conversation_messages": 0,
-                "memory": "disabled",
-                "tools": "disabled",
-            },
-        }
+        prepared = prepare_validation_agent_context(
+            expected_context_id,
+            expected_revision,
+        )
+        result = generate_validation_agent_run_unlocked(
+            survey_id,
+            survey,
+            prepared,
+        )
+        assert_validation_agent_context_unchanged(prepared)
+        return result
     finally:
         VALIDATION_AGENT_LOCK.release()
+
+
+def validation_agent_failure(
+    survey_id: str,
+    response_index: int,
+    started_at: str,
+    error: Exception,
+) -> dict[str, Any]:
+    if isinstance(error, TimeoutError):
+        code = "agent_timeout"
+        message = "The Agent run did not finish in time."
+    elif isinstance(error, ValidationAgentOutputError):
+        code = "invalid_agent_output"
+        message = "The Agent returned an invalid survey result."
+    elif isinstance(error, ChatUnavailableError):
+        code = "agent_unavailable"
+        message = "Codex is not available through ChatGPT sign-in."
+    else:
+        code = "agent_failed"
+        message = "The Agent could not complete this survey."
+        print(
+            "Validation Agent batch worker error: "
+            f"{type(error).__name__} for {survey_id} response {response_index} "
+            "(details suppressed)",
+            file=sys.stderr,
+        )
+    return {
+        "ok": False,
+        "survey_id": survey_id,
+        "response_index": response_index,
+        "code": code,
+        "error": message,
+        "started_at": started_at,
+        "completed_at": utc_now(),
+    }
+
+
+def generate_validation_agent_batch_entry(
+    survey_id: str,
+    response_index: int,
+    survey: dict[str, Any],
+    prepared: ValidationAgentContext,
+) -> dict[str, Any]:
+    started_at = utc_now()
+    try:
+        result = generate_validation_agent_run_unlocked(
+            survey_id,
+            survey,
+            prepared,
+        )
+        return {**result, "response_index": response_index}
+    except Exception as exc:  # noqa: BLE001 - provider details stay server-side.
+        return validation_agent_failure(
+            survey_id,
+            response_index,
+            started_at,
+            exc,
+        )
+
+
+def validation_agent_batch_document(
+    prepared: ValidationAgentContext,
+    batch_id: str,
+    runs_per_survey: int,
+    started_at: str,
+    results: list[dict[str, Any]],
+    *,
+    status: str,
+    completed_at: str | None = None,
+    code: str | None = None,
+    error: str | None = None,
+) -> dict[str, Any]:
+    succeeded_runs = sum(result.get("ok") is True for result in results)
+    failed_runs = len(results) - succeeded_runs
+    document = {
+        "schema_version": VALIDATION_BATCH_JOURNAL_SCHEMA_VERSION,
+        "ok": status != "failed",
+        "status": status,
+        "batch_id": batch_id,
+        **prepared.snapshot,
+        "persona_display_name": prepared.persona_display_name,
+        "model": prepared.backend.model,
+        "reasoning_effort": prepared.backend.reasoning_effort,
+        "runs_per_survey": runs_per_survey,
+        "survey_count": len(VALIDATION_SURVEY_ORDER),
+        "requested_runs": len(VALIDATION_SURVEY_ORDER) * runs_per_survey,
+        "completed_runs": len(results),
+        "succeeded_runs": succeeded_runs,
+        "failed_runs": failed_runs,
+        "started_at": started_at,
+        "completed_at": completed_at,
+        "results": results,
+    }
+    if code is not None:
+        document["code"] = code
+    if error is not None:
+        document["error"] = error
+    return document
+
+
+def validation_agent_batch_journal_path(
+    results_directory: Path,
+    batch_id: str,
+) -> Path:
+    return (
+        results_directory
+        / VALIDATION_BATCH_JOURNAL_DIRNAME
+        / f"{batch_id}.json"
+    )
+
+
+def write_validation_agent_batch_journal(
+    path: Path,
+    document: dict[str, Any],
+) -> None:
+    atomic_write_text(
+        path,
+        json.dumps(document, indent=2, ensure_ascii=True) + "\n",
+    )
+
+
+def generate_validation_agent_batch_unlocked(
+    prepared: ValidationAgentContext,
+    batch_id: str,
+    runs_per_survey: int,
+    started_at: str,
+    on_progress: Callable[[dict[str, Any]], None] | None = None,
+) -> dict[str, Any]:
+    surveys_by_id = {
+        survey_id: load_validation_survey(survey_id)
+        for survey_id in VALIDATION_SURVEY_ORDER
+    }
+    requests = [
+        (survey_id, response_index, surveys_by_id[survey_id], prepared)
+        for survey_id in VALIDATION_SURVEY_ORDER
+        for response_index in range(1, runs_per_survey + 1)
+    ]
+    slots: list[dict[str, Any] | None] = [None] * len(requests)
+    with ThreadPoolExecutor(
+        max_workers=VALIDATION_BATCH_MAX_WORKERS,
+        thread_name_prefix="matraix-validation-agent",
+    ) as executor:
+        futures = {
+            executor.submit(generate_validation_agent_batch_entry, *request): index
+            for index, request in enumerate(requests)
+        }
+        for future in as_completed(futures):
+            slots[futures[future]] = future.result()
+            completed_results = [result for result in slots if result is not None]
+            if on_progress is not None:
+                on_progress(
+                    validation_agent_batch_document(
+                        prepared,
+                        batch_id,
+                        runs_per_survey,
+                        started_at,
+                        completed_results,
+                        status="running",
+                    )
+                )
+
+    assert_validation_agent_context_unchanged(prepared)
+    results = [result for result in slots if result is not None]
+    return validation_agent_batch_document(
+        prepared,
+        batch_id,
+        runs_per_survey,
+        started_at,
+        results,
+        status="complete",
+        completed_at=utc_now(),
+    )
+
+
+def generate_validation_agent_batch(payload: dict[str, Any]) -> dict[str, Any]:
+    expected_context_id, expected_revision, runs_per_survey = (
+        validate_validation_agent_batch_request(payload)
+    )
+    if not VALIDATION_AGENT_LOCK.acquire(blocking=False):
+        raise ValidationAgentBusyError(
+            "Another Validation Agent run is already in progress."
+        )
+    batch_id = f"validation-batch-{secrets.token_hex(12)}"
+    started_at = utc_now()
+    try:
+        prepared = prepare_validation_agent_context(
+            expected_context_id,
+            expected_revision,
+        )
+        return generate_validation_agent_batch_unlocked(
+            prepared,
+            batch_id,
+            runs_per_survey,
+            started_at,
+        )
+    finally:
+        VALIDATION_AGENT_LOCK.release()
+
+
+def complete_interrupted_validation_agent_batch(
+    journal: dict[str, Any],
+) -> dict[str, Any]:
+    if journal.get("status") != "running":
+        return journal
+    results = journal.get("results")
+    if not isinstance(results, list):
+        results = []
+    existing_slots = {
+        (result.get("survey_id"), result.get("response_index"))
+        for result in results
+        if isinstance(result, dict)
+    }
+    stamp = utc_now()
+    for survey_id in VALIDATION_SURVEY_ORDER:
+        for response_index in range(1, VALIDATION_BATCH_RUNS_PER_SURVEY + 1):
+            if (survey_id, response_index) in existing_slots:
+                continue
+            results.append(
+                {
+                    "ok": False,
+                    "survey_id": survey_id,
+                    "response_index": response_index,
+                    "code": "agent_interrupted",
+                    "error": "The Agent run was interrupted before it finished.",
+                    "started_at": journal.get("started_at") or stamp,
+                    "completed_at": stamp,
+                }
+            )
+    survey_order = {
+        survey_id: index for index, survey_id in enumerate(VALIDATION_SURVEY_ORDER)
+    }
+    results.sort(
+        key=lambda result: (
+            survey_order.get(str(result.get("survey_id")), len(survey_order)),
+            int(result.get("response_index", 0)),
+        )
+    )
+    succeeded_runs = sum(
+        isinstance(result, dict) and result.get("ok") is True
+        for result in results
+    )
+    return {
+        **journal,
+        "ok": True,
+        "status": "complete",
+        "completed_runs": len(results),
+        "succeeded_runs": succeeded_runs,
+        "failed_runs": len(results) - succeeded_runs,
+        "completed_at": stamp,
+        "results": results,
+    }
+
+
+def validation_agent_batch_thread_alive(batch_id: str) -> bool:
+    with VALIDATION_AGENT_BATCH_THREADS_LOCK:
+        thread = VALIDATION_AGENT_BATCH_THREADS.get(batch_id)
+        return bool(thread and (thread.ident is None or thread.is_alive()))
+
+
+def load_validation_agent_batch_journal(
+    path: Path,
+    *,
+    recover_interrupted: bool = True,
+) -> dict[str, Any]:
+    journal = json.loads(path.read_text(encoding="utf-8"))
+    if (
+        not isinstance(journal, dict)
+        or journal.get("schema_version")
+        != VALIDATION_BATCH_JOURNAL_SCHEMA_VERSION
+        or not isinstance(journal.get("batch_id"), str)
+        or journal.get("status") not in {"running", "complete", "failed"}
+    ):
+        raise ValueError("Validation Agent batch journal is invalid")
+    if (
+        recover_interrupted
+        and journal["status"] == "running"
+        and not validation_agent_batch_thread_alive(journal["batch_id"])
+    ):
+        journal = complete_interrupted_validation_agent_batch(journal)
+        write_validation_agent_batch_journal(path, journal)
+    return journal
+
+
+def run_validation_agent_batch_job(
+    prepared: ValidationAgentContext,
+    batch_id: str,
+    runs_per_survey: int,
+    started_at: str,
+    journal_path: Path,
+) -> None:
+    try:
+        result = generate_validation_agent_batch_unlocked(
+            prepared,
+            batch_id,
+            runs_per_survey,
+            started_at,
+            lambda progress: write_validation_agent_batch_journal(
+                journal_path,
+                progress,
+            ),
+        )
+        write_validation_agent_batch_journal(journal_path, result)
+    except PersonaContextChangedError as exc:
+        try:
+            journal = load_validation_agent_batch_journal(
+                journal_path,
+                recover_interrupted=False,
+            )
+        except (OSError, ValueError, json.JSONDecodeError):
+            journal = validation_agent_batch_document(
+                prepared,
+                batch_id,
+                runs_per_survey,
+                started_at,
+                [],
+                status="running",
+            )
+        failed = {
+            **journal,
+            "ok": False,
+            "status": "failed",
+            "code": "persona_changed",
+            "error": str(exc),
+            "completed_at": utc_now(),
+        }
+        write_validation_agent_batch_journal(journal_path, failed)
+    except Exception as exc:  # noqa: BLE001 - details remain server-side.
+        print(
+            f"Validation Agent batch job error: {type(exc).__name__} "
+            "(details suppressed)",
+            file=sys.stderr,
+        )
+        try:
+            journal = load_validation_agent_batch_journal(
+                journal_path,
+                recover_interrupted=False,
+            )
+            completed = complete_interrupted_validation_agent_batch(journal)
+            write_validation_agent_batch_journal(journal_path, completed)
+        except Exception:  # noqa: BLE001 - the original failure is already logged.
+            pass
+    finally:
+        VALIDATION_AGENT_LOCK.release()
+        with VALIDATION_AGENT_BATCH_THREADS_LOCK:
+            VALIDATION_AGENT_BATCH_THREADS.pop(batch_id, None)
+
+
+def start_validation_agent_batch(payload: dict[str, Any]) -> dict[str, Any]:
+    expected_context_id, expected_revision, runs_per_survey = (
+        validate_validation_agent_batch_request(payload)
+    )
+    if not VALIDATION_AGENT_LOCK.acquire(blocking=False):
+        raise ValidationAgentBusyError(
+            "Another Validation Agent run is already in progress."
+        )
+    batch_id = f"validation-batch-{secrets.token_hex(12)}"
+    started_at = utc_now()
+    try:
+        prepared = prepare_validation_agent_context(
+            expected_context_id,
+            expected_revision,
+        )
+        initial = validation_agent_batch_document(
+            prepared,
+            batch_id,
+            runs_per_survey,
+            started_at,
+            [],
+            status="running",
+        )
+        journal_path = validation_agent_batch_journal_path(
+            prepared.results_directory,
+            batch_id,
+        )
+        write_validation_agent_batch_journal(journal_path, initial)
+        thread = threading.Thread(
+            target=run_validation_agent_batch_job,
+            args=(
+                prepared,
+                batch_id,
+                runs_per_survey,
+                started_at,
+                journal_path,
+            ),
+            daemon=True,
+            name=f"matraix-{batch_id}",
+        )
+        with VALIDATION_AGENT_BATCH_THREADS_LOCK:
+            VALIDATION_AGENT_BATCH_THREADS[batch_id] = thread
+        thread.start()
+        return initial
+    except Exception:
+        with VALIDATION_AGENT_BATCH_THREADS_LOCK:
+            VALIDATION_AGENT_BATCH_THREADS.pop(batch_id, None)
+        VALIDATION_AGENT_LOCK.release()
+        raise
+
+
+def validation_agent_batch_saved_slots(
+    context: PersonaContext,
+    batch_id: str,
+) -> set[tuple[str, int]]:
+    path = validation_results_path(context)
+    if not path.is_file():
+        return set()
+    try:
+        state = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return set()
+    store = state.get("store") if isinstance(state, dict) else None
+    survey_store = store.get("surveys") if isinstance(store, dict) else None
+    if not isinstance(survey_store, dict):
+        return set()
+    slots: set[tuple[str, int]] = set()
+    for survey_id, history in survey_store.items():
+        if survey_id not in VALIDATION_SURVEY_IDS or not isinstance(history, dict):
+            continue
+        agent_runs = history.get("agentRuns", [])
+        if isinstance(agent_runs, list):
+            for run in agent_runs:
+                experiment = run.get("experiment") if isinstance(run, dict) else None
+                if (
+                    isinstance(experiment, dict)
+                    and experiment.get("id") == batch_id
+                    and isinstance(experiment.get("responseIndex"), int)
+                ):
+                    slots.add((survey_id, experiment["responseIndex"]))
+        deleted_runs = history.get("deletedAgentRuns", [])
+        if isinstance(deleted_runs, list):
+            for response_index in range(1, VALIDATION_BATCH_RUNS_PER_SURVEY + 1):
+                base_id = f"agent-{batch_id}-{survey_id}-{response_index}"
+                if any(
+                    isinstance(deletion, dict)
+                    and isinstance(deletion.get("id"), str)
+                    and (
+                        deletion["id"] == base_id
+                        or deletion["id"].startswith(f"{base_id}-")
+                    )
+                    for deletion in deleted_runs
+                ):
+                    slots.add((survey_id, response_index))
+    return slots
+
+
+def validation_agent_batch_summary(journal: dict[str, Any]) -> dict[str, Any]:
+    return {
+        key: journal.get(key)
+        for key in (
+            "ok",
+            "status",
+            "batch_id",
+            "context_id",
+            "persona_revision",
+            "persona_dimension_count",
+            "runs_per_survey",
+            "survey_count",
+            "requested_runs",
+            "completed_runs",
+            "succeeded_runs",
+            "failed_runs",
+            "started_at",
+            "completed_at",
+            "code",
+            "error",
+        )
+        if key in journal
+    }
+
+
+def pending_validation_agent_batches() -> dict[str, Any]:
+    with STATE_LOCK:
+        context = synchronize_active_persona_context_unlocked()
+        if context is None:
+            raise FileNotFoundError("No active persona is available")
+        revision = sha256_path(ACTIVE_PERSONA_PATH)
+    journal_directory = (
+        context.responses_path.parent / VALIDATION_BATCH_JOURNAL_DIRNAME
+    )
+    pending: list[dict[str, Any]] = []
+    for path in sorted(journal_directory.glob("validation-batch-*.json")):
+        try:
+            journal = load_validation_agent_batch_journal(path)
+        except (OSError, ValueError, json.JSONDecodeError):
+            continue
+        if journal.get("context_id") != context.context_id:
+            continue
+        status = journal.get("status")
+        if status == "running":
+            pending.append(validation_agent_batch_summary(journal))
+            continue
+        if status != "complete":
+            continue
+        successes = {
+            (result.get("survey_id"), result.get("response_index"))
+            for result in journal.get("results", [])
+            if isinstance(result, dict) and result.get("ok") is True
+        }
+        if successes - validation_agent_batch_saved_slots(
+            context,
+            str(journal["batch_id"]),
+        ):
+            pending.append(validation_agent_batch_summary(journal))
+    pending.sort(key=lambda item: str(item.get("started_at") or ""))
+    return {
+        "ok": True,
+        "context_id": context.context_id,
+        "persona_revision": revision,
+        "batches": pending,
+    }
+
+
+def validation_agent_batch_status(batch_id: str) -> dict[str, Any]:
+    if not re.fullmatch(r"validation-batch-[0-9a-f]{24}", batch_id):
+        raise ValueError("batch_id is invalid")
+    with STATE_LOCK:
+        context = synchronize_active_persona_context_unlocked()
+        if context is None:
+            raise FileNotFoundError("No active persona is available")
+    path = validation_agent_batch_journal_path(
+        context.responses_path.parent,
+        batch_id,
+    )
+    if not path.is_file():
+        raise FileNotFoundError("Validation Agent batch was not found")
+    journal = load_validation_agent_batch_journal(path)
+    if journal.get("context_id") != context.context_id:
+        raise FileNotFoundError("Validation Agent batch was not found")
+    return journal
 
 
 def definition_hash() -> str:
@@ -1391,6 +1998,82 @@ def stamp_validation_store_identity(
     return store
 
 
+def validate_validation_agent_experiment(
+    value: Any,
+    survey_id: str,
+    path: str,
+) -> None:
+    if not isinstance(value, dict):
+        raise TypeError(f"{path} must be an object")
+    required = {
+        "id",
+        "startedAt",
+        "responseIndex",
+        "responsesPerSurvey",
+        "surveyIds",
+    }
+    if set(value) != required:
+        raise TypeError(
+            f"{path} must contain only id, startedAt, responseIndex, "
+            "responsesPerSurvey, and surveyIds"
+        )
+
+    experiment_id = value.get("id")
+    if (
+        not isinstance(experiment_id, str)
+        or not experiment_id.strip()
+        or len(experiment_id) > 200
+    ):
+        raise ValueError(f"{path}.id must be a non-empty string of at most 200 chars")
+
+    started_at = value.get("startedAt")
+    if not isinstance(started_at, str) or not started_at.strip():
+        raise ValueError(f"{path}.startedAt must be a timestamp string")
+    try:
+        parsed_started_at = datetime.fromisoformat(
+            started_at.replace("Z", "+00:00")
+        )
+    except ValueError as exc:
+        raise ValueError(f"{path}.startedAt must be a timestamp string") from exc
+    if parsed_started_at.tzinfo is None:
+        raise ValueError(f"{path}.startedAt must include a timezone")
+
+    response_index = value.get("responseIndex")
+    responses_per_survey = value.get("responsesPerSurvey")
+    if (
+        not isinstance(responses_per_survey, int)
+        or isinstance(responses_per_survey, bool)
+        or responses_per_survey != VALIDATION_BATCH_RUNS_PER_SURVEY
+    ):
+        raise ValueError(
+            f"{path}.responsesPerSurvey must be exactly "
+            f"{VALIDATION_BATCH_RUNS_PER_SURVEY}"
+        )
+    if (
+        not isinstance(response_index, int)
+        or isinstance(response_index, bool)
+        or response_index < 1
+        or response_index > responses_per_survey
+    ):
+        raise ValueError(
+            f"{path}.responseIndex must be between 1 and responsesPerSurvey"
+        )
+
+    survey_ids = value.get("surveyIds")
+    if not isinstance(survey_ids, list) or not survey_ids:
+        raise TypeError(f"{path}.surveyIds must be a non-empty list")
+    if not all(isinstance(item, str) for item in survey_ids):
+        raise TypeError(f"{path}.surveyIds must contain strings")
+    if len(set(survey_ids)) != len(survey_ids):
+        raise ValueError(f"{path}.surveyIds must not contain duplicates")
+    unknown_survey_ids = set(survey_ids) - VALIDATION_SURVEY_IDS
+    if unknown_survey_ids:
+        names = ", ".join(sorted(unknown_survey_ids))
+        raise ValueError(f"{path}.surveyIds contains unknown surveys: {names}")
+    if survey_id not in survey_ids:
+        raise ValueError(f"{path}.surveyIds must include its owning survey")
+
+
 def validate_validation_store(value: Any) -> dict[str, Any]:
     """Validate the stable outer shape before writing browser-provided data."""
     if not isinstance(value, dict):
@@ -1428,6 +2111,14 @@ def validate_validation_store(value: Any) -> dict[str, Any]:
             raise TypeError(
                 f"store.surveys.{survey_id}.agentRuns must contain objects"
             )
+        for run_index, run in enumerate(agent_runs):
+            experiment = run.get("experiment")
+            if experiment is not None:
+                validate_validation_agent_experiment(
+                    experiment,
+                    survey_id,
+                    f"store.surveys.{survey_id}.agentRuns[{run_index}].experiment",
+                )
         if not isinstance(deleted_runs, list) or not all(
             isinstance(run, dict) for run in deleted_runs
         ):
@@ -1636,6 +2327,7 @@ class SurveyHandler(BaseHTTPRequestHandler):
         if urlparse(self.path).path not in {
             "/api/validation/state",
             "/api/validation/agent-run",
+            "/api/validation/agent-batch",
         }:
             return
         origin = self.headers.get("Origin")
@@ -1697,6 +2389,7 @@ class SurveyHandler(BaseHTTPRequestHandler):
         if path not in {
             "/api/validation/state",
             "/api/validation/agent-run",
+            "/api/validation/agent-batch",
         }:
             self.send_error_json(HTTPStatus.NOT_FOUND, "Not found")
             return
@@ -1712,10 +2405,15 @@ class SurveyHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self) -> None:
-        path = urlparse(self.path).path
-        if path == "/api/validation/state":
+        parsed_url = urlparse(self.path)
+        path = parsed_url.path
+        if path in {
+            "/api/validation/state",
+            "/api/validation/agent-batch",
+        }:
             if not self.authorize_validation_request():
                 return
+        if path == "/api/validation/state":
             try:
                 self.send_json(active_validation_state())
             except (FileNotFoundError, TypeError, ValueError) as exc:
@@ -1724,6 +2422,38 @@ class SurveyHandler(BaseHTTPRequestHandler):
                     str(exc),
                     code="validation_state_unavailable",
                 )
+            return
+        if path == "/api/validation/agent-batch":
+            query = parse_qs(parsed_url.query, keep_blank_values=True)
+            if set(query) - {"batch_id"} or len(query.get("batch_id", [])) > 1:
+                self.send_error_json(
+                    HTTPStatus.BAD_REQUEST,
+                    "Expected only one optional batch_id query parameter.",
+                    code="invalid_validation_agent_batch_request",
+                )
+                return
+            try:
+                batch_ids = query.get("batch_id", [])
+                result = (
+                    validation_agent_batch_status(batch_ids[0])
+                    if batch_ids
+                    else pending_validation_agent_batches()
+                )
+            except ValueError as exc:
+                self.send_error_json(
+                    HTTPStatus.BAD_REQUEST,
+                    str(exc),
+                    code="invalid_validation_agent_batch_request",
+                )
+                return
+            except FileNotFoundError as exc:
+                self.send_error_json(
+                    HTTPStatus.NOT_FOUND,
+                    str(exc),
+                    code="agent_batch_not_found",
+                )
+                return
+            self.send_json(result)
             return
         if not self.authorize_local_request(mutation=False):
             return
@@ -1790,6 +2520,7 @@ class SurveyHandler(BaseHTTPRequestHandler):
         if path in {
             "/api/validation/state",
             "/api/validation/agent-run",
+            "/api/validation/agent-batch",
         }:
             if not self.authorize_validation_request():
                 return
@@ -1806,7 +2537,10 @@ class SurveyHandler(BaseHTTPRequestHandler):
         max_bytes = MAX_BODY_BYTES
         if path.startswith("/api/chat/"):
             max_bytes = MAX_CHAT_BODY_BYTES
-        elif path == "/api/validation/agent-run":
+        elif path in {
+            "/api/validation/agent-run",
+            "/api/validation/agent-batch",
+        }:
             max_bytes = MAX_CHAT_BODY_BYTES
         elif path == "/api/validation/state":
             max_bytes = MAX_VALIDATION_BODY_BYTES
@@ -1908,6 +2642,52 @@ class SurveyHandler(BaseHTTPRequestHandler):
                 )
                 return
             self.send_json(result)
+            return
+
+        if path == "/api/validation/agent-batch":
+            try:
+                result = start_validation_agent_batch(payload)
+            except (TypeError, ValueError) as exc:
+                self.send_error_json(
+                    HTTPStatus.BAD_REQUEST,
+                    str(exc),
+                    code="invalid_validation_agent_batch_request",
+                )
+                return
+            except ChatUnavailableError:
+                self.send_error_json(
+                    HTTPStatus.SERVICE_UNAVAILABLE,
+                    "Codex is not available through ChatGPT sign-in. Check the local server output.",
+                    code="agent_unavailable",
+                )
+                return
+            except ValidationAgentBusyError as exc:
+                self.send_error_json(
+                    HTTPStatus.CONFLICT,
+                    str(exc),
+                    code="agent_busy",
+                )
+                return
+            except PersonaContextChangedError as exc:
+                self.send_error_json(
+                    HTTPStatus.CONFLICT,
+                    str(exc),
+                    code="persona_changed",
+                )
+                return
+            except Exception as exc:  # noqa: BLE001 - provider details stay server-side.
+                print(
+                    "Validation Agent batch backend error: "
+                    f"{type(exc).__name__} (details suppressed)",
+                    file=sys.stderr,
+                )
+                self.send_error_json(
+                    HTTPStatus.BAD_GATEWAY,
+                    "The Agent batch could not be completed. No results were returned.",
+                    code="agent_batch_failed",
+                )
+                return
+            self.send_json(result, HTTPStatus.ACCEPTED)
             return
 
         if path == "/api/chat/message":

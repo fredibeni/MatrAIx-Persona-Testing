@@ -627,6 +627,78 @@ meta:
         self.assertEqual(status, 413)
         self.assertEqual(body["code"], "request_too_large")
 
+    def test_agent_experiment_metadata_is_validated(self) -> None:
+        valid = example_store()
+        valid["surveys"]["everyday"]["agentRuns"][0]["experiment"] = {
+            "id": "validation-batch-1",
+            "startedAt": "2026-09-01T09:00:00.000Z",
+            "responseIndex": 1,
+            "responsesPerSurvey": 10,
+            "surveyIds": [
+                "everyday",
+                "dials",
+                "plot-twists",
+                "internet-creature",
+            ],
+        }
+        self.assertIs(server.validate_validation_store(valid), valid)
+
+        invalid_experiments = {
+            "not an object": [],
+            "missing field": {
+                "id": "validation-batch-1",
+                "startedAt": "2026-09-01T09:00:00.000Z",
+                "responseIndex": 1,
+                "responsesPerSurvey": 10,
+            },
+            "empty id": {
+                **valid["surveys"]["everyday"]["agentRuns"][0]["experiment"],
+                "id": " ",
+            },
+            "invalid timestamp": {
+                **valid["surveys"]["everyday"]["agentRuns"][0]["experiment"],
+                "startedAt": "not-a-time",
+            },
+            "index below range": {
+                **valid["surveys"]["everyday"]["agentRuns"][0]["experiment"],
+                "responseIndex": 0,
+            },
+            "index above range": {
+                **valid["surveys"]["everyday"]["agentRuns"][0]["experiment"],
+                "responseIndex": 11,
+            },
+            "wrong batch size": {
+                **valid["surveys"]["everyday"]["agentRuns"][0]["experiment"],
+                "responsesPerSurvey": 9,
+            },
+            "duplicate survey": {
+                **valid["surveys"]["everyday"]["agentRuns"][0]["experiment"],
+                "surveyIds": ["everyday", "everyday"],
+            },
+            "unknown survey": {
+                **valid["surveys"]["everyday"]["agentRuns"][0]["experiment"],
+                "surveyIds": ["everyday", "unknown"],
+            },
+            "missing owning survey": {
+                **valid["surveys"]["everyday"]["agentRuns"][0]["experiment"],
+                "surveyIds": ["dials", "plot-twists"],
+            },
+        }
+        for name, experiment in invalid_experiments.items():
+            with self.subTest(name=name):
+                invalid = deepcopy(valid)
+                invalid["surveys"]["everyday"]["agentRuns"][0][
+                    "experiment"
+                ] = experiment
+                with self.assertRaises((TypeError, ValueError)):
+                    server.validate_validation_store(invalid)
+
+        legacy_without_experiment = example_store()
+        self.assertIs(
+            server.validate_validation_store(legacy_without_experiment),
+            legacy_without_experiment,
+        )
+
     def test_validation_origin_get_post_and_preflight_are_allowlisted(self) -> None:
         status, initial, headers = self.request(
             "GET", "/api/validation/state", origin=VALIDATION_ORIGIN

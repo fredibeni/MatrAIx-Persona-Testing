@@ -26,6 +26,14 @@ export interface HumanBenchmark extends StoredRun {
   startedAt: string;
 }
 
+export interface AgentExperimentRef {
+  id: string;
+  startedAt: string;
+  responseIndex: number;
+  responsesPerSurvey: number;
+  surveyIds: SurveyId[];
+}
+
 export interface AgentRun extends StoredRun {
   id: string;
   sequence: number;
@@ -33,6 +41,7 @@ export interface AgentRun extends StoredRun {
   startedAt: string;
   freshSessionAttestedAt: string | null;
   benchmarkId: string | null;
+  experiment?: AgentExperimentRef;
   migrated?: boolean;
 }
 
@@ -191,6 +200,47 @@ function normalizeHuman(
   };
 }
 
+function normalizeAgentExperiment(
+  value: unknown,
+  surveyId: SurveyId,
+): AgentExperimentRef | undefined {
+  if (!isRecord(value)) return undefined;
+  const id = nonEmptyString(value.id);
+  const startedAt = validTimestamp(value.startedAt);
+  const responseIndex = value.responseIndex;
+  const responsesPerSurvey = value.responsesPerSurvey;
+  if (
+    !id ||
+    !startedAt ||
+    typeof responseIndex !== 'number' ||
+    !Number.isInteger(responseIndex) ||
+    responseIndex <= 0 ||
+    typeof responsesPerSurvey !== 'number' ||
+    !Number.isInteger(responsesPerSurvey) ||
+    responsesPerSurvey <= 0 ||
+    responsesPerSurvey > 1_000 ||
+    responseIndex > responsesPerSurvey ||
+    !Array.isArray(value.surveyIds)
+  ) {
+    return undefined;
+  }
+  const validSurveyIds = new Set(Object.keys(surveyById) as SurveyId[]);
+  const surveyIds = value.surveyIds.filter(
+    (candidate): candidate is SurveyId =>
+      typeof candidate === 'string' &&
+      validSurveyIds.has(candidate as SurveyId),
+  );
+  if (
+    surveyIds.length === 0 ||
+    surveyIds.length !== value.surveyIds.length ||
+    new Set(surveyIds).size !== surveyIds.length ||
+    !surveyIds.includes(surveyId)
+  ) {
+    return undefined;
+  }
+  return { id, startedAt, responseIndex, responsesPerSurvey, surveyIds };
+}
+
 function normalizeAgentRun(
   value: unknown,
   surveyId: SurveyId,
@@ -224,6 +274,7 @@ function normalizeAgentRun(
       validTimestamp(value.isolationConfirmedAt) ??
       null,
     benchmarkId: nonEmptyString(value.benchmarkId) ?? null,
+    experiment: normalizeAgentExperiment(value.experiment, surveyId),
     migrated: value.migrated === true,
   };
 }
@@ -462,6 +513,10 @@ function mergeAnswerState(saved: StoredRun, incoming: StoredRun) {
   };
 }
 
+function mergeAgentExperimentMetadata(saved: AgentRun, incoming: AgentRun) {
+  return { experiment: saved.experiment ?? incoming.experiment };
+}
+
 function mergeHumanBenchmarks(
   saved?: HumanBenchmark,
   incoming?: HumanBenchmark,
@@ -515,6 +570,7 @@ function mergeAgentCollections(saved: AgentRun[], incoming: AgentRun[]) {
           existing.personaAgent,
           candidate.personaAgent,
         );
+        const experiment = mergeAgentExperimentMetadata(existing, candidate);
         if (
           existing.benchmarkId === null &&
           !existing.migrated &&
@@ -524,9 +580,17 @@ function mergeAgentCollections(saved: AgentRun[], incoming: AgentRun[]) {
             ...existing,
             benchmarkId: candidate.benchmarkId,
             personaAgent,
+            ...experiment,
           };
-        } else if (personaAgent !== existing.personaAgent) {
-          merged[existingIndex] = { ...existing, personaAgent };
+        } else if (
+          personaAgent !== existing.personaAgent ||
+          experiment.experiment !== existing.experiment
+        ) {
+          merged[existingIndex] = {
+            ...existing,
+            personaAgent,
+            ...experiment,
+          };
         }
         return;
       }
@@ -546,6 +610,7 @@ function mergeAgentCollections(saved: AgentRun[], incoming: AgentRun[]) {
             existing.personaAgent,
             candidate.personaAgent,
           ),
+          ...mergeAgentExperimentMetadata(existing, candidate),
           answers: { ...candidate.answers },
         };
         return;
@@ -566,6 +631,7 @@ function mergeAgentCollections(saved: AgentRun[], incoming: AgentRun[]) {
           existing.personaAgent,
           candidate.personaAgent,
         ),
+        ...mergeAgentExperimentMetadata(existing, candidate),
         ...mergeAnswerState(existing, candidate),
       };
       return;

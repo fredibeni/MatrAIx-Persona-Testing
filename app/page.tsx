@@ -20,7 +20,6 @@ import {
   Home,
   Info,
   LoaderCircle,
-  Plus,
   RotateCcw,
   TrendingUp,
   UserRound,
@@ -35,7 +34,6 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
-  activeAgentDraft,
   bindPendingAgentRuns,
   completedAgentRuns,
   convergenceNarrative,
@@ -85,9 +83,18 @@ import {
   type ValidationDiskState,
 } from '@/lib/validation-persistence';
 import {
-  runValidationAgentSurvey,
+  listPendingValidationAgentBatches,
+  runValidationAgentBatch,
   ValidationAgentError,
+  waitForValidationAgentBatch,
 } from '@/lib/validation-agent';
+import { appendValidationAgentBatch } from '@/lib/validation-batch-store';
+import {
+  aggregateValidationExperiment,
+  validationExperimentOptions,
+  type ValidationQuestionAggregate,
+  type ValidationSurveyAggregate,
+} from '@/lib/validation-results';
 
 type Actor = 'human' | 'agent';
 
@@ -272,7 +279,7 @@ function Shell({
           <button
             type="button"
             onClick={onHome}
-            aria-label="Go to all surveys"
+            aria-label="Go to Results"
             className="brand-button rounded-xl focus-ring"
           >
             <Logo />
@@ -284,7 +291,7 @@ function Shell({
             onClick={onHome}
             className="header-home focus-ring"
           >
-            <Home size={15} /> All surveys
+            <Home size={15} /> Results
           </button>
         )}
       </header>
@@ -297,27 +304,19 @@ function SurveyCard({
   survey,
   history,
   onHuman,
-  onAgent,
-  onHistory,
-  agentRunning,
-  agentDisabled,
+  aggregate,
+  interactionDisabled,
 }: {
   survey: SurveyDefinition;
   history: SurveyHistory;
   onHuman: () => void;
-  onAgent: () => void;
-  onHistory: () => void;
-  agentRunning: boolean;
-  agentDisabled: boolean;
+  aggregate?: ValidationSurveyAggregate;
+  interactionDisabled: boolean;
 }) {
   const human = history.human;
   const humanStatus = runStatus(human);
-  const agentDraft = activeAgentDraft(history);
-  const savedCompleted = completedAgentRuns(history).sort(runCompletionOrder);
-  const completed = human?.completedAt
-    ? completedAgentRuns(history, human.id).sort(runCompletionOrder)
-    : [];
-  const canCompare = Boolean(human?.completedAt && completed.length);
+  const hasResults = Boolean(aggregate?.completedRuns);
+  const legacyExperiment = aggregate?.expectedRuns === 1;
 
   return (
     <article className="survey-card" style={surveyThemeStyle(survey)}>
@@ -333,8 +332,45 @@ function SurveyCard({
         {survey.description}
       </p>
 
-      <div className="mt-6 space-y-3">
-        <button type="button" onClick={onHuman} className="run-row focus-ring">
+      <div className="validation-result-metrics">
+        <div className="validation-result-metric">
+          <span>Agent responses</span>
+          <strong>
+            {aggregate?.completedRuns ?? 0}
+            {aggregate?.expectedRuns ? ` of ${aggregate.expectedRuns}` : ''}
+          </strong>
+        </div>
+        <div className="validation-result-metric">
+          <span>Agent consistency</span>
+          <strong>
+            {!hasResults
+              ? '-'
+              : legacyExperiment
+                ? '1 response'
+                : aggregate?.consistency == null
+                  ? '-'
+                  : percent(aggregate.consistency)}
+          </strong>
+        </div>
+        <div className="validation-result-metric">
+          <span>Benchmark match</span>
+          <strong>
+            {!aggregate?.hasHumanBenchmark
+              ? 'No benchmark'
+              : aggregate.benchmarkSimilarity === null
+                ? '-'
+                : percent(aggregate.benchmarkSimilarity)}
+          </strong>
+        </div>
+      </div>
+
+      <div className="mt-6">
+        <button
+          type="button"
+          onClick={onHuman}
+          disabled={interactionDisabled}
+          className="run-row focus-ring"
+        >
           <span className="run-icon">
             <UserRound size={18} />
           </span>
@@ -346,83 +382,102 @@ function SurveyCard({
           <StatusPill status={humanStatus} />
           <ChevronRight size={17} className="text-slate-400" />
         </button>
-
-        <button
-          type="button"
-          onClick={onAgent}
-          disabled={agentDisabled}
-          aria-busy={agentRunning}
-          className="run-row focus-ring"
-        >
-          <span className="run-icon">
-            {agentRunning ? (
-              <LoaderCircle size={18} className="animate-spin" />
-            ) : (
-              <Bot size={18} />
-            )}
-          </span>
-          <span className="min-w-0 flex-1 text-left">
-            <span className="block text-sm font-bold text-slate-900">
-              {agentRunning
-                ? 'Running Agent experiment...'
-                : 'Agent experiments'}
-            </span>
-          </span>
-          <StatusPill
-            status={
-              agentRunning || agentDraft
-                ? 'in-progress'
-                : savedCompleted.length
-                  ? 'complete'
-                  : 'not-started'
-            }
-            label={
-              agentRunning
-                ? 'Running'
-                : savedCompleted.length
-                  ? `${savedCompleted.length} saved`
-                  : undefined
-            }
-          />
-          <ChevronRight size={17} className="text-slate-400" />
-        </button>
       </div>
 
-      <button
-        type="button"
-        onClick={onHistory}
-        disabled={!canCompare}
-        className="compare-button focus-ring"
-      >
-        <TrendingUp size={17} />
-        {completed.length
-          ? `View convergence - ${completed.length} ${completed.length === 1 ? 'run' : 'runs'}`
-          : savedCompleted.length && !human?.completedAt
-            ? 'Complete the Human benchmark to compare'
-            : human?.completedAt
-              ? 'Complete an Agent run to compare'
-              : 'Complete both records to compare'}
-        {canCompare && <ArrowRight size={16} className="ml-auto" />}
-      </button>
+      {hasResults && !aggregate?.hasHumanBenchmark && (
+        <p className="validation-result-note">
+          No Human benchmark yet. Agent agreement is still shown from this
+          experiment.
+        </p>
+      )}
+
+      {hasResults && (
+        <details className="validation-question-details">
+          <summary>
+            Question results
+            <span>{aggregate?.questions.length}</span>
+          </summary>
+          <div className="validation-question-list">
+            {aggregate?.questions.map((question) => (
+              <QuestionAggregateRow key={question.questionId} row={question} />
+            ))}
+          </div>
+        </details>
+      )}
     </article>
   );
 }
 
-function HomeView({
+function QuestionAggregateRow({ row }: { row: ValidationQuestionAggregate }) {
+  return (
+    <article className="validation-question-result">
+      <h3>{row.prompt}</h3>
+      <dl>
+        <div>
+          <dt>Agent consensus</dt>
+          <dd>{row.consensusAnswerLabel ?? 'No response'}</dd>
+        </div>
+        <div>
+          <dt>Consistency</dt>
+          <dd>
+            {row.answerCount < 2 || row.consistency === null
+              ? 'Needs 2 responses'
+              : percent(row.consistency)}
+          </dd>
+        </div>
+        <div>
+          <dt>Human benchmark</dt>
+          <dd>{row.humanAnswerLabel ?? 'Not completed'}</dd>
+        </div>
+        <div>
+          <dt>Exact benchmark match</dt>
+          <dd>
+            {row.exactBenchmarkMatchRate === null
+              ? '-'
+              : percent(row.exactBenchmarkMatchRate)}
+          </dd>
+        </div>
+      </dl>
+      <div className="validation-answer-distribution">
+        {row.distribution.map((answer) => (
+          <span key={answer.answerId}>
+            {answer.label}: {answer.count}/{row.answerCount}
+          </span>
+        ))}
+      </div>
+    </article>
+  );
+}
+
+function ResultsView({
   store,
   onHuman,
-  onAgent,
-  onHistory,
+  onRunAll,
   onLicense,
-  runningAgentSurveyId,
+  runningExperiment,
+  runDisabled,
+  selectedExperimentId,
+  onSelectExperiment,
 }: {
   store: SurveyStore;
   onHuman: (surveyId: SurveyId) => void;
-  onAgent: (surveyId: SurveyId) => void;
-  onHistory: (surveyId: SurveyId) => void;
+  onRunAll: () => void;
   onLicense: () => void;
-  runningAgentSurveyId: SurveyId | null;
+  runningExperiment: boolean;
+  runDisabled: boolean;
+  selectedExperimentId: string | null;
+  onSelectExperiment: (experimentId: string) => void;
 }) {
+  const experimentOptions = validationExperimentOptions(store);
+  const resolvedExperimentId = experimentOptions.some(
+    (option) => option.id === selectedExperimentId,
+  )
+    ? selectedExperimentId
+    : (experimentOptions[0]?.id ?? null);
+  const aggregate = resolvedExperimentId
+    ? aggregateValidationExperiment(store, resolvedExperimentId)
+    : null;
+
   return (
     <Shell simple>
       <section className="hero-wrap">
@@ -431,19 +486,116 @@ function HomeView({
         <div className="hero-grid">
           <div className="relative z-10 max-w-[790px]">
             <h1 className="font-display text-[clamp(3.25rem,8vw,7.1rem)] font-black leading-[0.84] tracking-[-0.07em] text-slate-950">
-              Does more <span className="ink-swipe">persona detail</span>{' '}
-              improve the match?
+              Validation <span className="ink-swipe">results</span>
             </h1>
             <p className="mt-7 max-w-[650px] text-[clamp(1rem,2vw,1.25rem)] leading-8 text-slate-600">
-              Complete the Human benchmark and Agent experiment in either order,
-              then compare each run in its survey&apos;s convergence view.
-              Results are saved in this MatrAIx folder.
+              Run one experiment across all four surveys, then compare the 10
+              Agent responses per survey with each other and with any completed
+              Human benchmarks.
             </p>
+          </div>
+          <div className="validation-batch-action">
+            <button
+              type="button"
+              onClick={onRunAll}
+              disabled={runDisabled}
+              aria-busy={runningExperiment}
+              className="primary-button focus-ring"
+            >
+              {runningExperiment ? (
+                <LoaderCircle size={18} className="animate-spin" />
+              ) : (
+                <Bot size={18} />
+              )}
+              {runningExperiment
+                ? 'Running 40 Agent responses...'
+                : 'Run Agent validation'}
+            </button>
+            <p>Starts 10 fresh, concurrent runs for each of 4 surveys.</p>
           </div>
         </div>
       </section>
 
       <section className="mx-auto max-w-[1240px] px-5 pb-20 pt-16 sm:px-8 lg:px-10">
+        <div className="validation-results-toolbar">
+          <label htmlFor="validation-experiment-selector">Experiment</label>
+          {experimentOptions.length ? (
+            <select
+              id="validation-experiment-selector"
+              value={resolvedExperimentId ?? ''}
+              onChange={(event) => onSelectExperiment(event.target.value)}
+            >
+              {experimentOptions.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <span>No Agent experiments yet</span>
+          )}
+          {aggregate && (
+            <small>
+              {aggregate.experiment.completedRuns} of{' '}
+              {aggregate.experiment.expectedRuns} responses saved
+            </small>
+          )}
+        </div>
+
+        <section className="validation-overall-results" aria-live="polite">
+          <div>
+            <span>Overall benchmark match</span>
+            <strong>
+              {aggregate?.overall.benchmarkSimilarity === null || !aggregate
+                ? 'No benchmarks'
+                : percent(aggregate.overall.benchmarkSimilarity)}
+            </strong>
+            <small>
+              {aggregate
+                ? `${aggregate.overall.benchmarkedSurveyCount} of 4 surveys compared`
+                : 'Complete Human benchmarks to compare'}
+            </small>
+          </div>
+          <div>
+            <span>Overall Agent consistency</span>
+            <strong>
+              {!aggregate
+                ? '-'
+                : aggregate.experiment.expectedRuns === 1
+                  ? '1 response'
+                  : aggregate.overall.consistency === null
+                    ? '-'
+                    : percent(aggregate.overall.consistency)}
+            </strong>
+            <small>Agreement with the most common answer per question</small>
+          </div>
+          <div>
+            <span>Agent responses</span>
+            <strong>
+              {aggregate
+                ? `${aggregate.overall.completedRuns}/${aggregate.overall.expectedRuns}`
+                : '0/40'}
+            </strong>
+            <small>
+              {aggregate
+                ? `${aggregate.overall.surveysWithResults} of 4 surveys represented`
+                : 'One experiment produces 40 responses'}
+            </small>
+          </div>
+          <div>
+            <span>Human benchmarks</span>
+            <strong>{aggregate?.overall.humanBenchmarkCount ?? 0}/4</strong>
+            <small>Current completed benchmarks</small>
+          </div>
+        </section>
+
+        <p className="validation-results-method">
+          Overall match pools every Agent answer against the available Human
+          answer for the same question. Consistency measures how often Agents
+          selected that question&apos;s most common answer. These are separate
+          signals.
+        </p>
+
         <div className="validation-survey-list flex flex-col gap-6">
           {surveys.map((survey) => (
             <SurveyCard
@@ -451,10 +603,10 @@ function HomeView({
               survey={survey}
               history={surveyHistory(store, survey.id)}
               onHuman={() => onHuman(survey.id)}
-              onAgent={() => onAgent(survey.id)}
-              onHistory={() => onHistory(survey.id)}
-              agentRunning={runningAgentSurveyId === survey.id}
-              agentDisabled={runningAgentSurveyId !== null}
+              aggregate={aggregate?.surveys.find(
+                (result) => result.surveyId === survey.id,
+              )}
+              interactionDisabled={runningExperiment}
             />
           ))}
         </div>
@@ -622,7 +774,7 @@ function QuizView({
               onClick={onHome}
               className="quiet-button focus-ring"
             >
-              All surveys
+              Results
             </button>
           </div>
           <button
@@ -791,7 +943,6 @@ function ResultView({
   completedAgentCount,
   onPrimary,
   onHistory,
-  onNewAgent,
   onHumanChange,
   onHome,
 }: {
@@ -803,7 +954,6 @@ function ResultView({
   completedAgentCount: number;
   onPrimary: () => void;
   onHistory: () => void;
-  onNewAgent: () => void;
   onHumanChange: () => void;
   onHome: () => void;
 }) {
@@ -815,15 +965,15 @@ function ResultView({
       ? `Compare Agent run ${agentRun.sequence}`
       : 'Complete the Human benchmark'
     : completedAgentCount
-      ? 'See how the Agent runs converge'
-      : 'Start the first Agent run';
+      ? 'View the aggregated validation Results'
+      : 'Go to validation Results';
   const primaryCopy = isAgent
     ? hasCompletedHuman
       ? 'The Human benchmark and this run are now ready for their own question-level comparison.'
       : 'This Agent run is saved. Complete the Human benchmark to unlock its question-level comparison.'
     : completedAgentCount
-      ? `There ${completedAgentCount === 1 ? 'is' : 'are'} ${completedAgentCount} saved Agent ${completedAgentCount === 1 ? 'run' : 'runs'} against this fixed benchmark.`
-      : 'The Human answers are saved locally. Every new Agent run will compare back to this benchmark.';
+      ? `There ${completedAgentCount === 1 ? 'is' : 'are'} ${completedAgentCount} saved Agent ${completedAgentCount === 1 ? 'response' : 'responses'} for this benchmark. Results keeps the aggregate comparison together.`
+      : 'The Human answers are saved locally. Start the next full Agent experiment from Results.';
 
   return (
     <Shell onHome={onHome}>
@@ -921,9 +1071,7 @@ function ResultView({
               ? hasCompletedHuman
                 ? 'Compare this run'
                 : 'Set Human benchmark'
-              : completedAgentCount
-                ? 'View convergence'
-                : 'Start Agent run'}
+              : 'View Results'}
             <ArrowRight size={17} />
           </button>
         </section>
@@ -934,35 +1082,25 @@ function ResultView({
             onClick={onHome}
             className="secondary-button focus-ring"
           >
-            <Home size={16} /> All surveys
+            <Home size={16} /> Results
           </button>
           {isAgent ? (
-            <>
-              {hasCompletedHuman && (
-                <button
-                  type="button"
-                  onClick={onHistory}
-                  className="secondary-button focus-ring"
-                >
-                  <History size={16} /> Run history
-                </button>
-              )}
+            hasCompletedHuman && (
               <button
                 type="button"
-                onClick={onNewAgent}
+                onClick={onHistory}
                 className="secondary-button focus-ring"
               >
-                <Plus size={16} /> New Agent run
+                <History size={16} /> Earlier run history
               </button>
-            </>
+            )
           ) : (
             <button
               type="button"
               onClick={onHumanChange}
               className="secondary-button focus-ring"
             >
-              <RotateCcw size={16} />{' '}
-              {completedAgentCount ? 'Reset survey' : 'Retake benchmark'}
+              <RotateCcw size={16} /> Retake benchmark
             </button>
           )}
         </div>
@@ -1015,7 +1153,6 @@ function ComparisonView({
   agentRun,
   onResult,
   onHistory,
-  onNewAgent,
   onHome,
 }: {
   survey: SurveyDefinition;
@@ -1023,7 +1160,6 @@ function ComparisonView({
   agentRun: AgentRun;
   onResult: (actor: Actor) => void;
   onHistory: () => void;
-  onNewAgent: () => void;
   onHome: () => void;
 }) {
   const comparison = compareSurvey(survey, human.answers, agentRun.answers);
@@ -1188,13 +1324,6 @@ function ComparisonView({
           </button>
           <button
             type="button"
-            onClick={onNewAgent}
-            className="secondary-button focus-ring"
-          >
-            <Plus size={16} /> New Agent run
-          </button>
-          <button
-            type="button"
             onClick={() => onResult('human')}
             className="secondary-button focus-ring"
           >
@@ -1212,7 +1341,7 @@ function ComparisonView({
             onClick={onHome}
             className="secondary-button focus-ring"
           >
-            <Home size={16} /> All surveys
+            <Home size={16} /> Results
           </button>
         </div>
       </div>
@@ -1421,14 +1550,12 @@ function HistoryView({
   survey,
   history,
   onComparison,
-  onNewAgent,
   onHumanResult,
   onHome,
 }: {
   survey: SurveyDefinition;
   history: SurveyHistory;
   onComparison: (runId: string) => void;
-  onNewAgent: () => void;
   onHumanResult: () => void;
   onHome: () => void;
 }) {
@@ -1517,14 +1644,6 @@ function HistoryView({
                 {narrative.detail}
               </p>
             </div>
-            <button
-              type="button"
-              onClick={onNewAgent}
-              className="primary-button shrink-0 focus-ring"
-              style={{ backgroundColor: survey.color }}
-            >
-              <Plus size={17} /> New Agent run
-            </button>
           </div>
           {points.length ? (
             <ConvergenceChart points={points} survey={survey} />
@@ -1532,7 +1651,7 @@ function HistoryView({
             <div className="empty-match">
               <TrendingUp size={34} style={{ color: survey.color }} />
               <p className="mt-4 max-w-[460px] text-center text-sm leading-6 text-slate-600">
-                Start the first measured Agent run to add a point.
+                Start a full Agent experiment from Results to add responses.
               </p>
             </div>
           )}
@@ -1677,13 +1796,6 @@ function HistoryView({
         <div className="mx-auto flex max-w-[1120px] flex-wrap justify-center gap-3 pb-16 pt-8">
           <button
             type="button"
-            onClick={onNewAgent}
-            className="primary-button bg-slate-950 focus-ring"
-          >
-            <Plus size={17} /> New Agent run
-          </button>
-          <button
-            type="button"
             onClick={onHumanResult}
             className="secondary-button focus-ring"
           >
@@ -1694,7 +1806,7 @@ function HistoryView({
             onClick={onHome}
             className="secondary-button focus-ring"
           >
-            <Home size={16} /> All surveys
+            <Home size={16} /> Results
           </button>
         </div>
       </div>
@@ -1711,7 +1823,7 @@ function LicenseView({ onHome }: { onHome: () => void }) {
           onClick={onHome}
           className="secondary-button focus-ring"
         >
-          <ArrowLeft size={16} /> All surveys
+          <ArrowLeft size={16} /> Results
         </button>
         <p className="section-kicker mt-10">Sources and license</p>
         <h1 className="font-display mt-2 text-4xl font-black tracking-[-0.045em] text-slate-950 sm:text-5xl">
@@ -1789,8 +1901,11 @@ export function ValidationApp({ hosted = false }: { hosted?: boolean }) {
   const [hydrated, setHydrated] = useState(false);
   const [embedded, setEmbedded] = useState(hosted);
   const [saveNotice, setSaveNotice] = useState<SaveNotice | null>(null);
-  const [runningAgentSurveyId, setRunningAgentSurveyId] =
-    useState<SurveyId | null>(null);
+  const [runningExperiment, setRunningExperiment] = useState(false);
+  const [batchRecoveryComplete, setBatchRecoveryComplete] = useState(false);
+  const [selectedExperimentId, setSelectedExperimentId] = useState<
+    string | null
+  >(null);
   const [saveRequest, setSaveRequest] = useState(0);
   const storeRef = useRef<SurveyStore>({});
   const diskStateRef = useRef<ValidationDiskState | null>(null);
@@ -1800,6 +1915,7 @@ export function ValidationApp({ hosted = false }: { hosted?: boolean }) {
   const saveQueuedRef = useRef(false);
   const failedFingerprintRef = useRef<string | null>(null);
   const agentRunInFlightRef = useRef(false);
+  const batchRecoveryGenerationRef = useRef(0);
   const mountedRef = useRef(true);
 
   useEffect(() => {
@@ -1976,6 +2092,97 @@ export function ValidationApp({ hosted = false }: { hosted?: boolean }) {
 
   useEffect(() => {
     if (!hydrated || !diskStateRef.current) return;
+    const generation = batchRecoveryGenerationRef.current + 1;
+    batchRecoveryGenerationRef.current = generation;
+    let cancelled = false;
+    let recoverySucceeded = false;
+    agentRunInFlightRef.current = true;
+    setBatchRecoveryComplete(false);
+
+    async function recoverAgentBatches() {
+      const diskState = diskStateRef.current;
+      if (!diskState) return;
+      try {
+        const pending = await listPendingValidationAgentBatches(
+          surveys,
+          diskState.contextId,
+        );
+        if (cancelled) return;
+        if (!pending.length) {
+          recoverySucceeded = true;
+          return;
+        }
+
+        setRunningExperiment(true);
+        setSaveNotice({
+          kind: 'saving',
+          message: 'recovering an unfinished Agent experiment...',
+        });
+        let nextStore = storeRef.current;
+        let latestBatchId: string | null = null;
+        let recoveredSuccesses = 0;
+        let recoveredFailures = 0;
+        for (const status of pending) {
+          const result = await waitForValidationAgentBatch(
+            status,
+            surveys,
+            undefined,
+            undefined,
+            (progress) => {
+              if (
+                !cancelled &&
+                batchRecoveryGenerationRef.current === generation
+              ) {
+                setSaveNotice({
+                  kind: 'saving',
+                  message: `recovering Agent experiment - ${progress.completedRuns} of ${progress.requestedRuns} responses complete...`,
+                });
+              }
+            },
+          );
+          nextStore = appendValidationAgentBatch(nextStore, result, surveys);
+          latestBatchId = result.batchId;
+          recoveredSuccesses += result.successes.length;
+          recoveredFailures += result.failures.length;
+        }
+        if (cancelled) return;
+        storeRef.current = nextStore;
+        setStore(nextStore);
+        if (latestBatchId) setSelectedExperimentId(latestBatchId);
+        setView(HOME_VIEW);
+        setSaveNotice({
+          kind: recoveredFailures ? 'error' : 'saved',
+          message: recoveredFailures
+            ? `${recoveredSuccesses} recovered Agent responses will be saved. ${recoveredFailures} runs did not finish.`
+            : `${recoveredSuccesses} Agent responses recovered - saving them to disk.`,
+        });
+        recoverySucceeded = true;
+      } catch (error) {
+        if (cancelled) return;
+        setSaveNotice({
+          kind: 'error',
+          message:
+            error instanceof ValidationAgentError
+              ? `${error.message} Reload Validation to recover the saved experiment before starting another.`
+              : 'The saved Agent experiment could not be recovered. Reload Validation before starting another.',
+        });
+      } finally {
+        if (!cancelled && batchRecoveryGenerationRef.current === generation) {
+          agentRunInFlightRef.current = false;
+          setRunningExperiment(false);
+          if (recoverySucceeded) setBatchRecoveryComplete(true);
+        }
+      }
+    }
+
+    void recoverAgentBatches();
+    return () => {
+      cancelled = true;
+    };
+  }, [hydrated]);
+
+  useEffect(() => {
+    if (!hydrated || !diskStateRef.current) return;
     const fingerprint = surveyStoreFingerprint(store);
     if (
       fingerprint === surveyStoreFingerprint(acknowledgedStoreRef.current) ||
@@ -2074,6 +2281,14 @@ export function ValidationApp({ hosted = false }: { hosted?: boolean }) {
   }
 
   function openHuman(surveyId: SurveyId) {
+    if (agentRunInFlightRef.current) {
+      setSaveNotice({
+        kind: 'saving',
+        message:
+          'finish the active Agent experiment before editing benchmarks.',
+      });
+      return;
+    }
     const history = surveyHistory(store, surveyId);
     if (history.human?.completedAt)
       setView({
@@ -2104,68 +2319,50 @@ export function ValidationApp({ hosted = false }: { hosted?: boolean }) {
     window.scrollTo({ top: 0 });
   }
 
-  async function runAgentSurvey(surveyId: SurveyId) {
-    if (agentRunInFlightRef.current) return;
+  async function runAllAgentSurveys() {
+    if (!batchRecoveryComplete || agentRunInFlightRef.current) return;
     agentRunInFlightRef.current = true;
-    setRunningAgentSurveyId(surveyId);
+    setRunningExperiment(true);
     setSaveNotice({
       kind: 'saving',
-      message: `running ${surveyById[surveyId].shortTitle} with a clean Agent context...`,
+      message:
+        'running 40 clean Agent responses - 10 concurrent runs for each survey...',
     });
 
     try {
       const refreshed = await refreshActivePersonaForAgent();
       if (!refreshed) return;
-      const survey = surveyById[surveyId];
-      const result = await runValidationAgentSurvey(
-        survey,
+      const result = await runValidationAgentBatch(
+        surveys,
         refreshed.contextId,
         refreshed.personaRevision,
+        undefined,
+        undefined,
+        (progress) => {
+          if (mountedRef.current) {
+            setSaveNotice({
+              kind: 'saving',
+              message: `running Agent experiment - ${progress.completedRuns} of ${progress.requestedRuns} responses complete...`,
+            });
+          }
+        },
       );
       if (!mountedRef.current) return;
 
-      const history = surveyHistory(storeRef.current, surveyId);
-      const existingDraft = activeAgentDraft(history);
-      const sequence =
-        existingDraft?.sequence ??
-        Math.max(0, ...history.agentRuns.map((run) => run.sequence)) + 1;
-      const run: AgentRun = {
-        id: existingDraft?.id ?? makeId('agent'),
-        sequence,
-        dimensionCount: result.dimensionCount,
-        answers: result.answers,
-        startedAt: result.startedAt,
-        completedAt: result.completedAt,
-        freshSessionAttestedAt: result.startedAt,
-        benchmarkId: history.human?.completedAt ? history.human.id : null,
-        personaAgent: result.personaAgent,
-      };
-
-      setStore((current) => {
-        const currentHistory = surveyHistory(current, surveyId);
-        const nextHistory = existingDraft
-          ? {
-              ...currentHistory,
-              agentRuns: currentHistory.agentRuns.map((candidate) =>
-                candidate.id === existingDraft.id ? run : candidate,
-              ),
-            }
-          : {
-              ...currentHistory,
-              agentRuns: [...currentHistory.agentRuns, run],
-            };
-        const next = { ...current, [surveyId]: nextHistory };
-        storeRef.current = next;
-        return next;
-      });
-      setView(
-        history.human?.completedAt
-          ? { name: 'comparison', surveyId, runId: run.id }
-          : { name: 'result', surveyId, actor: 'agent', runId: run.id },
+      const nextStore = appendValidationAgentBatch(
+        storeRef.current,
+        result,
+        surveys,
       );
+      storeRef.current = nextStore;
+      setStore(nextStore);
+      setSelectedExperimentId(result.batchId);
+      setView(HOME_VIEW);
       setSaveNotice({
-        kind: 'saved',
-        message: 'Agent run complete - saving to disk.',
+        kind: result.failures.length ? 'error' : 'saved',
+        message: result.failures.length
+          ? `${result.successes.length} of 40 Agent responses completed and will be saved. ${result.failures.length} failed.`
+          : '40 Agent responses complete - saving the experiment to disk.',
       });
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (error) {
@@ -2174,12 +2371,12 @@ export function ValidationApp({ hosted = false }: { hosted?: boolean }) {
         kind: 'error',
         message:
           error instanceof ValidationAgentError
-            ? `${error.message} No Agent result was saved.`
-            : 'The Agent run could not be completed. No result was saved.',
+            ? `${error.message} Reload Validation to recover any responses already saved by the experiment.`
+            : 'The Agent experiment could not be loaded yet. Reload Validation to recover any saved responses.',
       });
     } finally {
       agentRunInFlightRef.current = false;
-      if (mountedRef.current) setRunningAgentSurveyId(null);
+      if (mountedRef.current) setRunningExperiment(false);
     }
   }
 
@@ -2272,9 +2469,8 @@ export function ValidationApp({ hosted = false }: { hosted?: boolean }) {
 
   function changeHumanBenchmark(surveyId: SurveyId) {
     const history = surveyHistory(store, surveyId);
-    const hasAgentHistory = history.agentRuns.length > 0;
-    const message = hasAgentHistory
-      ? 'Reset this survey? This removes its Human benchmark and every Agent run from disk. Other surveys are not affected.'
+    const message = history.agentRuns.length
+      ? 'Retake this Human benchmark? Its current answers will be replaced. Saved Agent experiment responses will remain available in Results.'
       : 'Retake this Human benchmark? Its current answers will be replaced.';
     if (!window.confirm(message)) return;
     const personaAgent = activePersonaAgent();
@@ -2288,10 +2484,8 @@ export function ValidationApp({ hosted = false }: { hosted?: boolean }) {
     setStore((current) => ({
       ...current,
       [surveyId]: {
+        ...surveyHistory(current, surveyId),
         human,
-        agentRuns: [],
-        generation: (surveyHistory(current, surveyId).generation ?? 0) + 1,
-        deletedAgentRuns: [],
       },
     }));
     setView({ name: 'quiz', surveyId, actor: 'human', runId: human.id });
@@ -2313,7 +2507,7 @@ export function ValidationApp({ hosted = false }: { hosted?: boolean }) {
         return;
       }
       if (target.name === 'agent') {
-        void runAgentSurvey(target.surveyId);
+        goHome();
         return;
       }
 
@@ -2328,7 +2522,7 @@ export function ValidationApp({ hosted = false }: { hosted?: boolean }) {
       } else if (!history.human?.completedAt) {
         openHuman(surveyId);
       } else {
-        void runAgentSurvey(surveyId);
+        goHome();
       }
     },
   );
@@ -2401,13 +2595,15 @@ export function ValidationApp({ hosted = false }: { hosted?: boolean }) {
 
   function homeScreen() {
     return (
-      <HomeView
+      <ResultsView
         store={store}
         onHuman={openHuman}
-        onAgent={runAgentSurvey}
-        onHistory={(surveyId) => setView({ name: 'history', surveyId })}
+        onRunAll={() => void runAllAgentSurveys()}
         onLicense={() => setView({ name: 'license' })}
-        runningAgentSurveyId={runningAgentSurveyId}
+        runningExperiment={runningExperiment}
+        runDisabled={runningExperiment || !batchRecoveryComplete}
+        selectedExperimentId={selectedExperimentId}
+        onSelectExperiment={setSelectedExperimentId}
       />
     );
   }
@@ -2478,14 +2674,11 @@ export function ValidationApp({ hosted = false }: { hosted?: boolean }) {
                     runId: view.runId,
                   })
                 : openHuman(view.surveyId)
-              : completedCount
-                ? setView({ name: 'history', surveyId: view.surveyId })
-                : void runAgentSurvey(view.surveyId)
+              : goHome()
           }
           onHistory={() =>
             setView({ name: 'history', surveyId: view.surveyId })
           }
-          onNewAgent={() => void runAgentSurvey(view.surveyId)}
           onHumanChange={() => changeHumanBenchmark(view.surveyId)}
           onHome={goHome}
         />
@@ -2517,7 +2710,6 @@ export function ValidationApp({ hosted = false }: { hosted?: boolean }) {
           onHistory={() =>
             setView({ name: 'history', surveyId: view.surveyId })
           }
-          onNewAgent={() => void runAgentSurvey(view.surveyId)}
           onHome={goHome}
         />
       );
@@ -2535,7 +2727,6 @@ export function ValidationApp({ hosted = false }: { hosted?: boolean }) {
         onComparison={(runId) =>
           setView({ name: 'comparison', surveyId: view.surveyId, runId })
         }
-        onNewAgent={() => void runAgentSurvey(view.surveyId)}
         onHumanResult={() =>
           setView({
             name: 'result',
