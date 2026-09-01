@@ -398,6 +398,11 @@ assert.match(
   /\.validation-question-details\[open\][\s\S]*?\.validation-question-chevron\s*\{\s*transform:\s*rotate\(180deg\);\s*\}/,
   'opening Question results must rotate its chevron',
 );
+assert.match(
+  validationPageSource,
+  /<p>Starts 10 fresh runs per survey<\/p>/,
+  'the Agent validation helper copy must describe the number of runs concisely',
+);
 const resultsToolbarStart = validationPageSource.indexOf(
   '<div className="validation-results-toolbar">',
 );

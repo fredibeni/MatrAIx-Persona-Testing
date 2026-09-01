@@ -484,7 +484,7 @@ function ResultsView({
                 ? 'Running 40 Agent responses...'
                 : 'Run Agent validation'}
             </button>
-            <p>Starts 10 fresh, concurrent runs for each of 4 surveys.</p>
+            <p>Starts 10 fresh runs per survey</p>
           </div>
         </div>
       </section>

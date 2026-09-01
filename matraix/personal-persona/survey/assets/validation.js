@@ -13315,7 +13315,7 @@ function gi({ store: e, onHuman: t, onRunAll: n, onLicense: r, runningExperiment
 								size: 18,
 								className: "animate-spin"
 							}) : /* @__PURE__ */ (0, z.jsx)(te, { size: 18 }), i ? "Running 40 Agent responses..." : "Run Agent validation"]
-						}), /* @__PURE__ */ (0, z.jsx)("p", { children: "Starts 10 fresh, concurrent runs for each of 4 surveys." })]
+						}), /* @__PURE__ */ (0, z.jsx)("p", { children: "Starts 10 fresh runs per survey" })]
 					})]
 				})
 			]
