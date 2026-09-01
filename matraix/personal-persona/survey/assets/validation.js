@@ -10008,7 +10008,6 @@ var Ut = [
 		title: "Everyday Defaults",
 		shortTitle: "Everyday Defaults",
 		description: "See whether your persona knows the small preferences that quietly shape your day.",
-		time: "1 minute per run",
 		kind: "categorical",
 		color: "#ff6b35",
 		pale: "#fff1ea",
@@ -10176,7 +10175,6 @@ var Ut = [
 		title: "Personal Dials",
 		shortTitle: "Personal Dials",
 		description: "Compare degree, not just direction, across five everyday personality dimensions.",
-		time: "1 minute per run",
 		kind: "scale",
 		color: "#6457d7",
 		pale: "#efedff",
@@ -10219,7 +10217,6 @@ var Ut = [
 		title: "Small Plot Twists",
 		shortTitle: "Small Plot Twists",
 		description: "Test how well your persona predicts what you do when ordinary plans go sideways.",
-		time: "1 minute per run",
 		kind: "categorical",
 		color: "#0f9f7b",
 		pale: "#e4f8f2",
@@ -10387,7 +10384,6 @@ var Ut = [
 		title: "Internet Creature",
 		shortTitle: "Internet Creature",
 		description: "A full silly type quiz for finding out whether your persona shares your exact flavor of online chaos.",
-		time: "6 minutes per run",
 		kind: "silly",
 		color: "#e33186",
 		pale: "#ffe8f3",
@@ -13175,9 +13171,9 @@ function di({ survey: e, history: t, onHuman: n, aggregate: r, interactionDisabl
 		className: "survey-card",
 		style: ni(e),
 		children: [
-			/* @__PURE__ */ (0, z.jsxs)("div", {
+			/* @__PURE__ */ (0, z.jsx)("div", {
 				className: "flex items-center justify-between gap-4",
-				children: [/* @__PURE__ */ (0, z.jsx)("div", {
+				children: /* @__PURE__ */ (0, z.jsx)("div", {
 					className: "min-w-0",
 					children: /* @__PURE__ */ (0, z.jsxs)("h2", {
 						className: "survey-title font-display min-w-0 text-[clamp(1.55rem,3vw,2.15rem)] font-black leading-[0.98] tracking-[-0.045em] text-slate-950",
@@ -13187,10 +13183,7 @@ function di({ survey: e, history: t, onHuman: n, aggregate: r, interactionDisabl
 							e.title
 						]
 					})
-				}), /* @__PURE__ */ (0, z.jsx)("span", {
-					className: "time-chip shrink-0",
-					children: e.time
-				})]
+				})
 			}),
 			/* @__PURE__ */ (0, z.jsx)("p", {
 				className: "survey-description mt-4 min-h-[3.1rem] text-sm leading-6 text-slate-600",

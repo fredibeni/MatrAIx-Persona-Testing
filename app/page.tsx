@@ -325,7 +325,6 @@ function SurveyCard({
             {surveys.indexOf(survey) + 1}. {survey.title}
           </h2>
         </div>
-        <span className="time-chip shrink-0">{survey.time}</span>
       </div>
       <p className="survey-description mt-4 min-h-[3.1rem] text-sm leading-6 text-slate-600">
         {survey.description}

@@ -36,7 +36,6 @@ export interface SurveyDefinition {
   title: string;
   shortTitle: string;
   description: string;
-  time: string;
   kind: SurveyKind;
   color: string;
   pale: string;
@@ -1060,7 +1059,6 @@ export const surveys: SurveyDefinition[] = [
     shortTitle: 'Everyday Defaults',
     description:
       'See whether your persona knows the small preferences that quietly shape your day.',
-    time: '1 minute per run',
     kind: 'categorical',
     color: '#ff6b35',
     pale: '#fff1ea',
@@ -1073,7 +1071,6 @@ export const surveys: SurveyDefinition[] = [
     shortTitle: 'Personal Dials',
     description:
       'Compare degree, not just direction, across five everyday personality dimensions.',
-    time: '1 minute per run',
     kind: 'scale',
     color: '#6457d7',
     pale: '#efedff',
@@ -1086,7 +1083,6 @@ export const surveys: SurveyDefinition[] = [
     shortTitle: 'Small Plot Twists',
     description:
       'Test how well your persona predicts what you do when ordinary plans go sideways.',
-    time: '1 minute per run',
     kind: 'categorical',
     color: '#0f9f7b',
     pale: '#e4f8f2',
@@ -1099,7 +1095,6 @@ export const surveys: SurveyDefinition[] = [
     shortTitle: 'Internet Creature',
     description:
       'A full silly type quiz for finding out whether your persona shares your exact flavor of online chaos.',
-    time: '6 minutes per run',
     kind: 'silly',
     color: '#e33186',
     pale: '#ffe8f3',
