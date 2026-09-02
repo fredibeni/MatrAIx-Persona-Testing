@@ -13,7 +13,6 @@ import {
   ArrowLeft,
   ArrowRight,
   Bot,
-  Check,
   CheckCircle2,
   ChevronDown,
   ChevronRight,
@@ -234,9 +233,7 @@ function StatusPill({
 }) {
   if (status === 'complete') {
     return (
-      <span className="status-pill status-complete">
-        <Check size={12} strokeWidth={3} /> {label ?? 'Complete'}
-      </span>
+      <span className="status-pill status-complete">{label ?? 'Complete'}</span>
     );
   }
   if (status === 'in-progress')

@@ -177,6 +177,20 @@ assert.match(
   /font-weight:\s*400;/,
   'Human benchmark status pills must use regular-weight text',
 );
+const statusPillStart = validationPageSource.indexOf('function StatusPill(');
+const statusPillEnd = validationPageSource.indexOf(
+  'function SurveyCard(',
+  statusPillStart,
+);
+const statusPillSource = validationPageSource.slice(
+  statusPillStart,
+  statusPillEnd,
+);
+assert.doesNotMatch(
+  statusPillSource,
+  /<Check\b/,
+  'Complete status pills must not render checkmark icons',
+);
 assert.doesNotMatch(
   surveyCardSource,
   /className="run-icon"/,
