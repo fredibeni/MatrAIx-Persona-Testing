@@ -766,8 +766,18 @@ assert.equal(
 );
 assert.match(
   validationStylesSource,
-  /\.validation-embedded \.result-run-label\s*\{[\s\S]*?font-weight:\s*400;/,
-  'the completed-result actor label must use regular weight',
+  /\.validation-embedded \.result-run-label\s*\{[\s\S]*?font-weight:\s*400;[\s\S]*?font-size:\s*10px !important;/,
+  'the completed-result actor label must use regular weight at a compact 10px size',
+);
+assert.doesNotMatch(
+  resultViewSource,
+  /id="result-detail-heading"|>\s*Result detail\s*<\//,
+  'completed-result details must not render a visible Result detail heading',
+);
+assert.match(
+  resultViewSource,
+  /<section\s*aria-label="Result detail"/,
+  'completed-result details must retain an accessible section label',
 );
 const validationResultHeroRule = validationStylesSource.match(
   /\.validation-embedded \.result-hero\s*\{([^}]*)\}/,

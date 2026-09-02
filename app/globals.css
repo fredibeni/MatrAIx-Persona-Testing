@@ -2398,6 +2398,7 @@ button:disabled {
 
 .validation-embedded .result-run-label {
   font-weight: 400;
+  font-size: 10px !important;
 }
 
 .validation-embedded .result-stage > section:not(.result-hero),

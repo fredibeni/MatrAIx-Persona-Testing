@@ -1643,12 +1643,9 @@ function ResultView({
         </section>
 
         <section
-          aria-labelledby="result-detail-heading"
+          aria-label="Result detail"
           className="mx-auto mt-7 max-w-[900px] rounded-[30px] bg-white p-6 shadow-sm sm:p-9"
         >
-          <h2 id="result-detail-heading" className="section-kicker">
-            Result detail
-          </h2>
           <ResultVisual result={result} survey={survey} />
         </section>
 

@@ -14125,17 +14125,13 @@ function Li({ survey: e, actor: t, run: n, agentRun: r, hasCompletedHuman: i, on
 						})
 					]
 				}),
-				/* @__PURE__ */ (0, z.jsxs)("section", {
-					"aria-labelledby": "result-detail-heading",
+				/* @__PURE__ */ (0, z.jsx)("section", {
+					"aria-label": "Result detail",
 					className: "mx-auto mt-7 max-w-[900px] rounded-[30px] bg-white p-6 shadow-sm sm:p-9",
-					children: [/* @__PURE__ */ (0, z.jsx)("h2", {
-						id: "result-detail-heading",
-						className: "section-kicker",
-						children: "Result detail"
-					}), /* @__PURE__ */ (0, z.jsx)(Ii, {
+					children: /* @__PURE__ */ (0, z.jsx)(Ii, {
 						result: l,
 						survey: e
-					})]
+					})
 				}),
 				/* @__PURE__ */ (0, z.jsxs)("div", {
 					className: "mx-auto mt-7 flex max-w-[900px] flex-wrap items-center justify-center gap-3 pb-14",
