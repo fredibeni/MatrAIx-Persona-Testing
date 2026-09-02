@@ -14084,84 +14084,81 @@ function Li({ survey: e, actor: t, run: n, agentRun: r, hasCompletedHuman: i, on
 		children: /* @__PURE__ */ (0, z.jsxs)("div", {
 			className: "result-stage",
 			style: hi(e),
-			children: [
-				/* @__PURE__ */ (0, z.jsxs)("section", {
-					className: "result-hero",
-					children: [
-						/* @__PURE__ */ (0, z.jsx)("div", {
-							className: "result-spark spark-a",
-							"aria-hidden": "true",
-							children: "✦"
-						}),
-						/* @__PURE__ */ (0, z.jsx)("div", {
-							className: "result-spark spark-b",
-							"aria-hidden": "true",
-							children: "●"
-						}),
-						/* @__PURE__ */ (0, z.jsxs)("div", {
-							className: "relative z-10",
-							children: [
-								/* @__PURE__ */ (0, z.jsxs)("div", {
-									className: "result-run-label mx-auto flex w-fit items-center gap-2 rounded-full bg-white/70 px-4 py-1.5 text-xs uppercase tracking-[0.13em] text-slate-600 shadow-sm",
-									children: [/* @__PURE__ */ (0, z.jsx)(d.Icon, { size: 15 }), u ? `Agent run ${r.sequence}` : "Human benchmark"]
-								}),
-								u && /* @__PURE__ */ (0, z.jsxs)("div", {
-									className: "mx-auto mt-2 w-fit rounded-full px-3 py-1.5 text-xs font-black",
-									style: {
-										backgroundColor: e.color,
-										color: "var(--validation-on-accent)"
-									},
-									children: [r.dimensionCount ?? "Not recorded", " persona dimensions"]
-								}),
-								/* @__PURE__ */ (0, z.jsx)("h1", {
-									className: "font-display mx-auto mt-3 max-w-[850px] text-center text-[20px] font-black leading-[0.9] tracking-[-0.065em] text-slate-950",
-									children: l.title
-								}),
-								"description" in l && /* @__PURE__ */ (0, z.jsx)("p", {
-									className: "mx-auto mt-3 max-w-[620px] text-center text-[14px] leading-7 text-slate-600",
-									children: l.description
-								})
-							]
+			children: [/* @__PURE__ */ (0, z.jsxs)("section", {
+				className: "result-hero",
+				"aria-label": "Result detail",
+				children: [
+					/* @__PURE__ */ (0, z.jsx)("div", {
+						className: "result-spark spark-a",
+						"aria-hidden": "true",
+						children: "✦"
+					}),
+					/* @__PURE__ */ (0, z.jsx)("div", {
+						className: "result-spark spark-b",
+						"aria-hidden": "true",
+						children: "●"
+					}),
+					/* @__PURE__ */ (0, z.jsxs)("div", {
+						className: "relative z-10",
+						children: [
+							/* @__PURE__ */ (0, z.jsxs)("div", {
+								className: "result-run-label mx-auto flex w-fit items-center gap-2 rounded-full bg-white/70 px-4 py-1.5 text-xs uppercase tracking-[0.13em] text-slate-600 shadow-sm",
+								children: [/* @__PURE__ */ (0, z.jsx)(d.Icon, { size: 15 }), u ? `Agent run ${r.sequence}` : "Human benchmark"]
+							}),
+							u && /* @__PURE__ */ (0, z.jsxs)("div", {
+								className: "mx-auto mt-2 w-fit rounded-full px-3 py-1.5 text-xs font-black",
+								style: {
+									backgroundColor: e.color,
+									color: "var(--validation-on-accent)"
+								},
+								children: [r.dimensionCount ?? "Not recorded", " persona dimensions"]
+							}),
+							/* @__PURE__ */ (0, z.jsx)("h1", {
+								className: "font-display mx-auto mt-3 max-w-[850px] text-center text-[20px] font-black leading-[0.9] tracking-[-0.065em] text-slate-950",
+								children: l.title
+							}),
+							"description" in l && /* @__PURE__ */ (0, z.jsx)("p", {
+								className: "mx-auto mt-3 max-w-[620px] text-center text-[14px] leading-7 text-slate-600",
+								children: l.description
+							})
+						]
+					}),
+					/* @__PURE__ */ (0, z.jsx)("div", {
+						className: "result-detail-content",
+						children: /* @__PURE__ */ (0, z.jsx)(Ii, {
+							result: l,
+							survey: e
 						})
-					]
-				}),
-				/* @__PURE__ */ (0, z.jsx)("section", {
-					"aria-label": "Result detail",
-					className: "mx-auto mt-7 max-w-[900px] rounded-[30px] bg-white p-6 shadow-sm sm:p-9",
-					children: /* @__PURE__ */ (0, z.jsx)(Ii, {
-						result: l,
-						survey: e
 					})
-				}),
-				/* @__PURE__ */ (0, z.jsxs)("div", {
-					className: "mx-auto mt-7 flex max-w-[900px] flex-wrap items-center justify-center gap-3 pb-14",
-					children: [
-						!u && /* @__PURE__ */ (0, z.jsxs)(z.Fragment, { children: [/* @__PURE__ */ (0, z.jsxs)("button", {
-							type: "button",
-							onClick: o,
-							className: "secondary-button result-action-button focus-ring",
-							children: [/* @__PURE__ */ (0, z.jsx)(D, { size: 16 }), " Back"]
-						}), /* @__PURE__ */ (0, z.jsxs)("button", {
-							type: "button",
-							onClick: s,
-							className: "secondary-button result-action-button focus-ring",
-							children: [/* @__PURE__ */ (0, z.jsx)(ce, { size: 16 }), " Retake"]
-						})] }),
-						/* @__PURE__ */ (0, z.jsxs)("button", {
-							type: "button",
-							onClick: c,
-							className: "secondary-button result-action-button focus-ring",
-							children: [/* @__PURE__ */ (0, z.jsx)(A, { size: 16 }), " Results"]
-						}),
-						u && i && /* @__PURE__ */ (0, z.jsxs)("button", {
-							type: "button",
-							onClick: a,
-							className: "secondary-button result-action-button focus-ring",
-							children: [/* @__PURE__ */ (0, z.jsx)(se, { size: 16 }), " Earlier run history"]
-						})
-					]
-				})
-			]
+				]
+			}), /* @__PURE__ */ (0, z.jsxs)("div", {
+				className: "mx-auto mt-7 flex max-w-[900px] flex-wrap items-center justify-center gap-3 pb-14",
+				children: [
+					!u && /* @__PURE__ */ (0, z.jsxs)(z.Fragment, { children: [/* @__PURE__ */ (0, z.jsxs)("button", {
+						type: "button",
+						onClick: o,
+						className: "secondary-button result-action-button focus-ring",
+						children: [/* @__PURE__ */ (0, z.jsx)(D, { size: 16 }), " Back"]
+					}), /* @__PURE__ */ (0, z.jsxs)("button", {
+						type: "button",
+						onClick: s,
+						className: "secondary-button result-action-button focus-ring",
+						children: [/* @__PURE__ */ (0, z.jsx)(ce, { size: 16 }), " Retake"]
+					})] }),
+					/* @__PURE__ */ (0, z.jsxs)("button", {
+						type: "button",
+						onClick: c,
+						className: "secondary-button result-action-button focus-ring",
+						children: [/* @__PURE__ */ (0, z.jsx)(A, { size: 16 }), " Results"]
+					}),
+					u && i && /* @__PURE__ */ (0, z.jsxs)("button", {
+						type: "button",
+						onClick: a,
+						className: "secondary-button result-action-button focus-ring",
+						children: [/* @__PURE__ */ (0, z.jsx)(se, { size: 16 }), " Earlier run history"]
+					})
+				]
+			})]
 		})
 	});
 }

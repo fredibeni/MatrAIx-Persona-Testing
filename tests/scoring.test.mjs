@@ -776,8 +776,18 @@ assert.doesNotMatch(
 );
 assert.match(
   resultViewSource,
-  /<section\s*aria-label="Result detail"/,
-  'completed-result details must retain an accessible section label',
+  /<section className="result-hero" aria-label="Result detail">[\s\S]*?<div className="result-detail-content">[\s\S]*?<ResultVisual result=\{result\} survey=\{survey\} \/>/,
+  'completed-result details must share the accessible result hero container',
+);
+assert.doesNotMatch(
+  resultViewSource,
+  /rounded-\[30px\] bg-white p-6 shadow-sm sm:p-9/,
+  'completed-result details must not render a separate outer card',
+);
+assert.match(
+  validationStylesSource,
+  /\.validation-embedded \.result-hero\s*\{[\s\S]*?display:\s*block;[\s\S]*?\.validation-embedded \.result-detail-content\s*\{[\s\S]*?margin-top:\s*20px;/,
+  'the merged completed-result card must stack profile content below its summary',
 );
 const validationResultHeroRule = validationStylesSource.match(
   /\.validation-embedded \.result-hero\s*\{([^}]*)\}/,

@@ -1608,7 +1608,7 @@ function ResultView({
   return (
     <Shell onHome={onHome}>
       <div className="result-stage" style={surveyThemeStyle(survey)}>
-        <section className="result-hero">
+        <section className="result-hero" aria-label="Result detail">
           <div className="result-spark spark-a" aria-hidden="true">
             ✦
           </div>
@@ -1640,13 +1640,9 @@ function ResultView({
               </p>
             )}
           </div>
-        </section>
-
-        <section
-          aria-label="Result detail"
-          className="mx-auto mt-7 max-w-[900px] rounded-[30px] bg-white p-6 shadow-sm sm:p-9"
-        >
-          <ResultVisual result={result} survey={survey} />
+          <div className="result-detail-content">
+            <ResultVisual result={result} survey={survey} />
+          </div>
         </section>
 
         <div className="mx-auto mt-7 flex max-w-[900px] flex-wrap items-center justify-center gap-3 pb-14">
