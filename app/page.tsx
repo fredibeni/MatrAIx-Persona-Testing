@@ -2974,7 +2974,7 @@ export function ValidationApp({ hosted = false }: { hosted?: boolean }) {
           if (mountedRef.current) {
             setSaveNotice({
               kind: 'saving',
-              message: `running Agent experiment - ${progress.completedRuns} of ${progress.requestedRuns} responses complete...`,
+              message: `running validation - ${progress.completedRuns} of ${progress.requestedRuns} responses complete...`,
             });
           }
         },

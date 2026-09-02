@@ -127,6 +127,16 @@ const validationStylesSource = readFileSync(
   new URL('../app/globals.css', import.meta.url),
   'utf8',
 );
+assert.match(
+  validationPageSource,
+  /running validation - \$\{progress\.completedRuns\} of \$\{progress\.requestedRuns\} responses complete\.\.\./,
+  'the validation progress notice must use the concise validation label',
+);
+assert.doesNotMatch(
+  validationPageSource,
+  /running Agent experiment/,
+  'the validation progress notice must not use the old Agent experiment label',
+);
 const updatePersonaStylesSource = readFileSync(
   new URL('../matraix/personal-persona/survey/styles.css', import.meta.url),
   'utf8',

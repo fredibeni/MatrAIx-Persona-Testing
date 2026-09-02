@@ -15150,7 +15150,7 @@ function Gi({ hosted: e = !1 }) {
 				let r = await Mr(Yt, t.contextId, t.personaRevision, void 0, void 0, (e) => {
 					O.current && u({
 						kind: "saving",
-						message: `running Agent experiment - ${e.completedRuns} of ${e.requestedRuns} responses complete...`
+						message: `running validation - ${e.completedRuns} of ${e.requestedRuns} responses complete...`
 					});
 				});
 				if (!O.current) return;
