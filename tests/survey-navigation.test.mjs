@@ -364,8 +364,8 @@ assert.match(
 );
 assert.match(
   document.getElementById('questions').innerHTML,
-  /<span class="section-finished-validation-title">Run validation<\/span>\s*<span class="section-finished-validation-subtitle">in background \(recommended\)<\/span>/,
-  'The background Validation action must use the exact two-line label',
+  /<span class="section-finished-validation-title">Run validation in background<\/span>\s*<span class="section-finished-validation-subtitle">\(recommended\)<\/span>/,
+  'The background Validation action must keep its activity label together on the first line',
 );
 assert.equal(
   document.getElementById('survey-footer').hidden,
