@@ -401,13 +401,6 @@ function QuestionAggregateRow({ row }: { row: ValidationQuestionAggregate }) {
           </dd>
         </div>
       </dl>
-      <div className="validation-answer-distribution">
-        {row.distribution.map((answer) => (
-          <span key={answer.answerId}>
-            {answer.label}: {answer.count}/{row.answerCount}
-          </span>
-        ))}
-      </div>
     </article>
   );
 }
