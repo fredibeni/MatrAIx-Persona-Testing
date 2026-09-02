@@ -3,15 +3,14 @@ set -euo pipefail
 umask 077
 
 root_dir="$(cd "$(dirname "$0")" && pwd)"
+venv_dir="$root_dir/matraix/.venv"
+install_complete_marker="$venv_dir/.matraix-install-complete"
 persona_path="$root_dir/matraix/personal-persona/persona.yaml"
-persona_template="$root_dir/matraix/personal-persona/persona.example.yaml"
 
-if [[ ! -x "$root_dir/matraix/.venv/bin/python" ]]; then
+if [[ ! -x "$venv_dir/bin/python" || ! -f "$install_complete_marker" ]]; then
   "$root_dir/install.sh"
-fi
-if [[ ! -e "$persona_path" && ! -L "$persona_path" ]]; then
-  cp "$persona_template" "$persona_path"
-  chmod 600 "$persona_path"
+elif [[ ! -f "$persona_path" || -L "$persona_path" ]]; then
+  "$root_dir/onboard.sh"
 fi
 "$root_dir/build-persona.sh" migrate \
   --persona "$persona_path" \

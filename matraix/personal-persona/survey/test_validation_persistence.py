@@ -336,6 +336,23 @@ class ValidationPersistenceTests(unittest.TestCase):
         self.assertEqual(body["store"]["surveys"], {})
         self.assertIsInstance(body["store"]["updatedAt"], str)
 
+    def test_update_persona_and_validation_share_active_dimension_count(self) -> None:
+        survey_status, survey, _ = self.request("GET", "/api/survey")
+        validation_status, validation, _ = self.request(
+            "GET", "/api/validation/state"
+        )
+
+        self.assertEqual(survey_status, 200)
+        self.assertEqual(validation_status, 200)
+        self.assertEqual(
+            survey["persona_dimension_count"],
+            validation["persona_dimension_count"],
+        )
+        self.assertEqual(
+            survey["persona_dimension_count"],
+            server.active_persona_dimension_count(),
+        )
+
     def test_post_persists_nested_store_and_increments_revision(self) -> None:
         _, initial, _ = self.request("GET", "/api/validation/state")
         store = example_store()

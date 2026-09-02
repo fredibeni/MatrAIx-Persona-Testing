@@ -16,7 +16,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_PERSONA_ID = "0042"
 DEFAULT_API_MODEL = os.environ.get("MATRIX_PERSONA_MODEL", "openai/gpt-4o-mini")
-DEFAULT_CODEX_MODEL = os.environ.get("MATRIX_PERSONA_CODEX_MODEL", "gpt-5.6-luna")
+DEFAULT_CODEX_MODEL = os.environ.get("MATRIX_PERSONA_CODEX_MODEL", "default")
 DEFAULT_CODEX_REASONING = os.environ.get("MATRIX_PERSONA_CODEX_REASONING", "low")
 DEFAULT_CODEX_PATH = Path("/Applications/ChatGPT.app/Contents/Resources/codex")
 CODEX_DISABLED_FEATURES = (
@@ -324,11 +324,10 @@ def run_codex_prompt(
             "never",
             "-C",
             str(runtime_dir),
-            "-m",
-            model,
-            "-c",
-            f'model_reasoning_effort="{reasoning_effort}"',
         ]
+        if model != "default":
+            command.extend(("-m", model))
+        command.extend(("-c", f'model_reasoning_effort="{reasoning_effort}"'))
         for feature in CODEX_DISABLED_FEATURES:
             command.extend(("--disable", feature))
         if output_schema is not None:

@@ -63,12 +63,13 @@ MAX_CHAT_MESSAGE_CHARS = 8_000
 MAX_CHAT_MESSAGES = 100
 MAX_CHAT_HISTORY_CHARS = 80_000
 CHAT_MODEL_OPTIONS = (
+    ("default", "ChatGPT plan default"),
     ("gpt-5.6-luna", "GPT-5.6 Luna - efficient"),
     ("gpt-5.6-terra", "GPT-5.6 Terra - balanced"),
     ("gpt-5.6-sol", "GPT-5.6 Sol - flagship"),
 )
 ALLOWED_CHAT_MODELS = frozenset(model_id for model_id, _ in CHAT_MODEL_OPTIONS)
-DEFAULT_CHAT_MODEL = "gpt-5.6-luna"
+DEFAULT_CHAT_MODEL = "default"
 VALIDATION_RESULTS_FILENAME = "validation-results.json"
 VALIDATION_RESULTS_SCHEMA_VERSION = 1
 VALIDATION_STORE_VERSION = 2

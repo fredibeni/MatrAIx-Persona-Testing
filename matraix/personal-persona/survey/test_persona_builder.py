@@ -11,8 +11,11 @@ from contextlib import redirect_stdout
 from copy import deepcopy
 from io import StringIO
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import patch
 
 import yaml
+import matraix.persona_builder as persona_builder
 
 from matraix.persona_builder import (
     DEFAULT_SCHEMA_PATH,
@@ -655,6 +658,145 @@ class PersonaBuilderTests(unittest.TestCase):
                     require_private_mode=True,
                     require_git_ignore=False,
                 )
+
+    def test_archive_accepts_only_tracked_private_runtime_locations(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="matraix-persona-archive-") as name:
+            root = Path(name)
+            (root / ".gitignore").write_text(
+                "\n".join(
+                    (
+                        "/matraix/personal-persona/*.yaml",
+                        "/matraix/personal-persona/*.yml",
+                        "/matraix/personal-persona/source-material/",
+                        "/matraix/personal-persona/survey/data/*",
+                    )
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            allowed = (
+                root / "matraix/personal-persona/persona.yaml",
+                root / "matraix/personal-persona/another-private-persona.yml",
+                root
+                / "matraix/personal-persona/survey/data/persona-candidates.json",
+                root
+                / "matraix/personal-persona/survey/data/nested/persona-report.json",
+                root / "matraix/personal-persona/source-material/export.zip",
+            )
+            rejected = (
+                root / "matraix/personal-persona/persona.example.yaml",
+                root / "matraix/personal-persona/survey/data/.gitkeep",
+                root / "matraix/personal-persona/not-private/candidates.json",
+                root / "README.md",
+            )
+
+            with (
+                patch.object(persona_builder, "REPO_ROOT", root),
+                patch.object(persona_builder.subprocess, "run") as run,
+            ):
+                for private_path in allowed:
+                    with self.subTest(allowed=private_path.relative_to(root)):
+                        persona_builder._ensure_git_ignored(private_path)
+                for public_path in rejected:
+                    with (
+                        self.subTest(rejected=public_path.relative_to(root)),
+                        self.assertRaisesRegex(
+                            PersonaBuildError,
+                            "not in a known private runtime location",
+                        ),
+                    ):
+                        persona_builder._ensure_git_ignored(public_path)
+                run.assert_not_called()
+
+    def test_archive_requires_matching_tracked_ignore_rule(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="matraix-persona-archive-") as name:
+            root = Path(name)
+            (root / ".gitignore").write_text(
+                "/matraix/personal-persona/*.yaml\n",
+                encoding="utf-8",
+            )
+            candidates = (
+                root
+                / "matraix/personal-persona/survey/data/persona-candidates.json"
+            )
+            with (
+                patch.object(persona_builder, "REPO_ROOT", root),
+                self.assertRaisesRegex(
+                    PersonaBuildError,
+                    "ignore rule is missing from .gitignore",
+                ),
+            ):
+                persona_builder._ensure_git_ignored(candidates)
+
+    def test_git_checkout_still_enforces_git_check_ignore(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="matraix-persona-checkout-") as name:
+            root = Path(name)
+            (root / ".git").mkdir()
+            private_path = root / "matraix/personal-persona/persona.yaml"
+            failed_check = SimpleNamespace(returncode=1, stdout="", stderr="")
+            with (
+                patch.object(persona_builder, "REPO_ROOT", root),
+                patch.object(
+                    persona_builder.subprocess,
+                    "run",
+                    return_value=failed_check,
+                ) as run,
+                self.assertRaisesRegex(
+                    PersonaBuildError,
+                    "path is not ignored by Git",
+                ),
+            ):
+                persona_builder._ensure_git_ignored(private_path)
+            run.assert_called_once_with(
+                [
+                    "git",
+                    "-C",
+                    str(root),
+                    "check-ignore",
+                    "-q",
+                    "--",
+                    "matraix/personal-persona/persona.yaml",
+                ],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+
+    def test_archive_mode_and_symlink_checks_remain_enforced(self) -> None:
+        payload = build_persona_payload(
+            candidate_payload(),
+            catalog=self.catalog,
+            sensitivity=self.sensitivity,
+        )
+        with tempfile.TemporaryDirectory(prefix="matraix-persona-archive-") as name:
+            root = Path(name)
+            (root / ".gitignore").write_text(
+                "/matraix/personal-persona/*.yaml\n",
+                encoding="utf-8",
+            )
+            persona_dir = root / "matraix/personal-persona"
+            persona_dir.mkdir(parents=True)
+            target = persona_dir / "target.yaml"
+            target.write_text(
+                yaml.safe_dump(payload, sort_keys=False),
+                encoding="utf-8",
+            )
+            os.chmod(target, 0o644)
+            link = persona_dir / "persona.yaml"
+            link.symlink_to(target)
+
+            with patch.object(persona_builder, "REPO_ROOT", root):
+                with self.assertRaisesRegex(PersonaBuildError, "private symlink"):
+                    migrate_persona(link, dry_run=True, enforce_private=True)
+                with self.assertRaisesRegex(
+                    PersonaBuildError,
+                    "must have mode 600",
+                ):
+                    validate_persona(
+                        target,
+                        require_private_mode=True,
+                        require_git_ignore=True,
+                    )
 
 
 if __name__ == "__main__":

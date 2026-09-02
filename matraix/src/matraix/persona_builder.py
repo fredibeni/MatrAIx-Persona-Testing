@@ -73,6 +73,18 @@ DEFAULT_PERSONA_PATH = PERSONA_DIR / "persona.yaml"
 DEFAULT_TEMPLATE_PATH = PERSONA_DIR / "persona.example.yaml"
 DEFAULT_REPORT_PATH = PERSONA_DIR / "survey" / "data" / "persona-build-report.json"
 
+PRIVATE_PERSONA_RELATIVE_DIR = Path("matraix/personal-persona")
+PRIVATE_SURVEY_DATA_RELATIVE_DIR = PRIVATE_PERSONA_RELATIVE_DIR / "survey" / "data"
+PRIVATE_SOURCE_MATERIAL_RELATIVE_DIR = (
+    PRIVATE_PERSONA_RELATIVE_DIR / "source-material"
+)
+PRIVATE_PERSONA_IGNORE_RULES = {
+    ".yaml": "/matraix/personal-persona/*.yaml",
+    ".yml": "/matraix/personal-persona/*.yml",
+}
+PRIVATE_SURVEY_DATA_IGNORE_RULE = "/matraix/personal-persona/survey/data/*"
+PRIVATE_SOURCE_MATERIAL_IGNORE_RULE = "/matraix/personal-persona/source-material/"
+
 PERSONA_ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9_-]{0,63}$")
 SOURCE_ID_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
 ABSOLUTE_PATH_PATTERN = re.compile(
@@ -314,7 +326,13 @@ def _validate_source_coverage(
     _require(isinstance(value, dict), "source_coverage must be an object")
     _validate_keys(
         value,
-        {"generated_at", "sources", "schema_categories_reviewed", "limitations"},
+        {
+            "generated_at",
+            "sources",
+            "schema_categories_reviewed",
+            "schema_review_complete",
+            "limitations",
+        },
         "source_coverage",
     )
     generated_at = value.get("generated_at")
@@ -379,10 +397,16 @@ def _validate_source_coverage(
         unknown_categories = sorted(set(normalized_categories) - set(catalog.categories))
         _require(not unknown_categories, f"Unknown reviewed schema categories: {unknown_categories}")
     missing_categories = sorted(set(catalog.categories) - set(normalized_categories))
+    review_complete = value.get("schema_review_complete", True)
     _require(
-        not missing_categories,
-        f"Schema category review is incomplete; missing: {missing_categories}",
+        isinstance(review_complete, bool),
+        "source_coverage.schema_review_complete must be boolean",
     )
+    if review_complete:
+        _require(
+            not missing_categories,
+            f"Schema category review is incomplete; missing: {missing_categories}",
+        )
 
     normalized = {
         "generated_at": _safe_note(
@@ -392,6 +416,7 @@ def _validate_source_coverage(
         ),
         "sources": normalized_sources,
         "schema_categories_reviewed": normalized_categories,
+        "schema_review_complete": review_complete,
         "limitations": _clean_string_list(value.get("limitations", []), "source_coverage.limitations"),
     }
     return normalized, frozenset(source_ids)
@@ -426,7 +451,16 @@ def validate_candidate_payload(
         _require(isinstance(candidate, dict), f"candidates[{index}] must be an object")
         _validate_keys(
             candidate,
-            {"id", "value", "confidence", "evidence", "source_refs", "as_of", "runtime_included"},
+            {
+                "id",
+                "value",
+                "confidence",
+                "evidence",
+                "source_refs",
+                "document_refs",
+                "as_of",
+                "runtime_included",
+            },
             f"candidates[{index}]",
         )
         dim_id = candidate.get("id")
@@ -443,6 +477,14 @@ def validate_candidate_payload(
         source_refs = _clean_string_list(candidate.get("source_refs", []), f"candidates[{index}].source_refs")
         unknown_source_refs = sorted(set(source_refs) - set(source_ids))
         _require(not unknown_source_refs, f"Candidate {dim_id} references unknown sources: {unknown_source_refs}")
+        document_refs = _clean_string_list(
+            candidate.get("document_refs", []),
+            f"candidates[{index}].document_refs",
+        )
+        _require(
+            all(SOURCE_ID_PATTERN.fullmatch(ref) is not None for ref in document_refs),
+            f"Candidate {dim_id} has an invalid document reference",
+        )
 
         if confidence == "unknown":
             _require(value is None, f"Unknown candidate {dim_id} must have a null value")
@@ -468,6 +510,7 @@ def validate_candidate_payload(
                 max_chars=600,
             ),
             "source_refs": source_refs,
+            "document_refs": document_refs,
             "runtime_included": runtime_included,
         }
         if as_of is not None:
@@ -531,6 +574,7 @@ def _history_row(
         ),
         "selected_confidence": confidence,
         "source_refs": candidate["source_refs"],
+        "document_refs": candidate.get("document_refs", []),
         "sensitive": sensitive,
         "runtime_included": runtime_included,
         "needs_review": bool(confidence in {"unknown", "best_guess"} or not runtime_included),
@@ -1063,11 +1107,53 @@ def _ensure_private_mode(path: Path) -> None:
     _require(mode == 0o600, f"Private persona artifact must have mode 600, found {mode:o}: {path}")
 
 
+def _archive_private_ignore_rule(relative: Path) -> str | None:
+    """Return the tracked ignore rule for one safe archive-only private path."""
+    if (
+        relative.parent == PRIVATE_PERSONA_RELATIVE_DIR
+        and relative.name != "persona.example.yaml"
+    ):
+        return PRIVATE_PERSONA_IGNORE_RULES.get(relative.suffix.casefold())
+    if (
+        relative != PRIVATE_SURVEY_DATA_RELATIVE_DIR / ".gitkeep"
+        and PRIVATE_SURVEY_DATA_RELATIVE_DIR in relative.parents
+    ):
+        return PRIVATE_SURVEY_DATA_IGNORE_RULE
+    if PRIVATE_SOURCE_MATERIAL_RELATIVE_DIR in relative.parents:
+        return PRIVATE_SOURCE_MATERIAL_IGNORE_RULE
+    return None
+
+
 def _ensure_git_ignored(path: Path) -> None:
     try:
         relative = path.resolve().relative_to(REPO_ROOT.resolve())
     except ValueError as exc:
         raise PersonaBuildError(f"Private persona path is outside the repository: {path}") from exc
+
+    git_metadata = REPO_ROOT / ".git"
+    if not git_metadata.exists():
+        ignore_rule = _archive_private_ignore_rule(relative)
+        _require(
+            ignore_rule is not None,
+            f"Private persona path is not in a known private runtime location: {relative}",
+        )
+        gitignore_path = REPO_ROOT / ".gitignore"
+        try:
+            tracked_rules = {
+                line.strip()
+                for line in gitignore_path.read_text(encoding="utf-8").splitlines()
+                if line.strip() and not line.lstrip().startswith("#")
+            }
+        except OSError as exc:
+            raise PersonaBuildError(
+                f"Could not verify the distribution ignore rules: {exc}"
+            ) from exc
+        _require(
+            ignore_rule in tracked_rules,
+            f"Private runtime ignore rule is missing from .gitignore: {ignore_rule}",
+        )
+        return
+
     try:
         result = subprocess.run(
             ["git", "-C", str(REPO_ROOT), "check-ignore", "-q", "--", str(relative)],
@@ -1078,6 +1164,12 @@ def _ensure_git_ignored(path: Path) -> None:
     except OSError as exc:
         raise PersonaBuildError(f"Could not verify Git ignore rules: {exc}") from exc
     _require(result.returncode == 0, f"Private persona path is not ignored by Git: {relative}")
+
+
+def preflight_private_artifact_path(path: Path) -> None:
+    """Verify that a future private artifact has a safe, ignored destination."""
+    _require(not path.is_symlink(), f"Refusing to use a private symlink: {path}")
+    _ensure_git_ignored(path)
 
 
 def validate_persona(
