@@ -1,12 +1,18 @@
-# MatrAIx
+# MatrAIx Persona Testing
 
-MatrAIx is a private local persona app for macOS. It lets you:
+MatrAIx Persona Testing is a private local persona app for macOS. It lets you:
 
 - Chat with a persona grounded in your local persona YAML.
 - Fill gaps and correct details in Update persona.
 - Compare your answers with the persona's answers in Validation.
 
 The app uses Codex through your ChatGPT subscription. It does not require a separately billed OpenAI API key.
+
+## Relationship to MatrAIx
+
+This repository is an independent personal-testing adaptation of the original [MatrAIx-Persona-8B](https://github.com/MatrAIx-ai/MatrAIx-Persona-8B) project. `MatrAIx` is the name of that original project. This derivative is named **MatrAIx Persona Testing** to distinguish it from the official MatrAIx repository and is not presented as an official MatrAIx release.
+
+Some internal directories, Python packages, environment variables, and launcher filenames retain the `matraix` name for compatibility with the upstream codebase.
 
 ## Requirements
 
@@ -21,8 +27,8 @@ Node.js, Docker, a separate OpenAI API key, local model downloads, and the full 
 ## Install from Git
 
 ```bash
-git clone https://github.com/fredibeni/MatrAIx.git
-cd MatrAIx
+git clone https://github.com/fredibeni/MatrAIx-Persona-Testing.git
+cd MatrAIx-Persona-Testing
 ./install.sh
 ./start-local.sh
 ```
@@ -52,13 +58,13 @@ On a new installation, `./install.sh` automatically launches `./onboard.sh`, whi
 2. It asks what the persona should be called.
 3. It asks for explicit permission before using available personal material to prepopulate the persona.
 
-MatrAIx never asks you to paste a ChatGPT password, session cookie, access token, or API key into the app.
+MatrAIx Persona Testing never asks you to paste a ChatGPT password, session cookie, access token, or API key into the app.
 
 ### What ChatGPT sign-in does not provide
 
 Signing in to Codex with ChatGPT authorizes Codex model use. It does not give this local app automatic access to your ChatGPT web conversation history or ChatGPT saved memories.
 
-If you choose prepopulation, MatrAIx can use only sources that are actually available and that you approve, such as:
+If you choose prepopulation, MatrAIx Persona Testing can use only sources that are actually available and that you approve, such as:
 
 - The separate local Codex memory store on the Mac.
 - A ChatGPT data export that you select.
