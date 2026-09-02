@@ -1107,14 +1107,23 @@ button:disabled {
   text-transform: uppercase;
 }
 .validation-trend-card-header .validation-trend-selector {
-  display: block;
+  display: inline-flex;
+  min-height: 30px;
   width: auto;
   flex: 0 1 auto;
+  align-items: center;
+  gap: 6px;
+  border-radius: 8px;
   color: inherit;
+  background: #f1f3f5;
+  padding: 0 8px 0 6px;
   font-size: inherit;
   font-weight: inherit;
   letter-spacing: inherit;
-  text-transform: none;
+  text-transform: uppercase;
+}
+.validation-trend-selector-chevron {
+  flex: 0 0 auto;
 }
 .validation-trend-card-header select {
   width: 100%;
@@ -1135,12 +1144,13 @@ button:disabled {
 .validation-trend-card-header .validation-trend-selector select {
   width: auto;
   min-height: 30px;
+  appearance: none;
   color: #111827;
   background: transparent;
-  padding: 0 20px 0 0;
-  font-size: 1rem;
-  font-weight: 850;
-  letter-spacing: -0.02em;
+  padding: 0;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
 }
 .validation-trend-card-header select:focus-visible {
   outline: 2px solid var(--validation-survey-accent);
@@ -1683,8 +1693,13 @@ button:disabled {
   line-height: 1.5;
 }
 
-.validation-embedded .validation-trend-card-header h3 {
-  color: var(--validation-ink);
+.validation-embedded .validation-trend-card-header h3,
+.validation-embedded .validation-trend-card-header .validation-trend-selector {
+  color: var(--validation-gold-light);
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
 }
 
 .validation-embedded .validation-trend-card-header label,
@@ -1709,6 +1724,7 @@ button:disabled {
   .validation-trend-card-header
   .validation-trend-selector
   select {
+  color: inherit;
   background: transparent;
 }
 
@@ -1822,24 +1838,24 @@ button:disabled {
 .validation-embedded .validation-overall-results > div {
   border-radius: 13px;
   background: var(--validation-control);
-  padding: 12px 14px;
+  padding: 10px 14px;
 }
 
 .validation-embedded .validation-overall-metric-header {
   position: relative;
   display: flex;
-  min-height: 2.5em;
-  align-items: flex-start;
+  min-height: 0;
+  align-items: center;
   gap: 6px;
 }
 
 .validation-embedded .validation-overall-metric-header > span {
   display: block;
-  color: var(--validation-muted);
-  font-size: 10px;
-  font-weight: 760;
-  letter-spacing: 0.07em;
-  line-height: 1.25;
+  color: var(--validation-gold-light);
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.11em;
+  line-height: 1.2;
   text-transform: uppercase;
 }
 
@@ -1869,7 +1885,7 @@ button:disabled {
 
 .validation-embedded .validation-overall-results strong {
   display: block;
-  margin-top: 4px;
+  margin-top: 3px;
   color: var(--validation-ink);
   font-size: 22px;
   font-weight: 680;
@@ -1878,10 +1894,10 @@ button:disabled {
 
 .validation-embedded .validation-overall-results small {
   display: block;
-  margin-top: 4px;
+  margin-top: 2px;
   color: var(--validation-muted);
   font-size: 11px;
-  line-height: 1.35;
+  line-height: 1.3;
 }
 
 .validation-embedded .validation-question-details {

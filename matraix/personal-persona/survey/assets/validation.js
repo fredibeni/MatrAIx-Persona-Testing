@@ -13643,22 +13643,30 @@ function Mi({ data: e, hasAllHumanBenchmarks: t }) {
 						children: [/* @__PURE__ */ (0, z.jsxs)("label", {
 							className: "validation-trend-selector",
 							htmlFor: "validation-benchmark-trend-mode",
-							children: [/* @__PURE__ */ (0, z.jsx)("span", {
-								className: "sr-only",
-								children: "Benchmark match view"
-							}), /* @__PURE__ */ (0, z.jsxs)("select", {
-								id: "validation-benchmark-trend-mode",
-								"aria-label": "Benchmark match view",
-								value: n,
-								onChange: (e) => r(e.target.value),
-								children: [/* @__PURE__ */ (0, z.jsx)("option", {
-									value: "overall",
-									children: "Overall benchmark match"
-								}), /* @__PURE__ */ (0, z.jsx)("option", {
-									value: "individual",
-									children: "Individual benchmark match"
-								})]
-							})]
+							children: [
+								/* @__PURE__ */ (0, z.jsx)("span", {
+									className: "sr-only",
+									children: "Benchmark match view"
+								}),
+								/* @__PURE__ */ (0, z.jsx)(k, {
+									className: "validation-trend-selector-chevron",
+									size: 14,
+									"aria-hidden": "true"
+								}),
+								/* @__PURE__ */ (0, z.jsxs)("select", {
+									id: "validation-benchmark-trend-mode",
+									"aria-label": "Benchmark match view",
+									value: n,
+									onChange: (e) => r(e.target.value),
+									children: [/* @__PURE__ */ (0, z.jsx)("option", {
+										value: "overall",
+										children: "Overall benchmark match"
+									}), /* @__PURE__ */ (0, z.jsx)("option", {
+										value: "individual",
+										children: "Individual benchmark match"
+									})]
+								})
+							]
 						}), /* @__PURE__ */ (0, z.jsx)(Ai, {
 							label: "About benchmark match",
 							children: "Average Agent match against the available Human benchmark."

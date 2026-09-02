@@ -990,6 +990,11 @@ function ValidationTrendSection({
                 htmlFor="validation-benchmark-trend-mode"
               >
                 <span className="sr-only">Benchmark match view</span>
+                <ChevronDown
+                  className="validation-trend-selector-chevron"
+                  size={14}
+                  aria-hidden="true"
+                />
                 <select
                   id="validation-benchmark-trend-mode"
                   aria-label="Benchmark match view"

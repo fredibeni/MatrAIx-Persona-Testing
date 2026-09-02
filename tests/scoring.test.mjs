@@ -1075,8 +1075,29 @@ assert.doesNotMatch(
 );
 assert.match(
   validationPageSource,
-  /className="validation-trend-title-row"[\s\S]*?className="validation-trend-selector"[\s\S]*?id="validation-benchmark-trend-mode"[\s\S]*?label="About benchmark match"/,
-  'the benchmark history selector and explanation control must share the title row',
+  /className="validation-trend-title-row"[\s\S]*?className="validation-trend-selector"[\s\S]*?<ChevronDown[\s\S]*?id="validation-benchmark-trend-mode"[\s\S]*?label="About benchmark match"/,
+  'the benchmark history selector must lead with a chevron and share the title row with its explanation control',
+);
+const trendSelectorRule = validationStylesSource.match(
+  /\.validation-trend-card-header \.validation-trend-selector\s*\{([^}]*)\}/,
+);
+assert.match(
+  trendSelectorRule?.[1] ?? '',
+  /background:\s*#f1f3f5;/,
+  'the benchmark history selector must have a distinct dropdown background',
+);
+const validationTrendTypographyRule = validationStylesSource.match(
+  /\.validation-embedded \.validation-trend-card-header h3,[\s\S]*?\.validation-embedded \.validation-trend-card-header \.validation-trend-selector\s*\{([^}]*)\}/,
+);
+assert.match(
+  validationTrendTypographyRule?.[1] ?? '',
+  /font-size:\s*11px;/,
+  'validation chart controls must match the Experiment breakdown label size',
+);
+assert.match(
+  validationTrendTypographyRule?.[1] ?? '',
+  /letter-spacing:\s*0\.11em;/,
+  'validation chart controls must match the Experiment breakdown label tracking',
 );
 assert.match(
   validationPageSource,
@@ -1281,16 +1302,21 @@ assert.ok(
 );
 assert.match(
   overallMetricLabelRule?.[1] ?? '',
-  /min-height:\s*2\.5em;/,
-  'overall Results labels must retain a compact aligned header row',
+  /min-height:\s*0;/,
+  'overall Results labels must not reserve unnecessary header height',
 );
 const overallMetricTextRule = validationStylesSource.match(
   /\.validation-embedded \.validation-overall-metric-header > span\s*\{([^}]*)\}/,
 );
 assert.match(
   overallMetricTextRule?.[1] ?? '',
-  /line-height:\s*1\.25;/,
-  'overall Results label row height must stay fixed for aligned values',
+  /font-size:\s*11px;/,
+  'overall Results labels must match the Experiment breakdown label size',
+);
+assert.match(
+  overallMetricTextRule?.[1] ?? '',
+  /letter-spacing:\s*0\.11em;/,
+  'overall Results labels must match the Experiment breakdown label tracking',
 );
 const compactValidationStylesStart = validationStylesSource.indexOf(
   '@media (max-width: 650px) {',
