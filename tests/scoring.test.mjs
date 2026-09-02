@@ -1095,7 +1095,7 @@ assert.match(
   'the benchmark history selector must have a distinct dropdown background',
 );
 const validationTrendTypographyRule = validationStylesSource.match(
-  /\.validation-embedded \.validation-trend-card-header h3,[\s\S]*?\.validation-embedded \.validation-trend-card-header \.validation-trend-selector\s*\{([^}]*)\}/,
+  /\.validation-embedded \.validation-trend-card-header h3\s*\{([^}]*)\}/,
 );
 assert.match(
   validationTrendTypographyRule?.[1] ?? '',
@@ -1106,6 +1106,24 @@ assert.match(
   validationTrendTypographyRule?.[1] ?? '',
   /letter-spacing:\s*0\.11em;/,
   'validation chart controls must match the Experiment breakdown label tracking',
+);
+const embeddedTrendSelectorRule = validationStylesSource.match(
+  /\.validation-embedded \.validation-trend-card-header \.validation-trend-selector\s*\{([^}]*)\}/,
+);
+assert.match(
+  embeddedTrendSelectorRule?.[1] ?? '',
+  /flex-direction:\s*row;/,
+  'the benchmark history selector must keep its chevron and text on one line',
+);
+assert.match(
+  embeddedTrendSelectorRule?.[1] ?? '',
+  /background:\s*var\(--validation-control\);/,
+  'the benchmark history selector must match the high-contrast Experiment dropdown treatment',
+);
+assert.match(
+  embeddedTrendSelectorRule?.[1] ?? '',
+  /font-size:\s*14px;/,
+  'the benchmark history selector must match the Experiment dropdown text size',
 );
 assert.match(
   validationPageSource,
