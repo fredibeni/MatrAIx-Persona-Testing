@@ -217,6 +217,11 @@ assert.doesNotMatch(
   /Exact benchmark match/,
   'question results must use the concise Benchmark match label',
 );
+assert.match(
+  questionAggregateRowSource,
+  /Math\.round\(row\.exactBenchmarkMatchRate \* row\.answerCount\)\}\/\$\{row\.answerCount\}/,
+  'per-question Benchmark match must show the count of matching runs',
+);
 const questionResultGridRule = validationStylesSource.match(
   /\.validation-embedded \.validation-question-result dl\s*\{([^}]*)\}/,
 );

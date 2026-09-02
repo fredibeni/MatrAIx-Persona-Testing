@@ -389,7 +389,7 @@ function QuestionAggregateRow({ row }: { row: ValidationQuestionAggregate }) {
           <dd>
             {row.exactBenchmarkMatchRate === null
               ? '-'
-              : percent(row.exactBenchmarkMatchRate)}
+              : `${Math.round(row.exactBenchmarkMatchRate * row.answerCount)}/${row.answerCount}`}
           </dd>
         </div>
         <div>
