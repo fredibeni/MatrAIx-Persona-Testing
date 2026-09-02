@@ -3,6 +3,7 @@
 const app = {
   definition: null,
   state: null,
+  personaDimensionCount: null,
   currentIndex: 0,
   currentQuestionIndex: 0,
   viewMode: 'question',
@@ -275,7 +276,10 @@ function dimensionCoverage() {
 
 function renderSurveyMetrics(coverage, minutesRemaining) {
   elements.remainingTime.textContent = formatMinutes(minutesRemaining);
-  elements.dimensionsAnswered.textContent = String(coverage.answered);
+  const activeDimensionCount = Number.isInteger(app.personaDimensionCount)
+    ? app.personaDimensionCount
+    : coverage.answered;
+  elements.dimensionsAnswered.textContent = String(activeDimensionCount);
   elements.dimensionsTotal.textContent = String(coverage.total);
 }
 
@@ -1395,6 +1399,9 @@ async function saveState() {
     app.state.baseline_sha256 = result.baseline_sha256;
     app.state.definition_sha256 = result.definition_sha256;
     app.state.persona_revision = result.persona_revision;
+    if (Number.isInteger(result.persona_dimension_count)) {
+      app.personaDimensionCount = result.persona_dimension_count;
+    }
     const time = new Date(result.saved_at).toLocaleTimeString([], {
       hour: '2-digit',
       minute: '2-digit',
@@ -1433,6 +1440,9 @@ function applySurveySnapshot(snapshot) {
   clearAutoAdvance();
   app.definition = snapshot.definition;
   app.state = snapshot.state;
+  app.personaDimensionCount = Number.isInteger(snapshot.persona_dimension_count)
+    ? snapshot.persona_dimension_count
+    : null;
   app.state.answers = app.state.answers || {};
   app.state.visited_modules = app.state.visited_modules || [];
   const modules = app.definition.modules || [];

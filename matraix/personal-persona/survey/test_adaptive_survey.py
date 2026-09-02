@@ -178,6 +178,31 @@ class AdaptiveSurveyTests(unittest.TestCase):
             )
             self.assertEqual(refined["meta"]["schema_dimensions"], 1290)
 
+    def test_survey_snapshot_uses_active_persona_dimension_count(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="matraix-survey-dimension-count-") as name:
+            directory = Path(name)
+            active_path = directory / "active.yaml"
+            active_path.write_text(
+                """persona_id: counted
+display_name: Counted
+dimensions:
+  known_value: present
+  zero_value: 0
+  false_value: false
+  empty_value: ''
+  null_value: null
+""",
+                encoding="utf-8",
+            )
+            patches = self.patched_store(directory, active_path)
+            for active_patch in patches:
+                active_patch.start()
+                self.addCleanup(active_patch.stop)
+
+            snapshot = server.active_survey_snapshot()
+
+            self.assertEqual(snapshot["persona_dimension_count"], 4)
+
     def test_stale_tab_cannot_write_after_persona_replacement(self) -> None:
         with tempfile.TemporaryDirectory(prefix="matraix-adaptive-stale-") as name:
             directory = Path(name)

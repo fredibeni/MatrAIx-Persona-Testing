@@ -1842,7 +1842,11 @@ def active_survey_snapshot() -> dict[str, Any]:
         adapted["persona"]["save_revision"] = int(
             state.get("save_revision", 0)
         )
-        return {"definition": adapted, "state": state}
+        return {
+            "definition": adapted,
+            "state": state,
+            "persona_dimension_count": active_persona_dimension_count(),
+        }
 
 
 def active_survey_state() -> dict[str, Any]:
@@ -2957,6 +2961,7 @@ class SurveyHandler(BaseHTTPRequestHandler):
                     "baseline_sha256": state.get("baseline_sha256"),
                     "definition_sha256": state.get("definition_sha256"),
                     "persona_revision": state.get("persona_revision"),
+                    "persona_dimension_count": active_persona_dimension_count(),
                     "changed_answers": len(changes),
                     "persona_updated": True,
                     "selected_updates": summary["selected_updates"],
