@@ -364,7 +364,7 @@ assert.match(
 );
 assert.match(
   document.getElementById('questions').innerHTML,
-  /<span class="section-finished-validation-title">Run validation<\/span>\s*<span class="section-finished-validation-subtitle">in background<\/span>/,
+  /<span class="section-finished-validation-title">Run validation<\/span>\s*<span class="section-finished-validation-subtitle">in background \(recommended\)<\/span>/,
   'The background Validation action must use the exact two-line label',
 );
 assert.equal(
