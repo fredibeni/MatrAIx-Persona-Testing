@@ -377,12 +377,12 @@ function QuestionAggregateRow({ row }: { row: ValidationQuestionAggregate }) {
       <h3>{row.prompt}</h3>
       <dl>
         <div>
-          <dt>Agent consensus</dt>
-          <dd>{row.consensusAnswerLabel ?? 'No response'}</dd>
-        </div>
-        <div>
           <dt>Human benchmark</dt>
           <dd>{row.humanAnswerLabel ?? 'Not completed'}</dd>
+        </div>
+        <div>
+          <dt>Agent consensus</dt>
+          <dd>{row.consensusAnswerLabel ?? 'No response'}</dd>
         </div>
         <div>
           <dt>Benchmark match</dt>

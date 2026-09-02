@@ -209,8 +209,8 @@ assert.doesNotMatch(
 );
 assert.match(
   questionAggregateRowSource,
-  /<dt>Agent consensus<\/dt>[\s\S]*?<dt>Human benchmark<\/dt>[\s\S]*?<dt>Benchmark match<\/dt>[\s\S]*?<dt>Agent consistency<\/dt>/,
-  'question results must put Benchmark match before Agent consistency in the metric row',
+  /<dt>Human benchmark<\/dt>[\s\S]*?<dt>Agent consensus<\/dt>[\s\S]*?<dt>Benchmark match<\/dt>[\s\S]*?<dt>Agent consistency<\/dt>/,
+  'question results must show Human benchmark before Agent consensus and Benchmark match before Agent consistency',
 );
 assert.doesNotMatch(
   questionAggregateRowSource,
