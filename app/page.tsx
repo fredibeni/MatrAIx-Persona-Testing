@@ -381,7 +381,11 @@ function QuestionAggregateRow({ row }: { row: ValidationQuestionAggregate }) {
           <dd>{row.consensusAnswerLabel ?? 'No response'}</dd>
         </div>
         <div>
-          <dt>Consistency</dt>
+          <dt>Human benchmark</dt>
+          <dd>{row.humanAnswerLabel ?? 'Not completed'}</dd>
+        </div>
+        <div>
+          <dt>Agent consistency</dt>
           <dd>
             {row.answerCount < 2 || row.consistency === null
               ? 'Needs 2 responses'
@@ -389,11 +393,7 @@ function QuestionAggregateRow({ row }: { row: ValidationQuestionAggregate }) {
           </dd>
         </div>
         <div>
-          <dt>Human benchmark</dt>
-          <dd>{row.humanAnswerLabel ?? 'Not completed'}</dd>
-        </div>
-        <div>
-          <dt>Exact benchmark match</dt>
+          <dt>Benchmark match</dt>
           <dd>
             {row.exactBenchmarkMatchRate === null
               ? '-'

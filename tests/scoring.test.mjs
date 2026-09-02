@@ -138,6 +138,17 @@ const surveyCardSource = validationPageSource.slice(
   surveyCardStart,
   surveyCardEnd,
 );
+const questionAggregateRowStart = validationPageSource.indexOf(
+  'function QuestionAggregateRow(',
+);
+const questionAggregateRowEnd = validationPageSource.indexOf(
+  'function validationTrendColor(',
+  questionAggregateRowStart,
+);
+const questionAggregateRowSource = validationPageSource.slice(
+  questionAggregateRowStart,
+  questionAggregateRowEnd,
+);
 assert.match(
   surveyCardSource,
   /<div className="survey-card-header">\s*<h2 className="survey-title[^"]*"[\s\S]*?<\/h2>\s*<button[\s\S]*?className="run-row survey-human-run focus-ring"[\s\S]*?<\/button>\s*<\/div>\s*<p className="survey-description/,
@@ -195,6 +206,24 @@ assert.doesNotMatch(
   surveyCardSource,
   /className="run-icon"/,
   'the compact Human benchmark control must not include a person icon',
+);
+assert.match(
+  questionAggregateRowSource,
+  /<dt>Agent consensus<\/dt>[\s\S]*?<dt>Human benchmark<\/dt>[\s\S]*?<dt>Agent consistency<\/dt>[\s\S]*?<dt>Benchmark match<\/dt>/,
+  'question results must place human and Agent answers before their two metrics',
+);
+assert.doesNotMatch(
+  questionAggregateRowSource,
+  /Exact benchmark match/,
+  'question results must use the concise Benchmark match label',
+);
+const questionResultGridRule = validationStylesSource.match(
+  /\.validation-embedded \.validation-question-result dl\s*\{([^}]*)\}/,
+);
+assert.match(
+  questionResultGridRule?.[1] ?? '',
+  /grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\);/,
+  'question result answer and metric cards must use two equal-width columns',
 );
 assert.match(
   validationStylesSource,
