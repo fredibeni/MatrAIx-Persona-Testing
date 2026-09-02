@@ -1975,7 +1975,7 @@ button:disabled {
 
 .validation-embedded .validation-question-list {
   display: grid;
-  gap: 8px;
+  gap: 16px;
   padding: 0;
 }
 
@@ -1990,9 +1990,7 @@ button:disabled {
 }
 
 .validation-embedded .validation-question-result {
-  border-radius: 10px;
-  background: var(--validation-control);
-  padding: 13px;
+  padding: 0;
 }
 
 .validation-embedded .validation-question-result h3 {

@@ -225,6 +225,14 @@ assert.match(
   /grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\);/,
   'question result answer and metric cards must use two equal-width columns',
 );
+const questionResultRule = validationStylesSource.match(
+  /\.validation-embedded \.validation-question-result\s*\{([^}]*)\}/,
+);
+assert.doesNotMatch(
+  questionResultRule?.[1] ?? '',
+  /background:|border-radius:/,
+  'question result groups must not add an extra surrounding card',
+);
 assert.match(
   validationStylesSource,
   /@media \(max-width: 780px\) \{[\s\S]*?\.survey-card-header\s*\{[\s\S]*?flex-direction:\s*column;[\s\S]*?\}[\s\S]*?\.survey-human-run\s*\{[\s\S]*?align-self:\s*flex-start;[\s\S]*?\}/,
