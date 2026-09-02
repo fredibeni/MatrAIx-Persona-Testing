@@ -1104,6 +1104,11 @@ assert.match(
 );
 assert.match(
   validationTrendTypographyRule?.[1] ?? '',
+  /color:\s*var\(--validation-ink\);/,
+  'the Agent consistency title must retain white text on the dark chart card',
+);
+assert.match(
+  validationTrendTypographyRule?.[1] ?? '',
   /letter-spacing:\s*0\.11em;/,
   'validation chart controls must match the Experiment breakdown label tracking',
 );
@@ -1338,6 +1343,11 @@ assert.match(
   overallMetricTextRule?.[1] ?? '',
   /font-size:\s*11px;/,
   'overall Results labels must match the Experiment breakdown label size',
+);
+assert.match(
+  overallMetricTextRule?.[1] ?? '',
+  /color:\s*var\(--validation-ink\);/,
+  'overall Results labels must retain white text on the dark metric cards',
 );
 assert.match(
   overallMetricTextRule?.[1] ?? '',
