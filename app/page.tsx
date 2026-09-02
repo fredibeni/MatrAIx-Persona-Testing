@@ -951,27 +951,29 @@ function ValidationTrendSection({ data }: { data: ValidationTrendData }) {
         <article className="validation-trend-card">
           <header className="validation-trend-card-header">
             <div className="validation-trend-title-row">
-              <h3>Benchmark match</h3>
+              <label
+                className="validation-trend-selector"
+                htmlFor="validation-benchmark-trend-mode"
+              >
+                <span className="sr-only">Benchmark match view</span>
+                <select
+                  id="validation-benchmark-trend-mode"
+                  aria-label="Benchmark match view"
+                  value={benchmarkMode}
+                  onChange={(event) =>
+                    setBenchmarkMode(
+                      event.target.value as ValidationBenchmarkTrendMode,
+                    )
+                  }
+                >
+                  <option value="overall">Overall benchmark match</option>
+                  <option value="individual">Individual benchmark match</option>
+                </select>
+              </label>
               <ValidationTrendInfo label="About benchmark match">
                 Average Agent match against the available Human benchmark.
               </ValidationTrendInfo>
             </div>
-            <label htmlFor="validation-benchmark-trend-mode">
-              <span className="sr-only">Benchmark match view</span>
-              <select
-                id="validation-benchmark-trend-mode"
-                aria-label="Benchmark match view"
-                value={benchmarkMode}
-                onChange={(event) =>
-                  setBenchmarkMode(
-                    event.target.value as ValidationBenchmarkTrendMode,
-                  )
-                }
-              >
-                <option value="overall">Overall benchmark match</option>
-                <option value="individual">Individual benchmark match</option>
-              </select>
-            </label>
           </header>
           <ValidationTrendChart
             title={

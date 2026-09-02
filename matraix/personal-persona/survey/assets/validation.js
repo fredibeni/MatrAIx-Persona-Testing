@@ -13612,33 +13612,34 @@ function Ai({ data: e }) {
 			className: "validation-trends-grid",
 			children: [/* @__PURE__ */ (0, R.jsxs)("article", {
 				className: "validation-trend-card",
-				children: [/* @__PURE__ */ (0, R.jsxs)("header", {
+				children: [/* @__PURE__ */ (0, R.jsx)("header", {
 					className: "validation-trend-card-header",
-					children: [/* @__PURE__ */ (0, R.jsxs)("div", {
+					children: /* @__PURE__ */ (0, R.jsxs)("div", {
 						className: "validation-trend-title-row",
-						children: [/* @__PURE__ */ (0, R.jsx)("h3", { children: "Benchmark match" }), /* @__PURE__ */ (0, R.jsx)(Oi, {
+						children: [/* @__PURE__ */ (0, R.jsxs)("label", {
+							className: "validation-trend-selector",
+							htmlFor: "validation-benchmark-trend-mode",
+							children: [/* @__PURE__ */ (0, R.jsx)("span", {
+								className: "sr-only",
+								children: "Benchmark match view"
+							}), /* @__PURE__ */ (0, R.jsxs)("select", {
+								id: "validation-benchmark-trend-mode",
+								"aria-label": "Benchmark match view",
+								value: t,
+								onChange: (e) => n(e.target.value),
+								children: [/* @__PURE__ */ (0, R.jsx)("option", {
+									value: "overall",
+									children: "Overall benchmark match"
+								}), /* @__PURE__ */ (0, R.jsx)("option", {
+									value: "individual",
+									children: "Individual benchmark match"
+								})]
+							})]
+						}), /* @__PURE__ */ (0, R.jsx)(Oi, {
 							label: "About benchmark match",
 							children: "Average Agent match against the available Human benchmark."
 						})]
-					}), /* @__PURE__ */ (0, R.jsxs)("label", {
-						htmlFor: "validation-benchmark-trend-mode",
-						children: [/* @__PURE__ */ (0, R.jsx)("span", {
-							className: "sr-only",
-							children: "Benchmark match view"
-						}), /* @__PURE__ */ (0, R.jsxs)("select", {
-							id: "validation-benchmark-trend-mode",
-							"aria-label": "Benchmark match view",
-							value: t,
-							onChange: (e) => n(e.target.value),
-							children: [/* @__PURE__ */ (0, R.jsx)("option", {
-								value: "overall",
-								children: "Overall benchmark match"
-							}), /* @__PURE__ */ (0, R.jsx)("option", {
-								value: "individual",
-								children: "Individual benchmark match"
-							})]
-						})]
-					})]
+					})
 				}), /* @__PURE__ */ (0, R.jsx)(ki, {
 					title: t === "overall" ? "Overall benchmark match by persona dimensions" : "Individual benchmark match by persona dimensions",
 					description: t === "overall" ? "One line shows the average overall benchmark match at each saved dimension count." : "Four lines show average benchmark match for the four Validation surveys at each saved dimension count.",

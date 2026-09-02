@@ -1038,7 +1038,7 @@ button:disabled {
 .validation-trend-card-header {
   position: relative;
   display: flex;
-  min-height: 62px;
+  min-height: 38px;
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
@@ -1102,6 +1102,16 @@ button:disabled {
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
+.validation-trend-card-header .validation-trend-selector {
+  display: block;
+  width: auto;
+  flex: 0 1 auto;
+  color: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
+  text-transform: none;
+}
 .validation-trend-card-header select {
   width: 100%;
   min-height: 38px;
@@ -1117,6 +1127,16 @@ button:disabled {
   font-weight: 700;
   letter-spacing: 0;
   text-transform: none;
+}
+.validation-trend-card-header .validation-trend-selector select {
+  width: auto;
+  min-height: 30px;
+  color: #111827;
+  background: transparent;
+  padding: 0 20px 0 0;
+  font-size: 1rem;
+  font-weight: 850;
+  letter-spacing: -0.02em;
 }
 .validation-trend-card-header select:focus-visible {
   outline: 2px solid var(--validation-survey-accent);
@@ -1679,6 +1699,13 @@ button:disabled {
 .validation-embedded .validation-trend-card-header select {
   color: var(--validation-ink);
   background: var(--validation-control);
+}
+
+.validation-embedded
+  .validation-trend-card-header
+  .validation-trend-selector
+  select {
+  background: transparent;
 }
 
 .validation-embedded .validation-trend-info button {

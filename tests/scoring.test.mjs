@@ -948,6 +948,16 @@ assert.doesNotMatch(
   /<span>View<\/span>/,
   'the benchmark history selector must not render a redundant visible View label',
 );
+assert.doesNotMatch(
+  validationPageSource,
+  /<h3>Benchmark match<\/h3>/,
+  'the benchmark history selector must replace the redundant Benchmark match title',
+);
+assert.match(
+  validationPageSource,
+  /className="validation-trend-title-row"[\s\S]*?className="validation-trend-selector"[\s\S]*?id="validation-benchmark-trend-mode"[\s\S]*?label="About benchmark match"/,
+  'the benchmark history selector and explanation control must share the title row',
+);
 assert.match(
   validationPageSource,
   /surveys\.map\(\(survey, index\) => \(\{[\s\S]*?points: data\.surveyBenchmarkMatches\[survey\.id\],[\s\S]*?styleIndex: index/,
