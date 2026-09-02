@@ -13282,8 +13282,8 @@ function wi({ row: e }) {
 			/* @__PURE__ */ (0, z.jsxs)("dl", { children: [
 				/* @__PURE__ */ (0, z.jsxs)("div", { children: [/* @__PURE__ */ (0, z.jsx)("dt", { children: "Agent consensus" }), /* @__PURE__ */ (0, z.jsx)("dd", { children: e.consensusAnswerLabel ?? "No response" })] }),
 				/* @__PURE__ */ (0, z.jsxs)("div", { children: [/* @__PURE__ */ (0, z.jsx)("dt", { children: "Human benchmark" }), /* @__PURE__ */ (0, z.jsx)("dd", { children: e.humanAnswerLabel ?? "Not completed" })] }),
-				/* @__PURE__ */ (0, z.jsxs)("div", { children: [/* @__PURE__ */ (0, z.jsx)("dt", { children: "Agent consistency" }), /* @__PURE__ */ (0, z.jsx)("dd", { children: e.answerCount < 2 || e.consistency === null ? "Needs 2 responses" : un(e.consistency) })] }),
-				/* @__PURE__ */ (0, z.jsxs)("div", { children: [/* @__PURE__ */ (0, z.jsx)("dt", { children: "Benchmark match" }), /* @__PURE__ */ (0, z.jsx)("dd", { children: e.exactBenchmarkMatchRate === null ? "-" : un(e.exactBenchmarkMatchRate) })] })
+				/* @__PURE__ */ (0, z.jsxs)("div", { children: [/* @__PURE__ */ (0, z.jsx)("dt", { children: "Benchmark match" }), /* @__PURE__ */ (0, z.jsx)("dd", { children: e.exactBenchmarkMatchRate === null ? "-" : un(e.exactBenchmarkMatchRate) })] }),
+				/* @__PURE__ */ (0, z.jsxs)("div", { children: [/* @__PURE__ */ (0, z.jsx)("dt", { children: "Agent consistency" }), /* @__PURE__ */ (0, z.jsx)("dd", { children: e.answerCount < 2 || e.consistency === null ? "Needs 2 responses" : un(e.consistency) })] })
 			] }),
 			/* @__PURE__ */ (0, z.jsx)("div", {
 				className: "validation-answer-distribution",

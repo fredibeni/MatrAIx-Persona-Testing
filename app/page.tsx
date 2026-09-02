@@ -385,19 +385,19 @@ function QuestionAggregateRow({ row }: { row: ValidationQuestionAggregate }) {
           <dd>{row.humanAnswerLabel ?? 'Not completed'}</dd>
         </div>
         <div>
-          <dt>Agent consistency</dt>
-          <dd>
-            {row.answerCount < 2 || row.consistency === null
-              ? 'Needs 2 responses'
-              : percent(row.consistency)}
-          </dd>
-        </div>
-        <div>
           <dt>Benchmark match</dt>
           <dd>
             {row.exactBenchmarkMatchRate === null
               ? '-'
               : percent(row.exactBenchmarkMatchRate)}
+          </dd>
+        </div>
+        <div>
+          <dt>Agent consistency</dt>
+          <dd>
+            {row.answerCount < 2 || row.consistency === null
+              ? 'Needs 2 responses'
+              : percent(row.consistency)}
           </dd>
         </div>
       </dl>
