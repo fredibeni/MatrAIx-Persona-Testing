@@ -12884,50 +12884,51 @@ function Rr(e, t) {
 }
 //#endregion
 //#region lib/validation-results.ts
-function zr(e) {
+var zr = "aggregate:all-validation-runs";
+function Br(e) {
 	return !e || e.completedRuns >= e.expectedRuns ? null : `Only ${e.completedRuns} of ${e.expectedRuns} Agent responses finished successfully.`;
 }
-function Br(e) {
+function Vr(e) {
 	return !!e.completedAt;
 }
-function Vr(e) {
+function Hr(e) {
 	return e.personaAgent?.contextId ?? "unknown-persona";
 }
-function Hr(e) {
+function Ur(e) {
 	return [...e].sort((e, t) => (e.experiment?.responseIndex ?? e.sequence) - (t.experiment?.responseIndex ?? t.sequence) || Date.parse(e.completedAt ?? e.startedAt) - Date.parse(t.completedAt ?? t.startedAt) || e.id.localeCompare(t.id));
 }
-function Ur(e) {
-	return `${Vr(e)}\u0000${e.dimensionCount ?? "unknown"}\u0000${e.experiment.id}`;
+function Wr(e) {
+	return `${Hr(e)}\u0000${e.dimensionCount ?? "unknown"}\u0000${e.experiment.id}`;
 }
-function Wr(e, t, n) {
+function Gr(e, t, n) {
 	e[t] = [...e[t] ?? [], n];
 }
-function Gr(e) {
+function Kr(e) {
 	let t = /* @__PURE__ */ new Map();
 	return Yt.forEach((n) => {
-		(e[n.id]?.agentRuns ?? []).filter((e) => Br(e) && !!e.experiment).forEach((e) => {
-			let r = e.experiment, i = Ur(e), a = t.get(i);
+		(e[n.id]?.agentRuns ?? []).filter((e) => Vr(e) && !!e.experiment).forEach((e) => {
+			let r = e.experiment, i = Wr(e), a = t.get(i);
 			a || (a = {
 				id: r.id,
 				dimensionCount: e.dimensionCount,
-				personaContextId: Vr(e),
+				personaContextId: Hr(e),
 				startedAt: r.startedAt,
 				expectedRuns: r.responsesPerSurvey * r.surveyIds.length,
 				runsBySurvey: {},
 				responsesPerSurvey: r.responsesPerSurvey,
 				surveyIds: r.surveyIds
-			}, t.set(i, a)), !(r.startedAt !== a.startedAt || r.responsesPerSurvey !== a.responsesPerSurvey || r.surveyIds.length !== a.surveyIds.length || r.surveyIds.some((e, t) => e !== a.surveyIds[t])) && ((a.runsBySurvey[n.id] ?? []).some((e) => e.experiment?.responseIndex === r.responseIndex) || Wr(a.runsBySurvey, n.id, e));
+			}, t.set(i, a)), !(r.startedAt !== a.startedAt || r.responsesPerSurvey !== a.responsesPerSurvey || r.surveyIds.length !== a.surveyIds.length || r.surveyIds.some((e, t) => e !== a.surveyIds[t])) && ((a.runsBySurvey[n.id] ?? []).some((e) => e.experiment?.responseIndex === r.responseIndex) || Gr(a.runsBySurvey, n.id, e));
 		});
 	}), [...t.values()];
 }
-function Kr(e) {
+function qr(e) {
 	let t = [];
 	return Yt.forEach((n) => {
-		(e[n.id]?.agentRuns ?? []).filter((e) => Br(e) && !e.experiment).forEach((e) => {
+		(e[n.id]?.agentRuns ?? []).filter((e) => Vr(e) && !e.experiment).forEach((e) => {
 			t.push({
 				id: `legacy:${n.id}:${e.id}`,
 				dimensionCount: e.dimensionCount,
-				personaContextId: Vr(e),
+				personaContextId: Hr(e),
 				startedAt: e.completedAt ?? e.startedAt,
 				expectedRuns: 1,
 				runsBySurvey: { [n.id]: [e] },
@@ -12937,40 +12938,55 @@ function Kr(e) {
 		});
 	}), t;
 }
-function qr(e) {
+function Jr(e) {
 	return Object.values(e.runsBySurvey).reduce((e, t) => e + (t?.length ?? 0), 0);
 }
-function Jr(e, t) {
+function Yr(e, t) {
 	let n = e === null ? "Unknown dimensions" : `${e} dim`;
 	return t === 1 ? n : `${n}, #${t}`;
 }
-function Yr(e) {
-	let t = [...Gr(e), ...Kr(e)].sort((e, t) => Date.parse(e.startedAt) - Date.parse(t.startedAt) || e.id.localeCompare(t.id)), n = /* @__PURE__ */ new Map();
+function Xr(e) {
+	let t = [...Kr(e), ...qr(e)].sort((e, t) => Date.parse(e.startedAt) - Date.parse(t.startedAt) || e.id.localeCompare(t.id)), n = /* @__PURE__ */ new Map();
 	return t.map((e) => {
 		let t = `${e.personaContextId}\u0000${e.dimensionCount ?? "unknown"}`, r = (n.get(t) ?? 0) + 1;
 		n.set(t, r);
-		let i = qr(e);
+		let i = Jr(e);
 		return {
 			id: e.id,
-			label: Jr(e.dimensionCount, r),
+			label: Yr(e.dimensionCount, r),
 			dimensionCount: e.dimensionCount,
 			startedAt: e.startedAt,
 			completedRuns: i,
 			expectedRuns: e.expectedRuns,
 			status: i >= e.expectedRuns ? "complete" : "partial",
-			runsBySurvey: Object.fromEntries(Object.entries(e.runsBySurvey).map(([e, t]) => [e, Hr(t ?? [])]))
+			runsBySurvey: Object.fromEntries(Object.entries(e.runsBySurvey).map(([e, t]) => [e, Ur(t ?? [])]))
 		};
 	}).reverse();
 }
-function Xr(e, t) {
+function Zr(e) {
+	let t = Xr(e);
+	if (!t.length) return null;
+	let n = t.reduce((e, t) => e + t.completedRuns, 0), r = t.reduce((e, t) => e + t.expectedRuns, 0);
+	return ai(e, {
+		id: zr,
+		label: "Aggregated",
+		dimensionCount: null,
+		startedAt: t[0].startedAt,
+		completedRuns: n,
+		expectedRuns: r,
+		status: n >= r ? "complete" : "partial",
+		runsBySurvey: Object.fromEntries(Yt.map((e) => [e.id, Ur(t.flatMap((t) => t.runsBySurvey[e.id] ?? []))]))
+	});
+}
+function Qr(e, t) {
 	return e.options.find((e) => e.id === t)?.value;
 }
-function Zr(e, t, n, r) {
+function $r(e, t, n, r) {
 	if (e.kind !== "scale") return +(n === r);
-	let i = Xr(t, n), a = Xr(t, r);
+	let i = Qr(t, n), a = Qr(t, r);
 	return i === void 0 || a === void 0 ? null : Math.max(0, 1 - Math.abs(i - a) / 4);
 }
-function Qr(e, t, n, r) {
+function ei(e, t, n, r) {
 	let i = new Map(t.options.map((e, t) => [e.id, t])), a = /* @__PURE__ */ new Map();
 	n.forEach((e) => {
 		let n = e.answers[t.id];
@@ -12982,7 +12998,7 @@ function Qr(e, t, n, r) {
 		count: n,
 		share: n / o
 	})).sort((e, t) => t.count - e.count || (i.get(e.answerId) ?? 0) - (i.get(t.answerId) ?? 0)), c = s[0], l = !!r?.completedAt, u = l ? r?.answers[t.id] ?? null : null, d = u === null ? [] : n.map((e) => e.answers[t.id]).filter((e) => i.has(e)), f = d.flatMap((n) => {
-		let r = Zr(e, t, u, n);
+		let r = $r(e, t, u, n);
 		return r === null ? [] : [r];
 	}), p = d.filter((e) => e === u).length;
 	return {
@@ -13002,19 +13018,19 @@ function Qr(e, t, n, r) {
 		exactBenchmarkMatchRate: d.length ? p / d.length : null
 	};
 }
-function $r(e) {
+function ti(e) {
 	let t = e.filter((e) => e.value !== null && e.weight > 0), n = t.reduce((e, t) => e + t.weight, 0);
 	return n ? t.reduce((e, t) => e + t.value * t.weight, 0) / n : null;
 }
-function ei(e) {
+function ni(e) {
 	let t = new Set(Object.values(e).flatMap((e) => e ?? []).flatMap((e) => e.personaAgent?.contextId ? [e.personaAgent.contextId] : []));
 	return t.size === 1 ? [...t][0] : null;
 }
-function ti(e, t) {
+function ri(e, t) {
 	return e?.completedAt && t !== null && e.personaAgent?.contextId === t ? e : void 0;
 }
-function ni(e, t, n, r) {
-	let i = e.questions.map((r) => Qr(e, r, t, n)), a = i.reduce((e, t) => e + t.answerCount, 0), o = i.reduce((e, t) => e + (t.benchmarkSimilarity === null ? 0 : t.answerCount), 0);
+function ii(e, t, n, r) {
+	let i = e.questions.map((r) => ei(e, r, t, n)), a = i.reduce((e, t) => e + t.answerCount, 0), o = i.reduce((e, t) => e + (t.benchmarkSimilarity === null ? 0 : t.answerCount), 0);
 	return {
 		surveyId: e.id,
 		title: e.title,
@@ -13022,16 +13038,16 @@ function ni(e, t, n, r) {
 		expectedRuns: r,
 		questionCount: e.questions.length,
 		answerCount: a,
-		consistency: $r(i.map((e) => ({
+		consistency: ti(i.map((e) => ({
 			value: e.consistency,
 			weight: e.answerCount
 		}))),
 		hasHumanBenchmark: !!n?.completedAt,
-		benchmarkSimilarity: $r(i.map((e) => ({
+		benchmarkSimilarity: ti(i.map((e) => ({
 			value: e.benchmarkSimilarity,
 			weight: e.answerCount
 		}))),
-		exactBenchmarkMatchRate: $r(i.map((e) => ({
+		exactBenchmarkMatchRate: ti(i.map((e) => ({
 			value: e.exactBenchmarkMatchRate,
 			weight: e.answerCount
 		}))),
@@ -13039,8 +13055,8 @@ function ni(e, t, n, r) {
 		questions: i
 	};
 }
-function ri(e, t) {
-	let n = Object.values(t.runsBySurvey).flatMap((e) => e ?? []).find((e) => !!e.experiment), r = new Set(n?.experiment?.surveyIds ?? Object.keys(t.runsBySurvey)), i = n?.experiment?.responsesPerSurvey ?? 1, a = ei(t.runsBySurvey), o = Yt.map((n) => ni(n, t.runsBySurvey[n.id] ?? [], ti(e[n.id]?.human, a), r.has(n.id) ? i : 0)), s = o.reduce((e, t) => e + t.answerCount, 0), c = o.reduce((e, t) => e + t.benchmarkComparisons, 0);
+function ai(e, t) {
+	let n = Object.values(t.runsBySurvey).flatMap((e) => e ?? []).find((e) => !!e.experiment), r = new Set(n?.experiment?.surveyIds ?? Object.keys(t.runsBySurvey)), i = n?.experiment?.responsesPerSurvey ?? 1, a = ni(t.runsBySurvey), o = Yt.map((n) => ii(n, t.runsBySurvey[n.id] ?? [], ri(e[n.id]?.human, a), r.has(n.id) ? i : 0)), s = o.reduce((e, t) => e + t.answerCount, 0), c = o.reduce((e, t) => e + t.benchmarkComparisons, 0);
 	return {
 		experiment: t,
 		overall: {
@@ -13050,17 +13066,17 @@ function ri(e, t) {
 			surveyCount: Yt.length,
 			questionCount: o.reduce((e, t) => e + t.questionCount, 0),
 			answerCount: s,
-			consistency: $r(o.map((e) => ({
+			consistency: ti(o.map((e) => ({
 				value: e.consistency,
 				weight: e.answerCount
 			}))),
 			humanBenchmarkCount: o.filter((e) => e.hasHumanBenchmark).length,
 			benchmarkedSurveyCount: o.filter((e) => e.benchmarkComparisons > 0).length,
-			benchmarkSimilarity: $r(o.map((e) => ({
+			benchmarkSimilarity: ti(o.map((e) => ({
 				value: e.benchmarkSimilarity,
 				weight: e.benchmarkComparisons
 			}))),
-			exactBenchmarkMatchRate: $r(o.map((e) => ({
+			exactBenchmarkMatchRate: ti(o.map((e) => ({
 				value: e.exactBenchmarkMatchRate,
 				weight: e.benchmarkComparisons
 			}))),
@@ -13069,11 +13085,11 @@ function ri(e, t) {
 		surveys: o
 	};
 }
-function ii(e, t) {
-	let n = Yr(e).find((e) => e.id === t);
-	return n ? ri(e, n) : null;
+function oi(e, t) {
+	let n = Xr(e).find((e) => e.id === t);
+	return n ? ai(e, n) : null;
 }
-function ai(e, t) {
+function si(e, t) {
 	let n = /* @__PURE__ */ new Map();
 	return e.forEach((e) => {
 		let r = t(e.aggregate);
@@ -13091,21 +13107,21 @@ function ai(e, t) {
 		partialExperimentCount: t.filter((e) => e.status === "partial").length
 	}));
 }
-function oi(e) {
-	let t = Yr(e).flatMap((t) => t.dimensionCount === null ? [] : [{
+function ci(e) {
+	let t = Xr(e).flatMap((t) => t.dimensionCount === null ? [] : [{
 		dimensionCount: t.dimensionCount,
 		status: t.status,
-		aggregate: ri(e, t)
+		aggregate: ai(e, t)
 	}]);
 	return {
-		overallBenchmarkMatch: ai(t, (e) => e.overall.benchmarkSimilarity),
-		agentConsistency: ai(t, (e) => e.overall.consistency),
-		surveyBenchmarkMatches: Object.fromEntries(Yt.map((e) => [e.id, ai(t, (t) => t.surveys.find((t) => t.surveyId === e.id)?.benchmarkSimilarity ?? null)]))
+		overallBenchmarkMatch: si(t, (e) => e.overall.benchmarkSimilarity),
+		agentConsistency: si(t, (e) => e.overall.consistency),
+		surveyBenchmarkMatches: Object.fromEntries(Yt.map((e) => [e.id, si(t, (t) => t.surveys.find((t) => t.surveyId === e.id)?.benchmarkSimilarity ?? null)]))
 	};
 }
 //#endregion
 //#region app/page.tsx
-var si = {
+var li = {
 	human: {
 		label: "Human benchmark",
 		shortLabel: "Human",
@@ -13116,57 +13132,57 @@ var si = {
 		shortLabel: "Agent",
 		Icon: te
 	}
-}, ci = { name: "home" }, li = new Intl.DateTimeFormat(void 0, {
+}, ui = { name: "home" }, di = new Intl.DateTimeFormat(void 0, {
 	month: "short",
 	day: "numeric",
 	hour: "numeric",
 	minute: "2-digit"
-}), ui = new Intl.DateTimeFormat(void 0, {
+}), fi = new Intl.DateTimeFormat(void 0, {
 	hour: "2-digit",
 	minute: "2-digit"
 });
-function di(e) {
+function pi(e) {
 	return `${e}-${typeof crypto < "u" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`}`;
 }
-function fi(e) {
+function mi(e) {
 	if (!e) return "";
 	let t = new Date(e);
-	return Number.isNaN(t.getTime()) ? "Date unavailable" : li.format(t);
+	return Number.isNaN(t.getTime()) ? "Date unavailable" : di.format(t);
 }
-function pi(e) {
-	return e ? ui.format(new Date(e)) : null;
+function hi(e) {
+	return e ? fi.format(new Date(e)) : null;
 }
-function mi(e) {
+function gi(e) {
 	return {
 		"--survey": e.color,
 		"--pale": e.pale,
 		"--ink": e.ink
 	};
 }
-function hi(e) {
+function _i(e) {
 	return e ? `Digital ${e.displayName}` : "Persona not recorded";
 }
-function gi(e, t) {
+function vi(e, t) {
 	return !e || !t || e.contextId === t.contextId;
 }
-function _i(e, t) {
+function yi(e, t) {
 	return Date.parse(e.completedAt ?? e.startedAt) - Date.parse(t.completedAt ?? t.startedAt) || e.sequence - t.sequence;
 }
-function vi(e) {
+function bi(e) {
 	return e?.completedAt ? "complete" : e && Object.keys(e.answers).length > 0 ? "in-progress" : "not-started";
 }
-function yi(e, t) {
+function xi(e, t) {
 	if (!("surveyId" in t)) return t;
 	let n = Fn(e, t.surveyId);
-	if (t.name === "quiz") return (t.actor === "human" ? n.human : Rn(n, t.runId)) ? t : ci;
-	if (t.name === "result") return (t.actor === "human" ? n.human : Rn(n, t.runId))?.completedAt ? t : ci;
+	if (t.name === "quiz") return (t.actor === "human" ? n.human : Rn(n, t.runId)) ? t : ui;
+	if (t.name === "result") return (t.actor === "human" ? n.human : Rn(n, t.runId))?.completedAt ? t : ui;
 	if (t.name === "comparison") {
 		let e = Rn(n, t.runId);
-		return n.human?.completedAt && e?.completedAt && e.benchmarkId === n.human.id && gi(n.human.personaAgent, e.personaAgent) ? t : ci;
+		return n.human?.completedAt && e?.completedAt && e.benchmarkId === n.human.id && vi(n.human.personaAgent, e.personaAgent) ? t : ui;
 	}
-	return n.human?.completedAt && In(n, n.human.id).length > 0 ? t : ci;
+	return n.human?.completedAt && In(n, n.human.id).length > 0 ? t : ui;
 }
-function bi({ status: e, label: t }) {
+function Si({ status: e, label: t }) {
 	return e === "complete" ? /* @__PURE__ */ (0, z.jsx)("span", {
 		className: "status-pill status-complete",
 		children: t ?? "Complete"
@@ -13178,7 +13194,7 @@ function bi({ status: e, label: t }) {
 		children: t ?? "Not started"
 	});
 }
-function xi() {
+function Ci() {
 	return /* @__PURE__ */ (0, z.jsxs)("span", {
 		className: "flex items-center gap-3",
 		children: [/* @__PURE__ */ (0, z.jsxs)("span", {
@@ -13194,20 +13210,20 @@ function xi() {
 		})] })]
 	});
 }
-function Si({ children: e, onHome: t, simple: n = !1 }) {
+function wi({ children: e, onHome: t, simple: n = !1 }) {
 	return /* @__PURE__ */ (0, z.jsxs)("main", {
 		className: "min-h-screen",
 		children: [/* @__PURE__ */ (0, z.jsxs)("header", {
 			className: "site-header",
 			children: [n ? /* @__PURE__ */ (0, z.jsx)("div", {
 				className: "brand-button rounded-xl",
-				children: /* @__PURE__ */ (0, z.jsx)(xi, {})
+				children: /* @__PURE__ */ (0, z.jsx)(Ci, {})
 			}) : /* @__PURE__ */ (0, z.jsx)("button", {
 				type: "button",
 				onClick: t,
 				"aria-label": "Go to Results",
 				className: "brand-button rounded-xl focus-ring",
-				children: /* @__PURE__ */ (0, z.jsx)(xi, {})
+				children: /* @__PURE__ */ (0, z.jsx)(Ci, {})
 			}), !n && /* @__PURE__ */ (0, z.jsxs)("button", {
 				type: "button",
 				onClick: t,
@@ -13217,11 +13233,11 @@ function Si({ children: e, onHome: t, simple: n = !1 }) {
 		}), e]
 	});
 }
-function Ci({ survey: e, history: t, onHuman: n, aggregate: r, interactionDisabled: i }) {
-	let a = t.human, o = vi(a), s = !!r?.completedRuns;
+function Ti({ survey: e, history: t, onHuman: n, aggregate: r, interactionDisabled: i, showQuestionMetricPercentages: a = !1 }) {
+	let o = t.human, s = bi(o), c = !!r?.completedRuns;
 	return /* @__PURE__ */ (0, z.jsxs)("article", {
 		className: "survey-card",
-		style: mi(e),
+		style: gi(e),
 		children: [
 			/* @__PURE__ */ (0, z.jsxs)("div", {
 				className: "survey-card-header",
@@ -13242,7 +13258,7 @@ function Ci({ survey: e, history: t, onHuman: n, aggregate: r, interactionDisabl
 							className: "survey-human-run-label",
 							children: "Human benchmark"
 						}),
-						/* @__PURE__ */ (0, z.jsx)(bi, { status: o }),
+						/* @__PURE__ */ (0, z.jsx)(Si, { status: s }),
 						/* @__PURE__ */ (0, z.jsx)(k, {
 							size: 17,
 							className: "text-slate-400"
@@ -13254,7 +13270,7 @@ function Ci({ survey: e, history: t, onHuman: n, aggregate: r, interactionDisabl
 				className: "survey-description mt-4 min-h-[3.1rem] text-sm leading-6 text-slate-600",
 				children: e.description
 			}),
-			s && /* @__PURE__ */ (0, z.jsxs)("details", {
+			c && /* @__PURE__ */ (0, z.jsxs)("details", {
 				className: "validation-question-details",
 				children: [/* @__PURE__ */ (0, z.jsxs)("summary", { children: [/* @__PURE__ */ (0, z.jsxs)("span", {
 					className: "validation-question-summary-label",
@@ -13268,48 +13284,51 @@ function Ci({ survey: e, history: t, onHuman: n, aggregate: r, interactionDisabl
 					children: r?.questions.length
 				})] }), /* @__PURE__ */ (0, z.jsx)("div", {
 					className: "validation-question-list",
-					children: r?.questions.map((e) => /* @__PURE__ */ (0, z.jsx)(wi, { row: e }, e.questionId))
+					children: r?.questions.map((e) => /* @__PURE__ */ (0, z.jsx)(Ei, {
+						row: e,
+						showPercentages: a
+					}, e.questionId))
 				})]
 			})
 		]
 	});
 }
-function wi({ row: e }) {
+function Ei({ row: e, showPercentages: t = !1 }) {
 	return /* @__PURE__ */ (0, z.jsxs)("article", {
 		className: "validation-question-result",
 		children: [/* @__PURE__ */ (0, z.jsx)("h3", { children: e.prompt }), /* @__PURE__ */ (0, z.jsxs)("dl", { children: [
 			/* @__PURE__ */ (0, z.jsxs)("div", { children: [/* @__PURE__ */ (0, z.jsx)("dt", { children: "Human benchmark" }), /* @__PURE__ */ (0, z.jsx)("dd", { children: e.humanAnswerLabel ?? "Not completed" })] }),
 			/* @__PURE__ */ (0, z.jsxs)("div", { children: [/* @__PURE__ */ (0, z.jsx)("dt", { children: "Agent consensus" }), /* @__PURE__ */ (0, z.jsx)("dd", { children: e.consensusAnswerLabel ?? "No response" })] }),
-			/* @__PURE__ */ (0, z.jsxs)("div", { children: [/* @__PURE__ */ (0, z.jsx)("dt", { children: "Benchmark match" }), /* @__PURE__ */ (0, z.jsx)("dd", { children: e.exactBenchmarkMatchRate === null ? "-" : `${Math.round(e.exactBenchmarkMatchRate * e.answerCount)}/${e.answerCount}` })] }),
-			/* @__PURE__ */ (0, z.jsxs)("div", { children: [/* @__PURE__ */ (0, z.jsx)("dt", { children: "Agent consistency" }), /* @__PURE__ */ (0, z.jsx)("dd", { children: e.answerCount < 2 || e.consistency === null ? "Needs 2 responses" : `${e.consensusCount}/${e.answerCount}` })] })
+			/* @__PURE__ */ (0, z.jsxs)("div", { children: [/* @__PURE__ */ (0, z.jsx)("dt", { children: "Benchmark match" }), /* @__PURE__ */ (0, z.jsx)("dd", { children: e.exactBenchmarkMatchRate === null ? "-" : t ? un(e.exactBenchmarkMatchRate) : `${Math.round(e.exactBenchmarkMatchRate * e.answerCount)}/${e.answerCount}` })] }),
+			/* @__PURE__ */ (0, z.jsxs)("div", { children: [/* @__PURE__ */ (0, z.jsx)("dt", { children: "Agent consistency" }), /* @__PURE__ */ (0, z.jsx)("dd", { children: e.answerCount < 2 || e.consistency === null ? "Needs 2 responses" : t ? un(e.consistency) : `${e.consensusCount}/${e.answerCount}` })] })
 		] })]
 	});
 }
-var Ti = [
+var Di = [
 	"var(--validation-trend-series-1)",
 	"var(--validation-trend-series-2)",
 	"var(--validation-trend-series-3)",
 	"var(--validation-trend-series-4)"
 ];
-function Ei(e) {
-	return Ti[e % Ti.length];
+function Oi(e) {
+	return Di[e % Di.length];
 }
-function Di({ x: e, y: t, styleIndex: n, size: r = 4 }) {
+function ki({ x: e, y: t, styleIndex: n, size: r = 4 }) {
 	return /* @__PURE__ */ (0, z.jsx)("circle", {
 		className: "validation-trend-marker",
 		cx: e,
 		cy: t,
 		r,
-		fill: Ei(n),
+		fill: Oi(n),
 		stroke: "var(--validation-trend-marker-fill)",
 		strokeWidth: 2,
 		"aria-hidden": "true"
 	});
 }
-function Oi(e, t, n) {
+function Ai(e, t, n) {
 	return `${t} dimensions. ${e.map((e) => `${un(n)} ${e}`).join(". ")}.`;
 }
-function ki({ label: e, children: t }) {
+function ji({ label: e, children: t }) {
 	let n = (0, C.useId)(), [r, i] = (0, C.useState)(!1);
 	return /* @__PURE__ */ (0, z.jsxs)("div", {
 		className: "validation-trend-info",
@@ -13330,7 +13349,7 @@ function ki({ label: e, children: t }) {
 		})]
 	});
 }
-function Ai({ title: e, description: t, yAxisLabel: n, series: r, dimensionValues: i, emptyMessage: a, lockedMessage: o }) {
+function Mi({ title: e, description: t, yAxisLabel: n, series: r, dimensionValues: i, emptyMessage: a, lockedMessage: o }) {
 	let s = (0, C.useId)(), c = `${s}-tooltip`, [l, u] = (0, C.useState)(null), [d, f] = (0, C.useState)(null), [p, m] = (0, C.useState)(null), h = r.flatMap((e) => e.points), g = !o && h.length > 0, _ = i[0] ?? 0, v = i.at(-1) ?? 0, y = (e) => _ === v ? 222 : 56 + (e - _) / (v - _) * 332, b = (e) => 14 + (1 - Math.max(0, Math.min(1, e))) * 184, x = i.length <= 6 ? i : Array.from(new Set(Array.from({ length: 6 }, (e, t) => Math.round(t * (i.length - 1) / 5)).map((e) => i[e]))), S = r.map((e) => ({
 		...e,
 		points: e.points.filter((e) => Number.isFinite(e.dimensionCount) && Number.isFinite(e.value))
@@ -13381,10 +13400,10 @@ function Ai({ title: e, description: t, yAxisLabel: n, series: r, dimensionValue
 						x2: "34",
 						y1: "7",
 						y2: "7",
-						stroke: Ei(e.styleIndex),
+						stroke: Oi(e.styleIndex),
 						strokeWidth: "2.5",
 						strokeLinecap: "round"
-					}), /* @__PURE__ */ (0, z.jsx)(Di, {
+					}), /* @__PURE__ */ (0, z.jsx)(ki, {
 						x: 18,
 						y: 7,
 						styleIndex: e.styleIndex,
@@ -13462,7 +13481,7 @@ function Ai({ title: e, description: t, yAxisLabel: n, series: r, dimensionValue
 							return e.points.length > 1 ? /* @__PURE__ */ (0, z.jsx)("polyline", {
 								points: t,
 								fill: "none",
-								stroke: Ei(e.styleIndex),
+								stroke: Oi(e.styleIndex),
 								strokeWidth: "2.5",
 								strokeLinecap: "round",
 								strokeLinejoin: "round",
@@ -13476,7 +13495,7 @@ function Ai({ title: e, description: t, yAxisLabel: n, series: r, dimensionValue
 								role: "graphics-symbol",
 								tabIndex: 0,
 								focusable: "true",
-								"aria-label": Oi(t, e.dimensionCount, e.value),
+								"aria-label": Ai(t, e.dimensionCount, e.value),
 								"aria-describedby": n ? c : void 0,
 								onMouseEnter: () => {
 									u(e.id), m(null);
@@ -13497,7 +13516,7 @@ function Ai({ title: e, description: t, yAxisLabel: n, series: r, dimensionValue
 									r: 12,
 									className: "validation-trend-hit-target",
 									"aria-hidden": "true"
-								}), e.entries.map((t) => /* @__PURE__ */ (0, z.jsx)(Di, {
+								}), e.entries.map((t) => /* @__PURE__ */ (0, z.jsx)(ki, {
 									x: e.x,
 									y: e.y,
 									styleIndex: t.styleIndex
@@ -13569,7 +13588,7 @@ function Ai({ title: e, description: t, yAxisLabel: n, series: r, dimensionValue
 		]
 	});
 }
-function ji({ data: e, hasAllHumanBenchmarks: t }) {
+function B({ data: e, hasAllHumanBenchmarks: t }) {
 	let [n, r] = (0, C.useState)("overall"), i = e ?? {
 		overallBenchmarkMatch: [],
 		agentConsistency: [],
@@ -13604,7 +13623,7 @@ function ji({ data: e, hasAllHumanBenchmarks: t }) {
 				children: [/* @__PURE__ */ (0, z.jsx)("span", {
 					className: "section-kicker",
 					children: "Validation history"
-				}), /* @__PURE__ */ (0, z.jsx)(ki, {
+				}), /* @__PURE__ */ (0, z.jsx)(ji, {
 					label: "About validation history calculations",
 					children: "Each point averages experiments with the same number of filled dimensions. Benchmark lines use the currently saved Human benchmarks."
 				})]
@@ -13644,12 +13663,12 @@ function ji({ data: e, hasAllHumanBenchmarks: t }) {
 									})]
 								})
 							]
-						}), /* @__PURE__ */ (0, z.jsx)(ki, {
+						}), /* @__PURE__ */ (0, z.jsx)(ji, {
 							label: "About benchmark match",
 							children: "Average Agent match against the available Human benchmark."
 						})]
 					})
-				}), /* @__PURE__ */ (0, z.jsx)(Ai, {
+				}), /* @__PURE__ */ (0, z.jsx)(Mi, {
 					title: n === "overall" ? "Overall benchmark match by persona dimensions" : "Individual benchmark match by persona dimensions",
 					description: n === "overall" ? "One line shows the average overall benchmark match at each saved dimension count." : "Four lines show average benchmark match for the four Validation surveys at each saved dimension count.",
 					yAxisLabel: "Benchmark match",
@@ -13664,12 +13683,12 @@ function ji({ data: e, hasAllHumanBenchmarks: t }) {
 					className: "validation-trend-card-header",
 					children: /* @__PURE__ */ (0, z.jsxs)("div", {
 						className: "validation-trend-title-row",
-						children: [/* @__PURE__ */ (0, z.jsx)("h3", { children: "Agent consistency" }), /* @__PURE__ */ (0, z.jsx)(ki, {
+						children: [/* @__PURE__ */ (0, z.jsx)("h3", { children: "Agent consistency" }), /* @__PURE__ */ (0, z.jsx)(ji, {
 							label: "About Agent consistency",
 							children: "Average agreement on the most common answer at each dimension count."
 						})]
 					})
-				}), /* @__PURE__ */ (0, z.jsx)(Ai, {
+				}), /* @__PURE__ */ (0, z.jsx)(Mi, {
 					title: "Overall Agent consistency by persona dimensions",
 					description: "One line shows average overall Agent consistency at each saved dimension count.",
 					yAxisLabel: "Agent consistency",
@@ -13682,9 +13701,9 @@ function ji({ data: e, hasAllHumanBenchmarks: t }) {
 		})]
 	});
 }
-function Mi({ store: e, onHuman: t, onRunAll: n, onLicense: r, runningExperiment: i, runDisabled: a, selectedExperimentId: o, onSelectExperiment: s, onDeleteExperiment: c }) {
-	let l = Yr(e), u = l.some((e) => e.id === o) ? o : l[0]?.id ?? null, d = u ? ii(e, u) : null, f = zr(d?.experiment ?? null), p = Yt.every((t) => !!e[t.id]?.human?.completedAt), m = p ? oi(e) : null;
-	return /* @__PURE__ */ (0, z.jsxs)(Si, {
+function V({ store: e, onHuman: t, onRunAll: n, onLicense: r, runningExperiment: i, runDisabled: a, selectedExperimentId: o, onSelectExperiment: s, onDeleteExperiment: c }) {
+	let l = Xr(e), u = o === "aggregate:all-validation-runs" && l.length > 0, d = u ? zr : l.some((e) => e.id === o) ? o : l[0]?.id ?? null, f = u ? Zr(e) : d ? oi(e, d) : null, p = Br(f?.experiment ?? null), m = Yt.every((t) => !!e[t.id]?.human?.completedAt), h = m ? ci(e) : null;
+	return /* @__PURE__ */ (0, z.jsxs)(wi, {
 		simple: !0,
 		children: [/* @__PURE__ */ (0, z.jsxs)("section", {
 			className: "hero-wrap",
@@ -13730,9 +13749,9 @@ function Mi({ store: e, onHuman: t, onRunAll: n, onLicense: r, runningExperiment
 		}), /* @__PURE__ */ (0, z.jsxs)("section", {
 			className: "mx-auto max-w-[1240px] px-5 pb-20 pt-16 sm:px-8 lg:px-10",
 			children: [
-				/* @__PURE__ */ (0, z.jsx)(ji, {
-					data: m,
-					hasAllHumanBenchmarks: p
+				/* @__PURE__ */ (0, z.jsx)(B, {
+					data: h,
+					hasAllHumanBenchmarks: m
 				}),
 				/* @__PURE__ */ (0, z.jsxs)("div", {
 					className: "validation-results-toolbar",
@@ -13744,28 +13763,31 @@ function Mi({ store: e, onHuman: t, onRunAll: n, onLicense: r, runningExperiment
 						}),
 						l.length ? /* @__PURE__ */ (0, z.jsxs)("div", {
 							className: "validation-experiment-controls",
-							children: [/* @__PURE__ */ (0, z.jsx)("select", {
+							children: [/* @__PURE__ */ (0, z.jsxs)("select", {
 								id: "validation-experiment-selector",
-								value: u ?? "",
+								value: d ?? "",
 								onChange: (e) => s(e.target.value),
-								children: l.map((e) => /* @__PURE__ */ (0, z.jsx)("option", {
+								children: [/* @__PURE__ */ (0, z.jsx)("option", {
+									value: zr,
+									children: "Aggregated"
+								}), l.map((e) => /* @__PURE__ */ (0, z.jsx)("option", {
 									value: e.id,
 									children: e.label
-								}, e.id))
-							}), /* @__PURE__ */ (0, z.jsx)("button", {
+								}, e.id))]
+							}), u ? null : /* @__PURE__ */ (0, z.jsx)("button", {
 								type: "button",
 								className: "validation-experiment-delete focus-ring",
 								disabled: i,
 								onClick: () => {
-									let e = l.find((e) => e.id === u);
+									let e = l.find((e) => e.id === d);
 									e && c(e);
 								},
 								children: "Delete"
 							})]
 						}) : /* @__PURE__ */ (0, z.jsx)("span", { children: "No Agent experiments yet" }),
-						f ? /* @__PURE__ */ (0, z.jsx)("output", {
+						p ? /* @__PURE__ */ (0, z.jsx)("output", {
 							className: "validation-experiment-warning",
-							children: f
+							children: p
 						}) : null
 					]
 				}),
@@ -13775,33 +13797,34 @@ function Mi({ store: e, onHuman: t, onRunAll: n, onLicense: r, runningExperiment
 					children: [/* @__PURE__ */ (0, z.jsxs)("div", { children: [
 						/* @__PURE__ */ (0, z.jsxs)("div", {
 							className: "validation-overall-metric-header",
-							children: [/* @__PURE__ */ (0, z.jsx)("span", { children: "Overall benchmark match" }), /* @__PURE__ */ (0, z.jsx)(ki, {
+							children: [/* @__PURE__ */ (0, z.jsx)("span", { children: "Overall benchmark match" }), /* @__PURE__ */ (0, z.jsx)(ji, {
 								label: "About overall benchmark match",
 								children: "Overall match pools every Agent answer against the available Human answer for the same question."
 							})]
 						}),
-						/* @__PURE__ */ (0, z.jsx)("strong", { children: d?.overall.benchmarkSimilarity === null || !d ? "No benchmarks" : un(d.overall.benchmarkSimilarity) }),
-						/* @__PURE__ */ (0, z.jsx)("small", { children: d ? `${d.overall.benchmarkedSurveyCount} of 4 surveys compared` : "Complete Human benchmarks to compare" })
+						/* @__PURE__ */ (0, z.jsx)("strong", { children: f?.overall.benchmarkSimilarity === null || !f ? "No benchmarks" : un(f.overall.benchmarkSimilarity) }),
+						/* @__PURE__ */ (0, z.jsx)("small", { children: f ? `${f.overall.benchmarkedSurveyCount} of 4 surveys compared` : "Complete Human benchmarks to compare" })
 					] }), /* @__PURE__ */ (0, z.jsxs)("div", { children: [
 						/* @__PURE__ */ (0, z.jsxs)("div", {
 							className: "validation-overall-metric-header",
-							children: [/* @__PURE__ */ (0, z.jsx)("span", { children: "Overall Agent consistency" }), /* @__PURE__ */ (0, z.jsx)(ki, {
+							children: [/* @__PURE__ */ (0, z.jsx)("span", { children: "Overall Agent consistency" }), /* @__PURE__ */ (0, z.jsx)(ji, {
 								label: "About overall Agent consistency",
 								children: "Consistency measures how often Agents selected that question's most common answer."
 							})]
 						}),
-						/* @__PURE__ */ (0, z.jsx)("strong", { children: d ? d.experiment.expectedRuns === 1 ? "1 response" : d.overall.consistency === null ? "-" : un(d.overall.consistency) : "-" }),
+						/* @__PURE__ */ (0, z.jsx)("strong", { children: f ? f.experiment.expectedRuns === 1 ? "1 response" : f.overall.consistency === null ? "-" : un(f.overall.consistency) : "-" }),
 						/* @__PURE__ */ (0, z.jsx)("small", { children: "Agreement with the most common answer per question" })
 					] })]
 				}),
 				/* @__PURE__ */ (0, z.jsx)("div", {
 					className: "validation-survey-list flex flex-col gap-6",
-					children: Yt.map((n) => /* @__PURE__ */ (0, z.jsx)(Ci, {
+					children: Yt.map((n) => /* @__PURE__ */ (0, z.jsx)(Ti, {
 						survey: n,
 						history: Fn(e, n.id),
 						onHuman: () => t(n.id),
-						aggregate: d?.surveys.find((e) => e.surveyId === n.id),
-						interactionDisabled: i
+						aggregate: f?.surveys.find((e) => e.surveyId === n.id),
+						interactionDisabled: i,
+						showQuestionMetricPercentages: u
 					}, n.id))
 				}),
 				/* @__PURE__ */ (0, z.jsx)("div", {
@@ -13817,8 +13840,8 @@ function Mi({ store: e, onHuman: t, onRunAll: n, onLicense: r, runningExperiment
 		})]
 	});
 }
-function B({ survey: e, actor: t, run: n, agentRun: r, onSaveAnswer: i, onComplete: a, onHome: o }) {
-	let s = e.questions.findIndex((e) => !n.answers[e.id]), [c, l] = (0, C.useState)(s === -1 ? e.questions.length - 1 : s), [u, d] = (0, C.useState)(!1), f = e.questions[c], p = n.answers[f.id], m = (c + 1) / e.questions.length * 100, h = si[t], g = c === e.questions.length - 1, _ = (0, C.useRef)(null), v = (0, C.useRef)(!1), y = (0, C.useRef)(void 0);
+function Ni({ survey: e, actor: t, run: n, agentRun: r, onSaveAnswer: i, onComplete: a, onHome: o }) {
+	let s = e.questions.findIndex((e) => !n.answers[e.id]), [c, l] = (0, C.useState)(s === -1 ? e.questions.length - 1 : s), [u, d] = (0, C.useState)(!1), f = e.questions[c], p = n.answers[f.id], m = (c + 1) / e.questions.length * 100, h = li[t], g = c === e.questions.length - 1, _ = (0, C.useRef)(null), v = (0, C.useRef)(!1), y = (0, C.useRef)(void 0);
 	(0, C.useEffect)(() => (v.current = !1, _.current?.focus({ preventScroll: !0 }), () => {
 		y.current !== void 0 && (window.clearTimeout(y.current), y.current = void 0);
 	}), [c]);
@@ -13836,11 +13859,11 @@ function B({ survey: e, actor: t, run: n, agentRun: r, onSaveAnswer: i, onComple
 	function x() {
 		!p || v.current || (g ? a() : l((e) => e + 1));
 	}
-	return /* @__PURE__ */ (0, z.jsx)(Si, {
+	return /* @__PURE__ */ (0, z.jsx)(wi, {
 		onHome: o,
 		children: /* @__PURE__ */ (0, z.jsxs)("div", {
 			className: "quiz-stage",
-			style: mi(e),
+			style: gi(e),
 			children: [
 				/* @__PURE__ */ (0, z.jsx)("div", {
 					className: "quiz-topline",
@@ -13859,7 +13882,7 @@ function B({ survey: e, actor: t, run: n, agentRun: r, onSaveAnswer: i, onComple
 							}),
 							/* @__PURE__ */ (0, z.jsxs)("span", {
 								className: "run-metadata-chip",
-								children: ["Persona agent: ", hi(n.personaAgent)]
+								children: ["Persona agent: ", _i(n.personaAgent)]
 							})
 						]
 					})] })
@@ -13912,7 +13935,7 @@ function B({ survey: e, actor: t, run: n, agentRun: r, onSaveAnswer: i, onComple
 								"aria-pressed": n,
 								onClick: () => b(t.id),
 								className: `answer-option focus-ring ${n ? "answer-selected" : ""} ${e.kind === "scale" ? "scale-option" : ""}`,
-								style: n ? mi(e) : void 0,
+								style: n ? gi(e) : void 0,
 								children: [e.kind === "scale" ? /* @__PURE__ */ (0, z.jsx)("span", {
 									className: "option-key",
 									children: t.id
@@ -13958,7 +13981,7 @@ function B({ survey: e, actor: t, run: n, agentRun: r, onSaveAnswer: i, onComple
 		})
 	});
 }
-function V({ result: e, survey: t }) {
+function Pi({ result: e, survey: t }) {
 	return /* @__PURE__ */ (0, z.jsx)("div", {
 		className: "mt-8 space-y-4",
 		children: Object.entries(e.scores).map(([e, n]) => /* @__PURE__ */ (0, z.jsxs)("div", { children: [/* @__PURE__ */ (0, z.jsxs)("div", {
@@ -13976,7 +13999,7 @@ function V({ result: e, survey: t }) {
 		})] }, e))
 	});
 }
-function Ni({ result: e, survey: t, compact: n = !1 }) {
+function Fi({ result: e, survey: t, compact: n = !1 }) {
 	return /* @__PURE__ */ (0, z.jsx)("div", {
 		className: `mt-7 ${n ? "space-y-4" : "grid gap-4 sm:grid-cols-2"}`,
 		children: e.values.map((e) => /* @__PURE__ */ (0, z.jsxs)("div", {
@@ -14018,7 +14041,7 @@ function Ni({ result: e, survey: t, compact: n = !1 }) {
 		}, e.id))
 	});
 }
-function Pi({ result: e, survey: t, compact: n = !1 }) {
+function Ii({ result: e, survey: t, compact: n = !1 }) {
 	return /* @__PURE__ */ (0, z.jsx)("div", {
 		className: "mt-7 space-y-5",
 		children: $t.map((r, i) => /* @__PURE__ */ (0, z.jsxs)("div", { children: [
@@ -14048,27 +14071,27 @@ function Pi({ result: e, survey: t, compact: n = !1 }) {
 		] }, r.key))
 	});
 }
-function Fi({ result: e, survey: t, compact: n = !1 }) {
-	return e.kind === "categorical" ? /* @__PURE__ */ (0, z.jsx)(V, {
+function Li({ result: e, survey: t, compact: n = !1 }) {
+	return e.kind === "categorical" ? /* @__PURE__ */ (0, z.jsx)(Pi, {
 		result: e,
 		survey: t
-	}) : e.kind === "scale" ? /* @__PURE__ */ (0, z.jsx)(Ni, {
+	}) : e.kind === "scale" ? /* @__PURE__ */ (0, z.jsx)(Fi, {
 		result: e,
 		survey: t,
 		compact: n
-	}) : /* @__PURE__ */ (0, z.jsx)(Pi, {
+	}) : /* @__PURE__ */ (0, z.jsx)(Ii, {
 		result: e,
 		survey: t,
 		compact: n
 	});
 }
-function Ii({ survey: e, actor: t, run: n, agentRun: r, hasCompletedHuman: i, onHistory: a, onHumanEdit: o, onHumanChange: s, onHome: c }) {
-	let l = sn(e, n.answers), u = t === "agent" && r, d = si[t];
-	return /* @__PURE__ */ (0, z.jsx)(Si, {
+function Ri({ survey: e, actor: t, run: n, agentRun: r, hasCompletedHuman: i, onHistory: a, onHumanEdit: o, onHumanChange: s, onHome: c }) {
+	let l = sn(e, n.answers), u = t === "agent" && r, d = li[t];
+	return /* @__PURE__ */ (0, z.jsx)(wi, {
 		onHome: c,
 		children: /* @__PURE__ */ (0, z.jsxs)("div", {
 			className: "result-stage",
-			style: mi(e),
+			style: gi(e),
 			children: [/* @__PURE__ */ (0, z.jsxs)("section", {
 				className: "result-hero",
 				"aria-label": "Result detail",
@@ -14110,7 +14133,7 @@ function Ii({ survey: e, actor: t, run: n, agentRun: r, hasCompletedHuman: i, on
 					}),
 					/* @__PURE__ */ (0, z.jsx)("div", {
 						className: "result-detail-content",
-						children: /* @__PURE__ */ (0, z.jsx)(Fi, {
+						children: /* @__PURE__ */ (0, z.jsx)(Li, {
 							result: l,
 							survey: e
 						})
@@ -14147,8 +14170,8 @@ function Ii({ survey: e, actor: t, run: n, agentRun: r, hasCompletedHuman: i, on
 		})
 	});
 }
-function Li({ survey: e, actor: t, result: n }) {
-	let r = si[t];
+function zi({ survey: e, actor: t, result: n }) {
+	let r = li[t];
 	return /* @__PURE__ */ (0, z.jsxs)("div", {
 		className: "comparison-result-card",
 		children: [
@@ -14173,7 +14196,7 @@ function Li({ survey: e, actor: t, result: n }) {
 				className: "mt-4 text-sm leading-6 text-slate-600",
 				children: n.description
 			}),
-			/* @__PURE__ */ (0, z.jsx)(Fi, {
+			/* @__PURE__ */ (0, z.jsx)(Li, {
 				result: n,
 				survey: e,
 				compact: !0
@@ -14181,13 +14204,13 @@ function Li({ survey: e, actor: t, result: n }) {
 		]
 	});
 }
-function Ri({ survey: e, human: t, agentRun: n, onResult: r, onHistory: i, onHome: a }) {
+function Bi({ survey: e, human: t, agentRun: n, onResult: r, onHistory: i, onHome: a }) {
 	let o = ln(e, t.answers, n.answers), s = sn(e, t.answers), c = sn(e, n.answers), l = o.exactMatches === e.questions.length ? "Every answer matched." : `${o.exactMatches} of ${e.questions.length} answers matched exactly.`;
-	return /* @__PURE__ */ (0, z.jsx)(Si, {
+	return /* @__PURE__ */ (0, z.jsx)(wi, {
 		onHome: a,
 		children: /* @__PURE__ */ (0, z.jsxs)("div", {
 			className: "comparison-stage",
-			style: mi(e),
+			style: gi(e),
 			children: [
 				/* @__PURE__ */ (0, z.jsxs)("section", {
 					className: "comparison-hero",
@@ -14231,7 +14254,7 @@ function Ri({ survey: e, human: t, agentRun: n, onResult: r, onHistory: i, onHom
 									children: [
 										"Persona agent:",
 										" ",
-										/* @__PURE__ */ (0, z.jsx)("strong", { children: hi(n.personaAgent) })
+										/* @__PURE__ */ (0, z.jsx)("strong", { children: _i(n.personaAgent) })
 									]
 								}),
 								/* @__PURE__ */ (0, z.jsxs)("span", {
@@ -14260,7 +14283,7 @@ function Ri({ survey: e, human: t, agentRun: n, onResult: r, onHistory: i, onHom
 							className: "mt-4 text-xs font-bold text-slate-500",
 							children: [
 								"Completed ",
-								fi(n.completedAt),
+								mi(n.completedAt),
 								n.migrated ? " - imported from the earlier app version" : ""
 							]
 						})
@@ -14268,11 +14291,11 @@ function Ri({ survey: e, human: t, agentRun: n, onResult: r, onHistory: i, onHom
 				}),
 				/* @__PURE__ */ (0, z.jsxs)("section", {
 					className: "mx-auto mt-10 grid max-w-[1080px] gap-5 lg:grid-cols-2",
-					children: [/* @__PURE__ */ (0, z.jsx)(Li, {
+					children: [/* @__PURE__ */ (0, z.jsx)(zi, {
 						survey: e,
 						actor: "human",
 						result: s
-					}), /* @__PURE__ */ (0, z.jsx)(Li, {
+					}), /* @__PURE__ */ (0, z.jsx)(zi, {
 						survey: e,
 						actor: "agent",
 						result: c
@@ -14396,7 +14419,7 @@ function Ri({ survey: e, human: t, agentRun: n, onResult: r, onHistory: i, onHom
 		})
 	});
 }
-function zi({ points: e, survey: t }) {
+function Vi({ points: e, survey: t }) {
 	let n = (0, C.useRef)(null), r = Math.max(1, ...e.map((e) => e.dimensionCount)), i = (e) => 90 + e / r * 622, a = (e) => 22 + (1 - e) * 202, o = Array.from(new Set(Array.from({ length: 5 }, (e, t) => Math.round(r * t / 4)))), s = /* @__PURE__ */ new Map();
 	e.forEach((e) => {
 		let t = `${e.dimensionCount}:${e.similarity.toFixed(6)}`, n = s.get(t);
@@ -14548,16 +14571,16 @@ function zi({ points: e, survey: t }) {
 		]
 	});
 }
-function Bi({ survey: e, history: t, onComparison: n, onHumanResult: r, onHome: i }) {
-	let a = t.human, o = In(t, a.id).sort(_i), s = In(t).filter((e) => e.benchmarkId !== a.id).sort(_i), c = Vn(e.id, t), l = Un(c), u = o.map((t) => ({
+function Hi({ survey: e, history: t, onComparison: n, onHumanResult: r, onHome: i }) {
+	let a = t.human, o = In(t, a.id).sort(yi), s = In(t).filter((e) => e.benchmarkId !== a.id).sort(yi), c = Vn(e.id, t), l = Un(c), u = o.map((t) => ({
 		run: t,
 		comparison: ln(e, a.answers, t.answers)
 	})), d = u.at(-1), f = u.length ? u.reduce((e, t) => t.comparison.similarity > e.comparison.similarity ? t : e) : void 0, p = o.filter((e) => e.dimensionCount === null).length;
-	return /* @__PURE__ */ (0, z.jsx)(Si, {
+	return /* @__PURE__ */ (0, z.jsx)(wi, {
 		onHome: i,
 		children: /* @__PURE__ */ (0, z.jsxs)("div", {
 			className: "history-stage",
-			style: mi(e),
+			style: gi(e),
 			children: [
 				/* @__PURE__ */ (0, z.jsxs)("section", {
 					className: "history-heading",
@@ -14584,7 +14607,7 @@ function Bi({ survey: e, history: t, onComparison: n, onHumanResult: r, onHome: 
 							children: [
 								/* @__PURE__ */ (0, z.jsxs)("span", {
 									className: "history-stat",
-									children: [/* @__PURE__ */ (0, z.jsx)("small", { children: "Persona agent" }), /* @__PURE__ */ (0, z.jsx)("strong", { children: hi(a.personaAgent) })]
+									children: [/* @__PURE__ */ (0, z.jsx)("small", { children: "Persona agent" }), /* @__PURE__ */ (0, z.jsx)("strong", { children: _i(a.personaAgent) })]
 								}),
 								/* @__PURE__ */ (0, z.jsxs)("span", {
 									className: "history-stat",
@@ -14630,7 +14653,7 @@ function Bi({ survey: e, history: t, onComparison: n, onHumanResult: r, onHome: 
 								})
 							] })
 						}),
-						c.length ? /* @__PURE__ */ (0, z.jsx)(zi, {
+						c.length ? /* @__PURE__ */ (0, z.jsx)(Vi, {
 							points: c,
 							survey: e
 						}) : /* @__PURE__ */ (0, z.jsxs)("div", {
@@ -14699,7 +14722,7 @@ function Bi({ survey: e, history: t, onComparison: n, onHumanResult: r, onHome: 
 										className: "font-black text-slate-950",
 										children: ["Run ", t.sequence]
 									}),
-									/* @__PURE__ */ (0, z.jsx)(Vt, { children: hi(t.personaAgent) }),
+									/* @__PURE__ */ (0, z.jsx)(Vt, { children: _i(t.personaAgent) }),
 									/* @__PURE__ */ (0, z.jsx)(Vt, { children: t.dimensionCount ?? "Not recorded" }),
 									/* @__PURE__ */ (0, z.jsx)(Vt, { children: /* @__PURE__ */ (0, z.jsx)("span", {
 										className: "rounded-full px-2.5 py-1 text-xs font-black",
@@ -14714,7 +14737,7 @@ function Bi({ survey: e, history: t, onComparison: n, onHumanResult: r, onHome: 
 										" / ",
 										e.questions.length
 									] }),
-									/* @__PURE__ */ (0, z.jsx)(Vt, { children: fi(t.completedAt) }),
+									/* @__PURE__ */ (0, z.jsx)(Vt, { children: mi(t.completedAt) }),
 									/* @__PURE__ */ (0, z.jsx)(Vt, {
 										className: "text-right",
 										children: /* @__PURE__ */ (0, z.jsx)("button", {
@@ -14771,10 +14794,10 @@ function Bi({ survey: e, history: t, onComparison: n, onHumanResult: r, onHome: 
 											}), /* @__PURE__ */ (0, z.jsxs)("span", {
 												className: "text-xs font-bold text-slate-500",
 												children: [
-													hi(t.personaAgent),
+													_i(t.personaAgent),
 													" -",
 													" ",
-													fi(t.completedAt)
+													mi(t.completedAt)
 												]
 											})]
 										}, t.id);
@@ -14813,8 +14836,8 @@ function Bi({ survey: e, history: t, onComparison: n, onHumanResult: r, onHome: 
 		})
 	});
 }
-function Vi({ onHome: e }) {
-	return /* @__PURE__ */ (0, z.jsx)(Si, {
+function Ui({ onHome: e }) {
+	return /* @__PURE__ */ (0, z.jsx)(wi, {
 		onHome: e,
 		children: /* @__PURE__ */ (0, z.jsxs)("article", {
 			className: "prose-card",
@@ -14877,7 +14900,7 @@ function Vi({ onHome: e }) {
 		})
 	});
 }
-function Hi({ notice: e }) {
+function Wi({ notice: e }) {
 	return /* @__PURE__ */ (0, z.jsxs)("output", {
 		className: "validation-save-status",
 		"aria-live": "polite",
@@ -14887,8 +14910,8 @@ function Hi({ notice: e }) {
 		}), /* @__PURE__ */ (0, z.jsx)("span", { children: e.message })]
 	});
 }
-function Ui({ hosted: e = !1 }) {
-	let [t, n] = (0, C.useState)({}), [r, i] = (0, C.useState)(ci), [a, o] = (0, C.useState)(!1), [s, c] = (0, C.useState)(e), [l, u] = (0, C.useState)(null), [d, f] = (0, C.useState)(!1), [p, m] = (0, C.useState)(!1), [h, g] = (0, C.useState)(null), [_, v] = (0, C.useState)(0), y = (0, C.useRef)({}), b = (0, C.useRef)(null), x = (0, C.useRef)({}), S = (0, C.useRef)(void 0), w = (0, C.useRef)(!1), T = (0, C.useRef)(!1), ee = (0, C.useRef)(null), E = (0, C.useRef)(!1), D = (0, C.useRef)(0), O = (0, C.useRef)(!0);
+function Gi({ hosted: e = !1 }) {
+	let [t, n] = (0, C.useState)({}), [r, i] = (0, C.useState)(ui), [a, o] = (0, C.useState)(!1), [s, c] = (0, C.useState)(e), [l, u] = (0, C.useState)(null), [d, f] = (0, C.useState)(!1), [p, m] = (0, C.useState)(!1), [h, g] = (0, C.useState)(null), [_, v] = (0, C.useState)(0), y = (0, C.useRef)({}), b = (0, C.useRef)(null), x = (0, C.useRef)({}), S = (0, C.useRef)(void 0), w = (0, C.useRef)(!1), T = (0, C.useRef)(!1), ee = (0, C.useRef)(null), E = (0, C.useRef)(!1), D = (0, C.useRef)(0), O = (0, C.useRef)(!0);
 	(0, C.useEffect)(() => {
 		y.current = t;
 	}, [t]);
@@ -14913,7 +14936,7 @@ function Ui({ hosted: e = !1 }) {
 				if (!(o instanceof cr) || o.status !== 409 || !o.currentState) throw o;
 				let s = o.currentState;
 				if (s.contextId !== e.contextId) {
-					b.current = s, x.current = s.store, y.current = s.store, ee.current = null, O.current && (n(s.store), i(ci), u({
+					b.current = s, x.current = s.store, y.current = s.store, ee.current = null, O.current && (n(s.store), i(ui), u({
 						kind: "saved",
 						message: "active persona changed - its results were loaded from disk."
 					}));
@@ -14924,7 +14947,7 @@ function Ui({ hosted: e = !1 }) {
 			b.current = a, x.current = a.store, ee.current = null;
 			let o = Pn(a.store, y.current);
 			if (hr(o) !== hr(y.current) && (y.current = o, O.current && n(o)), O.current) {
-				let e = pi(a.savedAt);
+				let e = hi(a.savedAt);
 				u({
 					kind: "saved",
 					message: e ? `saved to disk at ${e}` : "saved to disk"
@@ -14948,7 +14971,7 @@ function Ui({ hosted: e = !1 }) {
 		}), r = !1;
 		async function i() {
 			try {
-				let e = await dr(), t = pi(e.savedAt), i = t ? {
+				let e = await dr(), t = hi(e.savedAt), i = t ? {
 					kind: "saved",
 					message: `saved to disk at ${t}`
 				} : {
@@ -14999,7 +15022,7 @@ function Ui({ hosted: e = !1 }) {
 					s = Lr(s, r, Yt), c = r.batchId, l += r.successes.length, d += r.failures.length;
 				}
 				if (t) return;
-				y.current = s, n(s), c && g(c), i(ci), u({
+				y.current = s, n(s), c && g(c), i(ui), u({
 					kind: d ? "error" : "saved",
 					message: d ? `${l} recovered Agent responses will be saved. ${d} runs did not finish.` : `${l} Agent responses recovered - saving them to disk.`
 				}), r = !0;
@@ -15029,7 +15052,7 @@ function Ui({ hosted: e = !1 }) {
 		a,
 		_
 	]);
-	let ne = yi(t, r), k = "surveyId" in r ? Xt[r.surveyId] : void 0;
+	let ne = xi(t, r), k = "surveyId" in r ? Xt[r.surveyId] : void 0;
 	function re(e, t) {
 		n((n) => ({
 			...n,
@@ -15037,7 +15060,7 @@ function Ui({ hosted: e = !1 }) {
 		}));
 	}
 	function ie() {
-		i(ci), window.scrollTo({
+		i(ui), window.scrollTo({
 			top: 0,
 			behavior: "smooth"
 		});
@@ -15045,7 +15068,7 @@ function Ui({ hosted: e = !1 }) {
 	function ae(e) {
 		if (d || !window.confirm(`Are you sure you want to delete this validation run's results: "${e.label}"?`)) return;
 		let t = Rr(y.current, e.runsBySurvey);
-		t !== y.current && (y.current = t, n(t), g(Yr(t)[0]?.id ?? null), u({
+		t !== y.current && (y.current = t, n(t), g(Xr(t)[0]?.id ?? null), u({
 			kind: "saved",
 			message: `${e.label} validation run results deleted.`
 		}));
@@ -15060,7 +15083,7 @@ function Ui({ hosted: e = !1 }) {
 	async function j() {
 		try {
 			let e = await dr(), r = b.current;
-			if (r && e.contextId !== r.contextId) return b.current = e, x.current = e.store, y.current = e.store, ee.current = null, n(e.store), i(ci), u({
+			if (r && e.contextId !== r.contextId) return b.current = e, x.current = e.store, y.current = e.store, ee.current = null, n(e.store), i(ui), u({
 				kind: "saved",
 				message: "active persona changed - its results were loaded from disk."
 			}), null;
@@ -15098,7 +15121,7 @@ function Ui({ hosted: e = !1 }) {
 			let t = A();
 			if (!t) return;
 			let n = {
-				id: di("human"),
+				id: pi("human"),
 				answers: {},
 				startedAt: (/* @__PURE__ */ new Date()).toISOString(),
 				personaAgent: t
@@ -15132,7 +15155,7 @@ function Ui({ hosted: e = !1 }) {
 				});
 				if (!O.current) return;
 				let a = Lr(y.current, r, Yt);
-				y.current = a, n(a), g(r.batchId), e || i(ci), u({
+				y.current = a, n(a), g(r.batchId), e || i(ui), u({
 					kind: r.failures.length ? "error" : "saved",
 					message: r.failures.length ? `${r.successes.length} of 40 Agent responses completed and will be saved. ${r.failures.length} failed.` : "40 Agent responses complete - saving the experiment to disk."
 				}), e || window.scrollTo({
@@ -15204,7 +15227,7 @@ function Ui({ hosted: e = !1 }) {
 		let a = A();
 		if (!a) return;
 		let o = {
-			id: di("human"),
+			id: pi("human"),
 			answers: {},
 			startedAt: (/* @__PURE__ */ new Date()).toISOString(),
 			personaAgent: a
@@ -15308,7 +15331,7 @@ function Ui({ hosted: e = !1 }) {
 		t
 	]);
 	function ue() {
-		return /* @__PURE__ */ (0, z.jsx)(Mi, {
+		return /* @__PURE__ */ (0, z.jsx)(V, {
 			store: t,
 			onHuman: oe,
 			onRunAll: () => void se(),
@@ -15323,12 +15346,12 @@ function Ui({ hosted: e = !1 }) {
 	function de() {
 		if (!a) return /* @__PURE__ */ (0, z.jsx)("div", { className: "validation-loading min-h-screen" });
 		if (r.name === "home") return ue();
-		if (r.name === "license") return /* @__PURE__ */ (0, z.jsx)(Vi, { onHome: ie });
+		if (r.name === "license") return /* @__PURE__ */ (0, z.jsx)(Ui, { onHome: ie });
 		if (!k) return null;
 		let e = Fn(t, k.id);
 		if (r.name === "quiz") {
 			let t = r.actor === "human" ? e.human : Rn(e, r.runId);
-			return t ? /* @__PURE__ */ (0, z.jsx)(B, {
+			return t ? /* @__PURE__ */ (0, z.jsx)(Ni, {
 				survey: k,
 				actor: r.actor,
 				run: t,
@@ -15341,8 +15364,8 @@ function Ui({ hosted: e = !1 }) {
 		if (r.name === "result") {
 			let t = r.actor === "human" ? e.human : Rn(e, r.runId);
 			if (!t?.completedAt) return ue();
-			let n = !!(e.human?.completedAt && (r.actor === "human" || gi(e.human.personaAgent, t.personaAgent)));
-			return /* @__PURE__ */ (0, z.jsx)(Ii, {
+			let n = !!(e.human?.completedAt && (r.actor === "human" || vi(e.human.personaAgent, t.personaAgent)));
+			return /* @__PURE__ */ (0, z.jsx)(Ri, {
 				survey: k,
 				actor: r.actor,
 				run: t,
@@ -15359,7 +15382,7 @@ function Ui({ hosted: e = !1 }) {
 		}
 		if (r.name === "comparison") {
 			let t = Rn(e, r.runId);
-			return !e.human?.completedAt || !t?.completedAt || t.benchmarkId !== e.human.id || !gi(e.human.personaAgent, t.personaAgent) ? ue() : /* @__PURE__ */ (0, z.jsx)(Ri, {
+			return !e.human?.completedAt || !t?.completedAt || t.benchmarkId !== e.human.id || !vi(e.human.personaAgent, t.personaAgent) ? ue() : /* @__PURE__ */ (0, z.jsx)(Bi, {
 				survey: k,
 				human: e.human,
 				agentRun: t,
@@ -15376,7 +15399,7 @@ function Ui({ hosted: e = !1 }) {
 				onHome: ie
 			});
 		}
-		return !e.human?.completedAt || In(e, e.human.id).length === 0 ? ue() : /* @__PURE__ */ (0, z.jsx)(Bi, {
+		return !e.human?.completedAt || In(e, e.human.id).length === 0 ? ue() : /* @__PURE__ */ (0, z.jsx)(Hi, {
 			survey: k,
 			history: e,
 			onComparison: (e) => i({
@@ -15396,18 +15419,18 @@ function Ui({ hosted: e = !1 }) {
 	let fe = a && ne.name !== "license" && l !== null;
 	return /* @__PURE__ */ (0, z.jsxs)("div", {
 		className: [s ? "validation-embedded" : "", fe ? "validation-save-visible" : ""].filter(Boolean).join(" ") || void 0,
-		children: [de(), fe && /* @__PURE__ */ (0, z.jsx)(Hi, { notice: l })]
+		children: [de(), fe && /* @__PURE__ */ (0, z.jsx)(Wi, { notice: l })]
 	});
 }
 //#endregion
 //#region app/validation-entry.tsx
-var Wi = document.getElementById("validation-root");
-if (!Wi) throw Error("The Validation mount point was not found.");
-var Gi = (0, N.createRoot)(Wi), Ki = 0;
-function qi() {
-	Gi.render(/* @__PURE__ */ (0, z.jsx)(Ui, { hosted: !0 }, Ki));
+var Ki = document.getElementById("validation-root");
+if (!Ki) throw Error("The Validation mount point was not found.");
+var qi = (0, N.createRoot)(Ki), Ji = 0;
+function Yi() {
+	qi.render(/* @__PURE__ */ (0, z.jsx)(Gi, { hosted: !0 }, Ji));
 }
 window.addEventListener("matraix-validation-reload", () => {
-	Ki += 1, qi();
-}), qi();
+	Ji += 1, Yi();
+}), Yi();
 //#endregion

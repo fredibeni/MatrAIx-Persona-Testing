@@ -28,6 +28,8 @@ import {
   VALIDATION_AGENT_ENDPOINT,
 } from '../lib/validation-agent.ts';
 import {
+  AGGREGATED_VALIDATION_EXPERIMENT_ID,
+  aggregateAllValidationExperiments,
   aggregateValidationExperiment,
   aggregateValidationTrends,
   validationExperimentOptions,
@@ -226,6 +228,11 @@ assert.match(
   questionAggregateRowSource,
   /\$\{row\.consensusCount\}\/\$\{row\.answerCount\}/,
   'per-question Agent consistency must show the count of matching runs',
+);
+assert.match(
+  questionAggregateRowSource,
+  /showPercentages[\s\S]*?percent\(row\.exactBenchmarkMatchRate\)[\s\S]*?showPercentages[\s\S]*?percent\(row\.consistency\)/,
+  'aggregated question results must render benchmark and consistency as percentages',
 );
 assert.doesNotMatch(
   questionAggregateRowSource,
@@ -2383,6 +2390,40 @@ assert.equal(
   everyday.questions[0].options[0].id,
 );
 assert.equal(aggregated.surveys[0].questions[0].exactBenchmarkMatchRate, 2 / 3);
+
+const aggregateAllBatch = {
+  id: 'aggregate-all-extra',
+  startedAt: '2026-04-02T09:00:00.000Z',
+  responsesPerSurvey: 2,
+  surveyIds: ['everyday'],
+};
+const aggregateAllStore = structuredClone(aggregateStore);
+aggregateAllStore.everyday.agentRuns.push(
+  ...[1, 2].map((sequence) =>
+    experimentRun({
+      id: `aggregate-all-everyday-${sequence}`,
+      sequence,
+      survey: everyday,
+      answers: everydayA,
+      dimensionCount: 198,
+      completedAt: `2026-04-02T09:01:0${sequence}.000Z`,
+      experiment: aggregateAllBatch,
+      benchmarkId: 'aggregate-human-everyday',
+    }),
+  ),
+);
+const aggregateAll = aggregateAllValidationExperiments(aggregateAllStore);
+assert.ok(aggregateAll, 'all validation runs must aggregate when runs exist');
+assert.equal(aggregateAll.experiment.id, AGGREGATED_VALIDATION_EXPERIMENT_ID);
+assert.equal(aggregateAll.experiment.label, 'Aggregated');
+assert.equal(aggregateAll.experiment.completedRuns, 7);
+assert.equal(aggregateAll.experiment.expectedRuns, 8);
+assert.equal(aggregateAll.overall.benchmarkComparisons, 35);
+assert.equal(aggregateAll.surveys[0].questions[0].answerCount, 5);
+assert.equal(
+  aggregateAll.surveys[0].questions[0].exactBenchmarkMatchRate,
+  4 / 5,
+);
 
 const trendBatch154Partial = {
   id: 'trend-154-partial',

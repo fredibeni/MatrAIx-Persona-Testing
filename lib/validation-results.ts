@@ -13,6 +13,9 @@ import {
 
 export type ValidationExperimentStatus = 'complete' | 'partial';
 
+export const AGGREGATED_VALIDATION_EXPERIMENT_ID =
+  'aggregate:all-validation-runs';
+
 export interface ValidationExperimentOption {
   id: string;
   label: string;
@@ -268,6 +271,41 @@ export function validationExperimentOptions(
     };
   });
   return options.reverse();
+}
+
+export function aggregateAllValidationExperiments(
+  store: SurveyStore,
+): ValidationExperimentAggregate | null {
+  const options = validationExperimentOptions(store);
+  if (!options.length) return null;
+
+  const completedRuns = options.reduce(
+    (total, option) => total + option.completedRuns,
+    0,
+  );
+  const expectedRuns = options.reduce(
+    (total, option) => total + option.expectedRuns,
+    0,
+  );
+  const experiment: ValidationExperimentOption = {
+    id: AGGREGATED_VALIDATION_EXPERIMENT_ID,
+    label: 'Aggregated',
+    dimensionCount: null,
+    startedAt: options[0]!.startedAt,
+    completedRuns,
+    expectedRuns,
+    status: completedRuns >= expectedRuns ? 'complete' : 'partial',
+    runsBySurvey: Object.fromEntries(
+      surveys.map((survey) => [
+        survey.id,
+        orderedRuns(
+          options.flatMap((option) => option.runsBySurvey[survey.id] ?? []),
+        ),
+      ]),
+    ) as Partial<Record<SurveyId, AgentRun[]>>,
+  };
+
+  return aggregateValidationExperimentOption(store, experiment);
 }
 
 function optionValue(question: SurveyQuestion, answerId: string) {

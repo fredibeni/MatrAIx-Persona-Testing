@@ -95,6 +95,8 @@ import {
   deleteValidationExperimentRuns,
 } from '@/lib/validation-batch-store';
 import {
+  AGGREGATED_VALIDATION_EXPERIMENT_ID,
+  aggregateAllValidationExperiments,
   aggregateValidationTrends,
   aggregateValidationExperiment,
   validationExperimentWarning,
@@ -313,12 +315,14 @@ function SurveyCard({
   onHuman,
   aggregate,
   interactionDisabled,
+  showQuestionMetricPercentages = false,
 }: {
   survey: SurveyDefinition;
   history: SurveyHistory;
   onHuman: () => void;
   aggregate?: ValidationSurveyAggregate;
   interactionDisabled: boolean;
+  showQuestionMetricPercentages?: boolean;
 }) {
   const human = history.human;
   const humanStatus = runStatus(human);
@@ -362,7 +366,11 @@ function SurveyCard({
           </summary>
           <div className="validation-question-list">
             {aggregate?.questions.map((question) => (
-              <QuestionAggregateRow key={question.questionId} row={question} />
+              <QuestionAggregateRow
+                key={question.questionId}
+                row={question}
+                showPercentages={showQuestionMetricPercentages}
+              />
             ))}
           </div>
         </details>
@@ -371,7 +379,13 @@ function SurveyCard({
   );
 }
 
-function QuestionAggregateRow({ row }: { row: ValidationQuestionAggregate }) {
+function QuestionAggregateRow({
+  row,
+  showPercentages = false,
+}: {
+  row: ValidationQuestionAggregate;
+  showPercentages?: boolean;
+}) {
   return (
     <article className="validation-question-result">
       <h3>{row.prompt}</h3>
@@ -389,7 +403,9 @@ function QuestionAggregateRow({ row }: { row: ValidationQuestionAggregate }) {
           <dd>
             {row.exactBenchmarkMatchRate === null
               ? '-'
-              : `${Math.round(row.exactBenchmarkMatchRate * row.answerCount)}/${row.answerCount}`}
+              : showPercentages
+                ? percent(row.exactBenchmarkMatchRate)
+                : `${Math.round(row.exactBenchmarkMatchRate * row.answerCount)}/${row.answerCount}`}
           </dd>
         </div>
         <div>
@@ -397,7 +413,9 @@ function QuestionAggregateRow({ row }: { row: ValidationQuestionAggregate }) {
           <dd>
             {row.answerCount < 2 || row.consistency === null
               ? 'Needs 2 responses'
-              : `${row.consensusCount}/${row.answerCount}`}
+              : showPercentages
+                ? percent(row.consistency)
+                : `${row.consensusCount}/${row.answerCount}`}
           </dd>
         </div>
       </dl>
@@ -1072,14 +1090,19 @@ function ResultsView({
   ) => void;
 }) {
   const experimentOptions = validationExperimentOptions(store);
-  const resolvedExperimentId = experimentOptions.some(
-    (option) => option.id === selectedExperimentId,
-  )
-    ? selectedExperimentId
-    : (experimentOptions[0]?.id ?? null);
-  const aggregate = resolvedExperimentId
-    ? aggregateValidationExperiment(store, resolvedExperimentId)
-    : null;
+  const isAggregatedView =
+    selectedExperimentId === AGGREGATED_VALIDATION_EXPERIMENT_ID &&
+    experimentOptions.length > 0;
+  const resolvedExperimentId = isAggregatedView
+    ? AGGREGATED_VALIDATION_EXPERIMENT_ID
+    : experimentOptions.some((option) => option.id === selectedExperimentId)
+      ? selectedExperimentId
+      : (experimentOptions[0]?.id ?? null);
+  const aggregate = isAggregatedView
+    ? aggregateAllValidationExperiments(store)
+    : resolvedExperimentId
+      ? aggregateValidationExperiment(store, resolvedExperimentId)
+      : null;
   const experimentWarning = validationExperimentWarning(
     aggregate?.experiment ?? null,
   );
@@ -1147,25 +1170,30 @@ function ResultsView({
                 value={resolvedExperimentId ?? ''}
                 onChange={(event) => onSelectExperiment(event.target.value)}
               >
+                <option value={AGGREGATED_VALIDATION_EXPERIMENT_ID}>
+                  Aggregated
+                </option>
                 {experimentOptions.map((option) => (
                   <option key={option.id} value={option.id}>
                     {option.label}
                   </option>
                 ))}
               </select>
-              <button
-                type="button"
-                className="validation-experiment-delete focus-ring"
-                disabled={runningExperiment}
-                onClick={() => {
-                  const selected = experimentOptions.find(
-                    (option) => option.id === resolvedExperimentId,
-                  );
-                  if (selected) onDeleteExperiment(selected);
-                }}
-              >
-                Delete
-              </button>
+              {!isAggregatedView ? (
+                <button
+                  type="button"
+                  className="validation-experiment-delete focus-ring"
+                  disabled={runningExperiment}
+                  onClick={() => {
+                    const selected = experimentOptions.find(
+                      (option) => option.id === resolvedExperimentId,
+                    );
+                    if (selected) onDeleteExperiment(selected);
+                  }}
+                >
+                  Delete
+                </button>
+              ) : null}
             </div>
           ) : (
             <span>No Agent experiments yet</span>
@@ -1229,6 +1257,7 @@ function ResultsView({
                 (result) => result.surveyId === survey.id,
               )}
               interactionDisabled={runningExperiment}
+              showQuestionMetricPercentages={isAggregatedView}
             />
           ))}
         </div>
