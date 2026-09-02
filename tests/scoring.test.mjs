@@ -697,8 +697,18 @@ assert.doesNotMatch(
 );
 assert.match(
   resultViewSource,
-  /<h1 className="[^"]*text-\[28px\][^"]*">\s*\{result\.title\}/,
-  'the completed-result title must declare an exact 28px size',
+  /<h1 className="[^"]*text-\[20px\][^"]*">\s*\{result\.title\}/,
+  'the completed-result title must declare an exact 20px size',
+);
+assert.doesNotMatch(
+  resultViewSource,
+  /Persona agent:|survey\.shortTitle/,
+  'completed-result heroes must omit persona and survey-name metadata',
+);
+assert.match(
+  resultViewSource,
+  /<meta\.Icon size=\{15\} \/>\s*\{isAgent \? `Agent run \$\{agentRun\.sequence\}` : 'Human benchmark'\}/,
+  'completed-result heroes must retain only the actor label',
 );
 const resultDescriptionMatch = resultViewSource.match(
   /<p className="([^"]*)">\s*\{result\.description\}\s*<\/p>/,
@@ -741,8 +751,21 @@ assert.equal(
 );
 assert.equal(
   validationResultTitleSize,
-  validationHomeTitleSize,
-  'the completed-result title must use the same exact 28px size as the Validation home title',
+  '20px !important',
+  'the completed-result title must use the requested exact 20px size',
+);
+assert.match(
+  validationStylesSource,
+  /\.validation-embedded \.result-run-label\s*\{[\s\S]*?font-weight:\s*400;/,
+  'the completed-result actor label must use regular weight',
+);
+const validationResultHeroRule = validationStylesSource.match(
+  /\.validation-embedded \.result-hero\s*\{([^}]*)\}/,
+);
+assert.match(
+  validationResultHeroRule?.[1] ?? '',
+  /padding:\s*20px 22px;/,
+  'the simplified completed-result hero must use tighter padding',
 );
 assert.doesNotMatch(
   resultViewSource,

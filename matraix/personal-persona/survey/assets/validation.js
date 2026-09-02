@@ -14102,19 +14102,8 @@ function Li({ survey: e, actor: t, run: n, agentRun: r, hasCompletedHuman: i, on
 							className: "relative z-10",
 							children: [
 								/* @__PURE__ */ (0, z.jsxs)("div", {
-									className: "mx-auto flex w-fit items-center gap-2 rounded-full bg-white/70 px-4 py-2 text-xs font-black uppercase tracking-[0.13em] text-slate-600 shadow-sm",
-									children: [
-										/* @__PURE__ */ (0, z.jsx)(d.Icon, { size: 15 }),
-										" ",
-										u ? `Agent run ${r.sequence}` : "Human benchmark",
-										" -",
-										" ",
-										e.shortTitle
-									]
-								}),
-								/* @__PURE__ */ (0, z.jsxs)("div", {
-									className: "mx-auto mt-4 w-fit rounded-full bg-white/70 px-3 py-1.5 text-xs font-black text-slate-600 shadow-sm",
-									children: ["Persona agent: ", gi(n.personaAgent)]
+									className: "result-run-label mx-auto flex w-fit items-center gap-2 rounded-full bg-white/70 px-4 py-1.5 text-xs uppercase tracking-[0.13em] text-slate-600 shadow-sm",
+									children: [/* @__PURE__ */ (0, z.jsx)(d.Icon, { size: 15 }), u ? `Agent run ${r.sequence}` : "Human benchmark"]
 								}),
 								u && /* @__PURE__ */ (0, z.jsxs)("div", {
 									className: "mx-auto mt-2 w-fit rounded-full px-3 py-1.5 text-xs font-black",
@@ -14125,11 +14114,11 @@ function Li({ survey: e, actor: t, run: n, agentRun: r, hasCompletedHuman: i, on
 									children: [r.dimensionCount ?? "Not recorded", " persona dimensions"]
 								}),
 								/* @__PURE__ */ (0, z.jsx)("h1", {
-									className: "font-display mx-auto mt-3 max-w-[850px] text-center text-[28px] font-black leading-[0.9] tracking-[-0.065em] text-slate-950",
+									className: "font-display mx-auto mt-3 max-w-[850px] text-center text-[20px] font-black leading-[0.9] tracking-[-0.065em] text-slate-950",
 									children: l.title
 								}),
 								"description" in l && /* @__PURE__ */ (0, z.jsx)("p", {
-									className: "mx-auto mt-6 max-w-[620px] text-center text-[14px] leading-7 text-slate-600",
+									className: "mx-auto mt-3 max-w-[620px] text-center text-[14px] leading-7 text-slate-600",
 									children: l.description
 								})
 							]

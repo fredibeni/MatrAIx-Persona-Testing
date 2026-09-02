@@ -1616,13 +1616,9 @@ function ResultView({
             ●
           </div>
           <div className="relative z-10">
-            <div className="mx-auto flex w-fit items-center gap-2 rounded-full bg-white/70 px-4 py-2 text-xs font-black uppercase tracking-[0.13em] text-slate-600 shadow-sm">
-              <meta.Icon size={15} />{' '}
-              {isAgent ? `Agent run ${agentRun.sequence}` : 'Human benchmark'} -{' '}
-              {survey.shortTitle}
-            </div>
-            <div className="mx-auto mt-4 w-fit rounded-full bg-white/70 px-3 py-1.5 text-xs font-black text-slate-600 shadow-sm">
-              Persona agent: {personaAgentLabel(run.personaAgent)}
+            <div className="result-run-label mx-auto flex w-fit items-center gap-2 rounded-full bg-white/70 px-4 py-1.5 text-xs uppercase tracking-[0.13em] text-slate-600 shadow-sm">
+              <meta.Icon size={15} />
+              {isAgent ? `Agent run ${agentRun.sequence}` : 'Human benchmark'}
             </div>
             {isAgent && (
               <div
@@ -1635,11 +1631,11 @@ function ResultView({
                 {agentRun.dimensionCount ?? 'Not recorded'} persona dimensions
               </div>
             )}
-            <h1 className="font-display mx-auto mt-3 max-w-[850px] text-center text-[28px] font-black leading-[0.9] tracking-[-0.065em] text-slate-950">
+            <h1 className="font-display mx-auto mt-3 max-w-[850px] text-center text-[20px] font-black leading-[0.9] tracking-[-0.065em] text-slate-950">
               {result.title}
             </h1>
             {'description' in result && (
-              <p className="mx-auto mt-6 max-w-[620px] text-center text-[14px] leading-7 text-slate-600">
+              <p className="mx-auto mt-3 max-w-[620px] text-center text-[14px] leading-7 text-slate-600">
                 {result.description}
               </p>
             )}

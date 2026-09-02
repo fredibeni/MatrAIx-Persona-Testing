@@ -2378,7 +2378,7 @@ button:disabled {
   border-radius: 18px;
   color: var(--validation-ink);
   background: var(--validation-surface) !important;
-  padding: 28px 22px;
+  padding: 20px 22px;
   box-shadow: 0 18px 55px rgba(0, 0, 0, 0.28);
 }
 
@@ -2388,8 +2388,12 @@ button:disabled {
 }
 
 .validation-embedded .result-hero h1 {
-  margin-top: 10px !important;
-  font-size: 28px !important;
+  margin-top: 12px !important;
+  font-size: 20px !important;
+}
+
+.validation-embedded .result-run-label {
+  font-weight: 400;
 }
 
 .validation-embedded .result-stage > section:not(.result-hero),
