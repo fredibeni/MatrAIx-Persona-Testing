@@ -84,6 +84,20 @@ export interface ValidationExperimentAggregate {
   surveys: ValidationSurveyAggregate[];
 }
 
+export interface ValidationTrendMetricPoint {
+  dimensionCount: number;
+  value: number;
+  experimentCount: number;
+  completeExperimentCount: number;
+  partialExperimentCount: number;
+}
+
+export interface ValidationTrendData {
+  overallBenchmarkMatch: ValidationTrendMetricPoint[];
+  agentConsistency: ValidationTrendMetricPoint[];
+  surveyBenchmarkMatches: Record<SurveyId, ValidationTrendMetricPoint[]>;
+}
+
 export function validationExperimentWarning(
   experiment: Pick<
     ValidationExperimentOption,
@@ -442,15 +456,10 @@ function aggregateSurvey(
   };
 }
 
-export function aggregateValidationExperiment(
+function aggregateValidationExperimentOption(
   store: SurveyStore,
-  experimentId: string,
-): ValidationExperimentAggregate | null {
-  const experiment = validationExperimentOptions(store).find(
-    (option) => option.id === experimentId,
-  );
-  if (!experiment) return null;
-
+  experiment: ValidationExperimentOption,
+): ValidationExperimentAggregate {
   const explicitRun = Object.values(experiment.runsBySurvey)
     .flatMap((runs) => runs ?? [])
     .find((run) => Boolean(run.experiment));
@@ -517,5 +526,108 @@ export function aggregateValidationExperiment(
       benchmarkComparisons,
     },
     surveys: surveyResults,
+  };
+}
+
+export function aggregateValidationExperiment(
+  store: SurveyStore,
+  experimentId: string,
+): ValidationExperimentAggregate | null {
+  const experiment = validationExperimentOptions(store).find(
+    (option) => option.id === experimentId,
+  );
+  return experiment
+    ? aggregateValidationExperimentOption(store, experiment)
+    : null;
+}
+
+interface ValidationTrendObservation {
+  dimensionCount: number;
+  status: ValidationExperimentStatus;
+  explicit: boolean;
+  aggregate: ValidationExperimentAggregate;
+}
+
+function isExplicitExperiment(experiment: ValidationExperimentOption) {
+  return Object.values(experiment.runsBySurvey)
+    .flatMap((runs) => runs ?? [])
+    .some((run) => run.experiment?.id === experiment.id);
+}
+
+function aggregateTrendMetric(
+  observations: ValidationTrendObservation[],
+  valueFor: (aggregate: ValidationExperimentAggregate) => number | null,
+) {
+  const byDimension = new Map<
+    number,
+    Array<{ value: number; status: ValidationExperimentStatus }>
+  >();
+
+  observations.forEach((observation) => {
+    const value = valueFor(observation.aggregate);
+    if (value === null) return;
+    const matching = byDimension.get(observation.dimensionCount) ?? [];
+    matching.push({ value, status: observation.status });
+    byDimension.set(observation.dimensionCount, matching);
+  });
+
+  return [...byDimension.entries()]
+    .sort(([left], [right]) => left - right)
+    .map(([dimensionCount, matching]) => ({
+      dimensionCount,
+      value:
+        matching.reduce((total, observation) => total + observation.value, 0) /
+        matching.length,
+      experimentCount: matching.length,
+      completeExperimentCount: matching.filter(
+        (observation) => observation.status === 'complete',
+      ).length,
+      partialExperimentCount: matching.filter(
+        (observation) => observation.status === 'partial',
+      ).length,
+    }));
+}
+
+export function aggregateValidationTrends(
+  store: SurveyStore,
+): ValidationTrendData {
+  const observations = validationExperimentOptions(store).flatMap(
+    (experiment): ValidationTrendObservation[] => {
+      if (experiment.dimensionCount === null) return [];
+      return [
+        {
+          dimensionCount: experiment.dimensionCount,
+          status: experiment.status,
+          explicit: isExplicitExperiment(experiment),
+          aggregate: aggregateValidationExperimentOption(store, experiment),
+        },
+      ];
+    },
+  );
+
+  return {
+    overallBenchmarkMatch: aggregateTrendMetric(
+      observations,
+      (aggregate) => aggregate.overall.benchmarkSimilarity,
+    ),
+    agentConsistency: aggregateTrendMetric(
+      observations.filter(
+        (observation) =>
+          observation.explicit ||
+          observation.aggregate.overall.completedRuns > 1,
+      ),
+      (aggregate) => aggregate.overall.consistency,
+    ),
+    surveyBenchmarkMatches: Object.fromEntries(
+      surveys.map((survey) => [
+        survey.id,
+        aggregateTrendMetric(
+          observations,
+          (aggregate) =>
+            aggregate.surveys.find((result) => result.surveyId === survey.id)
+              ?.benchmarkSimilarity ?? null,
+        ),
+      ]),
+    ) as Record<SurveyId, ValidationTrendMetricPoint[]>,
   };
 }

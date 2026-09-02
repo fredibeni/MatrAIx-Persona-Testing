@@ -13023,40 +13023,76 @@ function ni(e, t, n, r) {
 	};
 }
 function ri(e, t) {
-	let n = Yr(e).find((e) => e.id === t);
-	if (!n) return null;
-	let r = Object.values(n.runsBySurvey).flatMap((e) => e ?? []).find((e) => !!e.experiment), i = new Set(r?.experiment?.surveyIds ?? Object.keys(n.runsBySurvey)), a = r?.experiment?.responsesPerSurvey ?? 1, o = ei(n.runsBySurvey), s = Zt.map((t) => ni(t, n.runsBySurvey[t.id] ?? [], ti(e[t.id]?.human, o), i.has(t.id) ? a : 0)), c = s.reduce((e, t) => e + t.answerCount, 0), l = s.reduce((e, t) => e + t.benchmarkComparisons, 0);
+	let n = Object.values(t.runsBySurvey).flatMap((e) => e ?? []).find((e) => !!e.experiment), r = new Set(n?.experiment?.surveyIds ?? Object.keys(t.runsBySurvey)), i = n?.experiment?.responsesPerSurvey ?? 1, a = ei(t.runsBySurvey), o = Zt.map((n) => ni(n, t.runsBySurvey[n.id] ?? [], ti(e[n.id]?.human, a), r.has(n.id) ? i : 0)), s = o.reduce((e, t) => e + t.answerCount, 0), c = o.reduce((e, t) => e + t.benchmarkComparisons, 0);
 	return {
-		experiment: n,
+		experiment: t,
 		overall: {
-			completedRuns: n.completedRuns,
-			expectedRuns: n.expectedRuns,
-			surveysWithResults: s.filter((e) => e.completedRuns > 0).length,
+			completedRuns: t.completedRuns,
+			expectedRuns: t.expectedRuns,
+			surveysWithResults: o.filter((e) => e.completedRuns > 0).length,
 			surveyCount: Zt.length,
-			questionCount: s.reduce((e, t) => e + t.questionCount, 0),
-			answerCount: c,
-			consistency: $r(s.map((e) => ({
+			questionCount: o.reduce((e, t) => e + t.questionCount, 0),
+			answerCount: s,
+			consistency: $r(o.map((e) => ({
 				value: e.consistency,
 				weight: e.answerCount
 			}))),
-			humanBenchmarkCount: s.filter((e) => e.hasHumanBenchmark).length,
-			benchmarkedSurveyCount: s.filter((e) => e.benchmarkComparisons > 0).length,
-			benchmarkSimilarity: $r(s.map((e) => ({
+			humanBenchmarkCount: o.filter((e) => e.hasHumanBenchmark).length,
+			benchmarkedSurveyCount: o.filter((e) => e.benchmarkComparisons > 0).length,
+			benchmarkSimilarity: $r(o.map((e) => ({
 				value: e.benchmarkSimilarity,
 				weight: e.benchmarkComparisons
 			}))),
-			exactBenchmarkMatchRate: $r(s.map((e) => ({
+			exactBenchmarkMatchRate: $r(o.map((e) => ({
 				value: e.exactBenchmarkMatchRate,
 				weight: e.benchmarkComparisons
 			}))),
-			benchmarkComparisons: l
+			benchmarkComparisons: c
 		},
-		surveys: s
+		surveys: o
+	};
+}
+function ii(e, t) {
+	let n = Yr(e).find((e) => e.id === t);
+	return n ? ri(e, n) : null;
+}
+function ai(e) {
+	return Object.values(e.runsBySurvey).flatMap((e) => e ?? []).some((t) => t.experiment?.id === e.id);
+}
+function oi(e, t) {
+	let n = /* @__PURE__ */ new Map();
+	return e.forEach((e) => {
+		let r = t(e.aggregate);
+		if (r === null) return;
+		let i = n.get(e.dimensionCount) ?? [];
+		i.push({
+			value: r,
+			status: e.status
+		}), n.set(e.dimensionCount, i);
+	}), [...n.entries()].sort(([e], [t]) => e - t).map(([e, t]) => ({
+		dimensionCount: e,
+		value: t.reduce((e, t) => e + t.value, 0) / t.length,
+		experimentCount: t.length,
+		completeExperimentCount: t.filter((e) => e.status === "complete").length,
+		partialExperimentCount: t.filter((e) => e.status === "partial").length
+	}));
+}
+function si(e) {
+	let t = Yr(e).flatMap((t) => t.dimensionCount === null ? [] : [{
+		dimensionCount: t.dimensionCount,
+		status: t.status,
+		explicit: ai(t),
+		aggregate: ri(e, t)
+	}]);
+	return {
+		overallBenchmarkMatch: oi(t, (e) => e.overall.benchmarkSimilarity),
+		agentConsistency: oi(t.filter((e) => e.explicit || e.aggregate.overall.completedRuns > 1), (e) => e.overall.consistency),
+		surveyBenchmarkMatches: Object.fromEntries(Zt.map((e) => [e.id, oi(t, (t) => t.surveys.find((t) => t.surveyId === e.id)?.benchmarkSimilarity ?? null)]))
 	};
 }
 //#endregion
 //#region app/page.tsx
-var ii = {
+var ci = {
 	human: {
 		label: "Human benchmark",
 		shortLabel: "Human",
@@ -13067,57 +13103,57 @@ var ii = {
 		shortLabel: "Agent",
 		Icon: ne
 	}
-}, ai = { name: "home" }, oi = new Intl.DateTimeFormat(void 0, {
+}, li = { name: "home" }, ui = new Intl.DateTimeFormat(void 0, {
 	month: "short",
 	day: "numeric",
 	hour: "numeric",
 	minute: "2-digit"
-}), si = new Intl.DateTimeFormat(void 0, {
+}), di = new Intl.DateTimeFormat(void 0, {
 	hour: "2-digit",
 	minute: "2-digit"
 });
-function ci(e) {
+function fi(e) {
 	return `${e}-${typeof crypto < "u" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`}`;
 }
-function li(e) {
+function pi(e) {
 	if (!e) return "";
 	let t = new Date(e);
-	return Number.isNaN(t.getTime()) ? "Date unavailable" : oi.format(t);
+	return Number.isNaN(t.getTime()) ? "Date unavailable" : ui.format(t);
 }
-function ui(e) {
-	return e ? si.format(new Date(e)) : null;
+function mi(e) {
+	return e ? di.format(new Date(e)) : null;
 }
-function di(e) {
+function hi(e) {
 	return {
 		"--survey": e.color,
 		"--pale": e.pale,
 		"--ink": e.ink
 	};
 }
-function fi(e) {
+function gi(e) {
 	return e ? `Digital ${e.displayName}` : "Persona not recorded";
 }
-function pi(e, t) {
+function _i(e, t) {
 	return !e || !t || e.contextId === t.contextId;
 }
-function mi(e, t) {
+function vi(e, t) {
 	return Date.parse(e.completedAt ?? e.startedAt) - Date.parse(t.completedAt ?? t.startedAt) || e.sequence - t.sequence;
 }
-function hi(e) {
+function yi(e) {
 	return e?.completedAt ? "complete" : e && Object.keys(e.answers).length > 0 ? "in-progress" : "not-started";
 }
-function gi(e, t) {
+function bi(e, t) {
 	if (!("surveyId" in t)) return t;
 	let n = Ln(e, t.surveyId);
-	if (t.name === "quiz") return (t.actor === "human" ? n.human : Bn(n, t.runId)) ? t : ai;
-	if (t.name === "result") return (t.actor === "human" ? n.human : Bn(n, t.runId))?.completedAt ? t : ai;
+	if (t.name === "quiz") return (t.actor === "human" ? n.human : Bn(n, t.runId)) ? t : li;
+	if (t.name === "result") return (t.actor === "human" ? n.human : Bn(n, t.runId))?.completedAt ? t : li;
 	if (t.name === "comparison") {
 		let e = Bn(n, t.runId);
-		return n.human?.completedAt && e?.completedAt && e.benchmarkId === n.human.id && pi(n.human.personaAgent, e.personaAgent) ? t : ai;
+		return n.human?.completedAt && e?.completedAt && e.benchmarkId === n.human.id && _i(n.human.personaAgent, e.personaAgent) ? t : li;
 	}
-	return n.human?.completedAt && Rn(n, n.human.id).length > 0 ? t : ai;
+	return n.human?.completedAt && Rn(n, n.human.id).length > 0 ? t : li;
 }
-function _i({ status: e, label: t }) {
+function xi({ status: e, label: t }) {
 	return e === "complete" ? /* @__PURE__ */ (0, R.jsxs)("span", {
 		className: "status-pill status-complete",
 		children: [
@@ -13136,7 +13172,7 @@ function _i({ status: e, label: t }) {
 		children: t ?? "Not started"
 	});
 }
-function vi() {
+function Si() {
 	return /* @__PURE__ */ (0, R.jsxs)("span", {
 		className: "flex items-center gap-3",
 		children: [/* @__PURE__ */ (0, R.jsxs)("span", {
@@ -13152,20 +13188,20 @@ function vi() {
 		})] })]
 	});
 }
-function yi({ children: e, onHome: t, simple: n = !1 }) {
+function Ci({ children: e, onHome: t, simple: n = !1 }) {
 	return /* @__PURE__ */ (0, R.jsxs)("main", {
 		className: "min-h-screen",
 		children: [/* @__PURE__ */ (0, R.jsxs)("header", {
 			className: "site-header",
 			children: [n ? /* @__PURE__ */ (0, R.jsx)("div", {
 				className: "brand-button rounded-xl",
-				children: /* @__PURE__ */ (0, R.jsx)(vi, {})
+				children: /* @__PURE__ */ (0, R.jsx)(Si, {})
 			}) : /* @__PURE__ */ (0, R.jsx)("button", {
 				type: "button",
 				onClick: t,
 				"aria-label": "Go to Results",
 				className: "brand-button rounded-xl focus-ring",
-				children: /* @__PURE__ */ (0, R.jsx)(vi, {})
+				children: /* @__PURE__ */ (0, R.jsx)(Si, {})
 			}), !n && /* @__PURE__ */ (0, R.jsxs)("button", {
 				type: "button",
 				onClick: t,
@@ -13175,11 +13211,11 @@ function yi({ children: e, onHome: t, simple: n = !1 }) {
 		}), e]
 	});
 }
-function bi({ survey: e, history: t, onHuman: n, aggregate: r, interactionDisabled: i }) {
-	let a = t.human, o = hi(a), s = !!r?.completedRuns;
+function wi({ survey: e, history: t, onHuman: n, aggregate: r, interactionDisabled: i }) {
+	let a = t.human, o = yi(a), s = !!r?.completedRuns;
 	return /* @__PURE__ */ (0, R.jsxs)("article", {
 		className: "survey-card",
-		style: di(e),
+		style: hi(e),
 		children: [
 			/* @__PURE__ */ (0, R.jsxs)("div", {
 				className: "survey-card-header",
@@ -13207,7 +13243,7 @@ function bi({ survey: e, history: t, onHuman: n, aggregate: r, interactionDisabl
 								children: "Human benchmark"
 							})
 						}),
-						/* @__PURE__ */ (0, R.jsx)(_i, { status: o }),
+						/* @__PURE__ */ (0, R.jsx)(xi, { status: o }),
 						/* @__PURE__ */ (0, R.jsx)(ie, {
 							size: 17,
 							className: "text-slate-400"
@@ -13233,13 +13269,13 @@ function bi({ survey: e, history: t, onHuman: n, aggregate: r, interactionDisabl
 					children: r?.questions.length
 				})] }), /* @__PURE__ */ (0, R.jsx)("div", {
 					className: "validation-question-list",
-					children: r?.questions.map((e) => /* @__PURE__ */ (0, R.jsx)(xi, { row: e }, e.questionId))
+					children: r?.questions.map((e) => /* @__PURE__ */ (0, R.jsx)(Ti, { row: e }, e.questionId))
 				})]
 			})
 		]
 	});
 }
-function xi({ row: e }) {
+function Ti({ row: e }) {
 	return /* @__PURE__ */ (0, R.jsxs)("article", {
 		className: "validation-question-result",
 		children: [
@@ -13263,9 +13299,327 @@ function xi({ row: e }) {
 		]
 	});
 }
-function Si({ store: e, onHuman: t, onRunAll: n, onLicense: r, runningExperiment: i, runDisabled: a, selectedExperimentId: o, onSelectExperiment: s }) {
-	let c = Yr(e), l = c.some((e) => e.id === o) ? o : c[0]?.id ?? null, u = l ? ri(e, l) : null, d = zr(u?.experiment ?? null);
-	return /* @__PURE__ */ (0, R.jsxs)(yi, {
+var Ei = [
+	void 0,
+	"8 5",
+	"2 5",
+	"11 4 2 4"
+];
+function Di({ x: e, y: t, styleIndex: n, size: r = 4 }) {
+	let i = {
+		fill: n % 2 == 0 ? "var(--validation-trend-line)" : "var(--validation-trend-marker-fill)",
+		stroke: "var(--validation-trend-line)",
+		strokeWidth: 2
+	};
+	switch (n % 4) {
+		case 1: return /* @__PURE__ */ (0, R.jsx)("rect", {
+			x: e - r,
+			y: t - r,
+			width: r * 2,
+			height: r * 2,
+			rx: "1",
+			...i
+		});
+		case 2: return /* @__PURE__ */ (0, R.jsx)("polygon", {
+			points: `${e},${t - r - 1} ${e + r + 1},${t} ${e},${t + r + 1} ${e - r - 1},${t}`,
+			...i
+		});
+		case 3: return /* @__PURE__ */ (0, R.jsx)("polygon", {
+			points: `${e},${t - r - 1} ${e + r + 1},${t + r} ${e - r - 1},${t + r}`,
+			...i
+		});
+		default: return /* @__PURE__ */ (0, R.jsx)("circle", {
+			cx: e,
+			cy: t,
+			r,
+			...i
+		});
+	}
+}
+function Oi(e) {
+	let t = `${e.experimentCount} experiment${e.experimentCount === 1 ? "" : "s"}`;
+	return e.partialExperimentCount ? `${t}, including ${e.partialExperimentCount} partial` : t;
+}
+function ki({ label: e, children: t }) {
+	let n = (0, C.useId)(), [r, i] = (0, C.useState)(!1);
+	return /* @__PURE__ */ (0, R.jsxs)("div", {
+		className: "validation-trend-info",
+		children: [/* @__PURE__ */ (0, R.jsx)("button", {
+			type: "button",
+			"aria-label": e,
+			"aria-expanded": r,
+			"aria-controls": n,
+			onClick: () => i((e) => !e),
+			children: /* @__PURE__ */ (0, R.jsx)(A, {
+				size: 14,
+				"aria-hidden": "true"
+			})
+		}), /* @__PURE__ */ (0, R.jsx)("p", {
+			id: n,
+			hidden: !r,
+			children: t
+		})]
+	});
+}
+function Ai({ title: e, description: t, yAxisLabel: n, series: r, dimensionValues: i, emptyMessage: a }) {
+	let o = (0, C.useId)(), s = r.flatMap((e) => e.points), c = i[0] ?? 0, l = i.at(-1) ?? 0, u = (e) => c === l ? 222 : 56 + (e - c) / (l - c) * 332, d = (e) => 14 + (1 - Math.max(0, Math.min(1, e))) * 184, f = i.length <= 6 ? i : Array.from(new Set(Array.from({ length: 6 }, (e, t) => Math.round(t * (i.length - 1) / 5)).map((e) => i[e])));
+	return /* @__PURE__ */ (0, R.jsxs)("figure", {
+		className: "validation-trend-chart",
+		"aria-labelledby": `${o}-title ${o}-description`,
+		children: [
+			/* @__PURE__ */ (0, R.jsx)("h4", {
+				id: `${o}-title`,
+				className: "sr-only",
+				children: e
+			}),
+			/* @__PURE__ */ (0, R.jsxs)("p", {
+				id: `${o}-description`,
+				className: "sr-only",
+				children: [t, " The horizontal axis is the number of dimensions filled. The vertical axis runs from zero to one hundred percent. Exact plotted values and contributing experiment counts are listed in the accessible table."]
+			}),
+			r.length > 1 ? /* @__PURE__ */ (0, R.jsx)("ul", {
+				className: "validation-trend-legend",
+				"aria-label": "Chart series",
+				children: r.map((e) => /* @__PURE__ */ (0, R.jsxs)("li", { children: [/* @__PURE__ */ (0, R.jsxs)("svg", {
+					viewBox: "0 0 36 14",
+					"aria-hidden": "true",
+					focusable: "false",
+					children: [/* @__PURE__ */ (0, R.jsx)("line", {
+						x1: "2",
+						x2: "34",
+						y1: "7",
+						y2: "7",
+						stroke: "var(--validation-trend-line)",
+						strokeWidth: "2.5",
+						strokeDasharray: Ei[e.styleIndex % 4],
+						strokeLinecap: "round"
+					}), /* @__PURE__ */ (0, R.jsx)(Di, {
+						x: 18,
+						y: 7,
+						styleIndex: e.styleIndex,
+						size: 3
+					})]
+				}), /* @__PURE__ */ (0, R.jsx)("span", { children: e.label })] }, e.id))
+			}) : null,
+			s.length ? /* @__PURE__ */ (0, R.jsx)("section", {
+				className: "validation-trend-scroll",
+				"aria-label": `${e} plot`,
+				children: /* @__PURE__ */ (0, R.jsxs)("svg", {
+					viewBox: "0 0 400 250",
+					className: "validation-trend-svg",
+					"aria-hidden": "true",
+					focusable: "false",
+					children: [
+						[
+							0,
+							.25,
+							.5,
+							.75,
+							1
+						].map((e) => /* @__PURE__ */ (0, R.jsxs)("g", { children: [/* @__PURE__ */ (0, R.jsx)("line", {
+							x1: 56,
+							x2: 388,
+							y1: d(e),
+							y2: d(e),
+							className: "validation-trend-grid-line"
+						}), /* @__PURE__ */ (0, R.jsxs)("text", {
+							x: 47,
+							y: d(e) + 4,
+							textAnchor: "end",
+							className: "validation-trend-tick",
+							children: [Math.round(e * 100), "%"]
+						})] }, e)),
+						/* @__PURE__ */ (0, R.jsx)("line", {
+							x1: 56,
+							x2: 388,
+							y1: 198,
+							y2: 198,
+							className: "validation-trend-axis-line"
+						}),
+						f.map((e) => /* @__PURE__ */ (0, R.jsxs)("g", { children: [/* @__PURE__ */ (0, R.jsx)("line", {
+							x1: u(e),
+							x2: u(e),
+							y1: 198,
+							y2: 203,
+							className: "validation-trend-axis-line"
+						}), /* @__PURE__ */ (0, R.jsx)("text", {
+							x: u(e),
+							y: 218,
+							textAnchor: "middle",
+							className: "validation-trend-tick",
+							children: e
+						})] }, e)),
+						/* @__PURE__ */ (0, R.jsx)("text", {
+							x: 444 / 2,
+							y: 242,
+							textAnchor: "middle",
+							className: "validation-trend-axis-label",
+							children: "Number of dimensions filled"
+						}),
+						/* @__PURE__ */ (0, R.jsx)("text", {
+							transform: `translate(15 ${212 / 2}) rotate(-90)`,
+							textAnchor: "middle",
+							className: "validation-trend-axis-label",
+							children: n
+						}),
+						r.map((e) => {
+							let t = e.points.filter((e) => Number.isFinite(e.dimensionCount) && Number.isFinite(e.value)), n = t.map((e) => `${u(e.dimensionCount)},${d(e.value)}`).join(" ");
+							return /* @__PURE__ */ (0, R.jsxs)("g", { children: [t.length > 1 ? /* @__PURE__ */ (0, R.jsx)("polyline", {
+								points: n,
+								fill: "none",
+								stroke: "var(--validation-trend-line)",
+								strokeWidth: "2.5",
+								strokeDasharray: Ei[e.styleIndex % 4],
+								strokeLinecap: "round",
+								strokeLinejoin: "round"
+							}) : null, t.map((t) => /* @__PURE__ */ (0, R.jsxs)("g", {
+								className: "validation-trend-point",
+								children: [/* @__PURE__ */ (0, R.jsxs)("title", { children: [
+									e.label,
+									", ",
+									t.dimensionCount,
+									" dimensions,",
+									" ",
+									Math.round(t.value * 100),
+									" percent,",
+									" ",
+									Oi(t)
+								] }), /* @__PURE__ */ (0, R.jsx)(Di, {
+									x: u(t.dimensionCount),
+									y: d(t.value),
+									styleIndex: e.styleIndex
+								})]
+							}, `${e.id}:${t.dimensionCount}`))] }, e.id);
+						})
+					]
+				})
+			}) : /* @__PURE__ */ (0, R.jsx)("output", {
+				className: "validation-trend-empty",
+				children: a
+			}),
+			s.length ? /* @__PURE__ */ (0, R.jsxs)("table", {
+				className: "sr-only",
+				children: [
+					/* @__PURE__ */ (0, R.jsxs)("caption", { children: ["Exact values plotted in ", e] }),
+					/* @__PURE__ */ (0, R.jsx)("thead", { children: /* @__PURE__ */ (0, R.jsxs)("tr", { children: [
+						/* @__PURE__ */ (0, R.jsx)("th", { children: "Series" }),
+						/* @__PURE__ */ (0, R.jsx)("th", { children: "Dimensions filled" }),
+						/* @__PURE__ */ (0, R.jsx)("th", { children: "Average" }),
+						/* @__PURE__ */ (0, R.jsx)("th", { children: "Experiments averaged" }),
+						/* @__PURE__ */ (0, R.jsx)("th", { children: "Complete experiments" }),
+						/* @__PURE__ */ (0, R.jsx)("th", { children: "Partial experiments" })
+					] }) }),
+					/* @__PURE__ */ (0, R.jsx)("tbody", { children: r.flatMap((e) => e.points.map((t) => /* @__PURE__ */ (0, R.jsxs)("tr", { children: [
+						/* @__PURE__ */ (0, R.jsx)("th", {
+							scope: "row",
+							children: e.label
+						}),
+						/* @__PURE__ */ (0, R.jsx)("td", { children: t.dimensionCount }),
+						/* @__PURE__ */ (0, R.jsx)("td", { children: fn(t.value) }),
+						/* @__PURE__ */ (0, R.jsx)("td", { children: t.experimentCount }),
+						/* @__PURE__ */ (0, R.jsx)("td", { children: t.completeExperimentCount }),
+						/* @__PURE__ */ (0, R.jsx)("td", { children: t.partialExperimentCount })
+					] }, `${e.id}:${t.dimensionCount}`))) })
+				]
+			}) : null
+		]
+	});
+}
+function ji({ data: e }) {
+	let [t, n] = (0, C.useState)("overall"), r = Array.from(new Set([
+		...e.overallBenchmarkMatch,
+		...e.agentConsistency,
+		...Object.values(e.surveyBenchmarkMatches).flat()
+	].map((e) => e.dimensionCount))).sort((e, t) => e - t), i = t === "overall" ? [{
+		id: "overall-benchmark-match",
+		label: "Overall benchmark match",
+		points: e.overallBenchmarkMatch,
+		styleIndex: 0
+	}] : Zt.map((t, n) => ({
+		id: t.id,
+		label: t.title,
+		points: e.surveyBenchmarkMatches[t.id],
+		styleIndex: n
+	})), a = [{
+		id: "agent-consistency",
+		label: "Overall Agent consistency",
+		points: e.agentConsistency,
+		styleIndex: 0
+	}];
+	return /* @__PURE__ */ (0, R.jsxs)("section", {
+		className: "validation-trends",
+		"aria-labelledby": "validation-trends-title",
+		children: [/* @__PURE__ */ (0, R.jsxs)("header", {
+			className: "validation-trends-header",
+			children: [/* @__PURE__ */ (0, R.jsxs)("div", { children: [/* @__PURE__ */ (0, R.jsx)("span", {
+				className: "section-kicker",
+				children: "Validation history"
+			}), /* @__PURE__ */ (0, R.jsx)("h2", {
+				id: "validation-trends-title",
+				children: "Performance by persona dimensions"
+			})] }), /* @__PURE__ */ (0, R.jsx)("p", { children: "Each point averages experiments with the same number of filled dimensions. Benchmark lines use the currently saved Human benchmarks." })]
+		}), /* @__PURE__ */ (0, R.jsxs)("div", {
+			className: "validation-trends-grid",
+			children: [/* @__PURE__ */ (0, R.jsxs)("article", {
+				className: "validation-trend-card",
+				children: [/* @__PURE__ */ (0, R.jsxs)("header", {
+					className: "validation-trend-card-header",
+					children: [/* @__PURE__ */ (0, R.jsxs)("div", {
+						className: "validation-trend-title-row",
+						children: [/* @__PURE__ */ (0, R.jsx)("h3", { children: "Benchmark match" }), /* @__PURE__ */ (0, R.jsx)(ki, {
+							label: "About benchmark match",
+							children: "Average Agent match against the available Human benchmark."
+						})]
+					}), /* @__PURE__ */ (0, R.jsxs)("label", {
+						htmlFor: "validation-benchmark-trend-mode",
+						children: [/* @__PURE__ */ (0, R.jsx)("span", { children: "View" }), /* @__PURE__ */ (0, R.jsxs)("select", {
+							id: "validation-benchmark-trend-mode",
+							"aria-label": "Benchmark match view",
+							value: t,
+							onChange: (e) => n(e.target.value),
+							children: [/* @__PURE__ */ (0, R.jsx)("option", {
+								value: "overall",
+								children: "Overall benchmark match"
+							}), /* @__PURE__ */ (0, R.jsx)("option", {
+								value: "individual",
+								children: "Individual benchmark match"
+							})]
+						})]
+					})]
+				}), /* @__PURE__ */ (0, R.jsx)(Ai, {
+					title: t === "overall" ? "Overall benchmark match by persona dimensions" : "Individual benchmark match by persona dimensions",
+					description: t === "overall" ? "One line shows the average overall benchmark match at each saved dimension count." : "Four lines show average benchmark match for the four Validation surveys at each saved dimension count.",
+					yAxisLabel: "Benchmark match",
+					series: i,
+					dimensionValues: r,
+					emptyMessage: "Complete Human benchmarks and run Agent validation at a known dimension count to chart benchmark match."
+				})]
+			}), /* @__PURE__ */ (0, R.jsxs)("article", {
+				className: "validation-trend-card",
+				children: [/* @__PURE__ */ (0, R.jsx)("header", {
+					className: "validation-trend-card-header",
+					children: /* @__PURE__ */ (0, R.jsxs)("div", {
+						className: "validation-trend-title-row",
+						children: [/* @__PURE__ */ (0, R.jsx)("h3", { children: "Agent consistency" }), /* @__PURE__ */ (0, R.jsx)(ki, {
+							label: "About Agent consistency",
+							children: "Average agreement on the most common answer at each dimension count."
+						})]
+					})
+				}), /* @__PURE__ */ (0, R.jsx)(Ai, {
+					title: "Overall Agent consistency by persona dimensions",
+					description: "One line shows average overall Agent consistency at each saved dimension count.",
+					yAxisLabel: "Agent consistency",
+					series: a,
+					dimensionValues: r,
+					emptyMessage: "Run Agent validation at a known dimension count to chart Agent consistency."
+				})]
+			})]
+		})]
+	});
+}
+function Mi({ store: e, onHuman: t, onRunAll: n, onLicense: r, runningExperiment: i, runDisabled: a, selectedExperimentId: o, onSelectExperiment: s }) {
+	let c = Yr(e), l = c.some((e) => e.id === o) ? o : c[0]?.id ?? null, u = l ? ii(e, l) : null, d = zr(u?.experiment ?? null), f = si(e);
+	return /* @__PURE__ */ (0, R.jsxs)(Ci, {
 		simple: !0,
 		children: [/* @__PURE__ */ (0, R.jsxs)("section", {
 			className: "hero-wrap",
@@ -13311,6 +13665,7 @@ function Si({ store: e, onHuman: t, onRunAll: n, onLicense: r, runningExperiment
 		}), /* @__PURE__ */ (0, R.jsxs)("section", {
 			className: "mx-auto max-w-[1240px] px-5 pb-20 pt-16 sm:px-8 lg:px-10",
 			children: [
+				/* @__PURE__ */ (0, R.jsx)(ji, { data: f }),
 				/* @__PURE__ */ (0, R.jsxs)("div", {
 					className: "validation-results-toolbar",
 					children: [
@@ -13352,7 +13707,7 @@ function Si({ store: e, onHuman: t, onRunAll: n, onLicense: r, runningExperiment
 				}),
 				/* @__PURE__ */ (0, R.jsx)("div", {
 					className: "validation-survey-list flex flex-col gap-6",
-					children: Zt.map((n) => /* @__PURE__ */ (0, R.jsx)(bi, {
+					children: Zt.map((n) => /* @__PURE__ */ (0, R.jsx)(wi, {
 						survey: n,
 						history: Ln(e, n.id),
 						onHuman: () => t(n.id),
@@ -13373,8 +13728,8 @@ function Si({ store: e, onHuman: t, onRunAll: n, onLicense: r, runningExperiment
 		})]
 	});
 }
-function Ci({ survey: e, actor: t, run: n, agentRun: r, onSaveAnswer: i, onComplete: a, onHome: o }) {
-	let s = e.questions.findIndex((e) => !n.answers[e.id]), [c, l] = (0, C.useState)(s === -1 ? e.questions.length - 1 : s), [u, d] = (0, C.useState)(!1), f = e.questions[c], p = n.answers[f.id], m = (c + 1) / e.questions.length * 100, h = ii[t], g = c === e.questions.length - 1, _ = (0, C.useRef)(null), v = (0, C.useRef)(!1), y = (0, C.useRef)(void 0);
+function Ni({ survey: e, actor: t, run: n, agentRun: r, onSaveAnswer: i, onComplete: a, onHome: o }) {
+	let s = e.questions.findIndex((e) => !n.answers[e.id]), [c, l] = (0, C.useState)(s === -1 ? e.questions.length - 1 : s), [u, d] = (0, C.useState)(!1), f = e.questions[c], p = n.answers[f.id], m = (c + 1) / e.questions.length * 100, h = ci[t], g = c === e.questions.length - 1, _ = (0, C.useRef)(null), v = (0, C.useRef)(!1), y = (0, C.useRef)(void 0);
 	(0, C.useEffect)(() => (v.current = !1, _.current?.focus({ preventScroll: !0 }), () => {
 		y.current !== void 0 && (window.clearTimeout(y.current), y.current = void 0);
 	}), [c]);
@@ -13392,11 +13747,11 @@ function Ci({ survey: e, actor: t, run: n, agentRun: r, onSaveAnswer: i, onCompl
 	function x() {
 		!p || v.current || (g ? a() : l((e) => e + 1));
 	}
-	return /* @__PURE__ */ (0, R.jsx)(yi, {
+	return /* @__PURE__ */ (0, R.jsx)(Ci, {
 		onHome: o,
 		children: /* @__PURE__ */ (0, R.jsxs)("div", {
 			className: "quiz-stage",
-			style: di(e),
+			style: hi(e),
 			children: [
 				/* @__PURE__ */ (0, R.jsx)("div", {
 					className: "quiz-topline",
@@ -13415,7 +13770,7 @@ function Ci({ survey: e, actor: t, run: n, agentRun: r, onSaveAnswer: i, onCompl
 							}),
 							/* @__PURE__ */ (0, R.jsxs)("span", {
 								className: "run-metadata-chip",
-								children: ["Persona agent: ", fi(n.personaAgent)]
+								children: ["Persona agent: ", gi(n.personaAgent)]
 							})
 						]
 					})] })
@@ -13468,7 +13823,7 @@ function Ci({ survey: e, actor: t, run: n, agentRun: r, onSaveAnswer: i, onCompl
 								"aria-pressed": n,
 								onClick: () => b(t.id),
 								className: `answer-option focus-ring ${n ? "answer-selected" : ""} ${e.kind === "scale" ? "scale-option" : ""}`,
-								style: n ? di(e) : void 0,
+								style: n ? hi(e) : void 0,
 								children: [e.kind === "scale" ? /* @__PURE__ */ (0, R.jsx)("span", {
 									className: "option-key",
 									children: t.id
@@ -13514,7 +13869,7 @@ function Ci({ survey: e, actor: t, run: n, agentRun: r, onSaveAnswer: i, onCompl
 		})
 	});
 }
-function wi({ result: e, survey: t }) {
+function z({ result: e, survey: t }) {
 	return /* @__PURE__ */ (0, R.jsx)("div", {
 		className: "mt-8 space-y-4",
 		children: Object.entries(e.scores).map(([e, n]) => /* @__PURE__ */ (0, R.jsxs)("div", { children: [/* @__PURE__ */ (0, R.jsxs)("div", {
@@ -13532,7 +13887,7 @@ function wi({ result: e, survey: t }) {
 		})] }, e))
 	});
 }
-function Ti({ result: e, survey: t, compact: n = !1 }) {
+function B({ result: e, survey: t, compact: n = !1 }) {
 	return /* @__PURE__ */ (0, R.jsx)("div", {
 		className: `mt-7 ${n ? "space-y-4" : "grid gap-4 sm:grid-cols-2"}`,
 		children: e.values.map((e) => /* @__PURE__ */ (0, R.jsxs)("div", {
@@ -13574,7 +13929,7 @@ function Ti({ result: e, survey: t, compact: n = !1 }) {
 		}, e.id))
 	});
 }
-function Ei({ result: e, survey: t, compact: n = !1 }) {
+function Pi({ result: e, survey: t, compact: n = !1 }) {
 	return /* @__PURE__ */ (0, R.jsx)("div", {
 		className: "mt-7 space-y-5",
 		children: tn.map((r, i) => /* @__PURE__ */ (0, R.jsxs)("div", { children: [
@@ -13604,27 +13959,27 @@ function Ei({ result: e, survey: t, compact: n = !1 }) {
 		] }, r.key))
 	});
 }
-function Di({ result: e, survey: t, compact: n = !1 }) {
-	return e.kind === "categorical" ? /* @__PURE__ */ (0, R.jsx)(wi, {
+function Fi({ result: e, survey: t, compact: n = !1 }) {
+	return e.kind === "categorical" ? /* @__PURE__ */ (0, R.jsx)(z, {
 		result: e,
 		survey: t
-	}) : e.kind === "scale" ? /* @__PURE__ */ (0, R.jsx)(Ti, {
+	}) : e.kind === "scale" ? /* @__PURE__ */ (0, R.jsx)(B, {
 		result: e,
 		survey: t,
 		compact: n
-	}) : /* @__PURE__ */ (0, R.jsx)(Ei, {
+	}) : /* @__PURE__ */ (0, R.jsx)(Pi, {
 		result: e,
 		survey: t,
 		compact: n
 	});
 }
-function Oi({ survey: e, actor: t, run: n, agentRun: r, hasCompletedHuman: i, onHistory: a, onHumanChange: o, onHome: s }) {
-	let c = ln(e, n.answers), l = t === "agent" && r, u = ii[t];
-	return /* @__PURE__ */ (0, R.jsx)(yi, {
+function Ii({ survey: e, actor: t, run: n, agentRun: r, hasCompletedHuman: i, onHistory: a, onHumanChange: o, onHome: s }) {
+	let c = ln(e, n.answers), l = t === "agent" && r, u = ci[t];
+	return /* @__PURE__ */ (0, R.jsx)(Ci, {
 		onHome: s,
 		children: /* @__PURE__ */ (0, R.jsxs)("div", {
 			className: "result-stage",
-			style: di(e),
+			style: hi(e),
 			children: [
 				/* @__PURE__ */ (0, R.jsxs)("section", {
 					className: "result-hero",
@@ -13655,7 +14010,7 @@ function Oi({ survey: e, actor: t, run: n, agentRun: r, hasCompletedHuman: i, on
 								}),
 								/* @__PURE__ */ (0, R.jsxs)("div", {
 									className: "mx-auto mt-4 w-fit rounded-full bg-white/70 px-3 py-1.5 text-xs font-black text-slate-600 shadow-sm",
-									children: ["Persona agent: ", fi(n.personaAgent)]
+									children: ["Persona agent: ", gi(n.personaAgent)]
 								}),
 								l && /* @__PURE__ */ (0, R.jsxs)("div", {
 									className: "mx-auto mt-2 w-fit rounded-full px-3 py-1.5 text-xs font-black",
@@ -13684,7 +14039,7 @@ function Oi({ survey: e, actor: t, run: n, agentRun: r, hasCompletedHuman: i, on
 						id: "result-detail-heading",
 						className: "section-kicker",
 						children: "Result detail"
-					}), /* @__PURE__ */ (0, R.jsx)(Di, {
+					}), /* @__PURE__ */ (0, R.jsx)(Fi, {
 						result: c,
 						survey: e
 					})]
@@ -13716,8 +14071,8 @@ function Oi({ survey: e, actor: t, run: n, agentRun: r, hasCompletedHuman: i, on
 		})
 	});
 }
-function ki({ survey: e, actor: t, result: n }) {
-	let r = ii[t];
+function Li({ survey: e, actor: t, result: n }) {
+	let r = ci[t];
 	return /* @__PURE__ */ (0, R.jsxs)("div", {
 		className: "comparison-result-card",
 		children: [
@@ -13742,7 +14097,7 @@ function ki({ survey: e, actor: t, result: n }) {
 				className: "mt-4 text-sm leading-6 text-slate-600",
 				children: n.description
 			}),
-			/* @__PURE__ */ (0, R.jsx)(Di, {
+			/* @__PURE__ */ (0, R.jsx)(Fi, {
 				result: n,
 				survey: e,
 				compact: !0
@@ -13750,13 +14105,13 @@ function ki({ survey: e, actor: t, result: n }) {
 		]
 	});
 }
-function Ai({ survey: e, human: t, agentRun: n, onResult: r, onHistory: i, onHome: a }) {
+function Ri({ survey: e, human: t, agentRun: n, onResult: r, onHistory: i, onHome: a }) {
 	let o = dn(e, t.answers, n.answers), s = ln(e, t.answers), c = ln(e, n.answers), l = o.exactMatches === e.questions.length ? "Every answer matched." : `${o.exactMatches} of ${e.questions.length} answers matched exactly.`;
-	return /* @__PURE__ */ (0, R.jsx)(yi, {
+	return /* @__PURE__ */ (0, R.jsx)(Ci, {
 		onHome: a,
 		children: /* @__PURE__ */ (0, R.jsxs)("div", {
 			className: "comparison-stage",
-			style: di(e),
+			style: hi(e),
 			children: [
 				/* @__PURE__ */ (0, R.jsxs)("section", {
 					className: "comparison-hero",
@@ -13800,7 +14155,7 @@ function Ai({ survey: e, human: t, agentRun: n, onResult: r, onHistory: i, onHom
 									children: [
 										"Persona agent:",
 										" ",
-										/* @__PURE__ */ (0, R.jsx)("strong", { children: fi(n.personaAgent) })
+										/* @__PURE__ */ (0, R.jsx)("strong", { children: gi(n.personaAgent) })
 									]
 								}),
 								/* @__PURE__ */ (0, R.jsxs)("span", {
@@ -13829,7 +14184,7 @@ function Ai({ survey: e, human: t, agentRun: n, onResult: r, onHistory: i, onHom
 							className: "mt-4 text-xs font-bold text-slate-500",
 							children: [
 								"Completed ",
-								li(n.completedAt),
+								pi(n.completedAt),
 								n.migrated ? " - imported from the earlier app version" : ""
 							]
 						})
@@ -13837,11 +14192,11 @@ function Ai({ survey: e, human: t, agentRun: n, onResult: r, onHistory: i, onHom
 				}),
 				/* @__PURE__ */ (0, R.jsxs)("section", {
 					className: "mx-auto mt-10 grid max-w-[1080px] gap-5 lg:grid-cols-2",
-					children: [/* @__PURE__ */ (0, R.jsx)(ki, {
+					children: [/* @__PURE__ */ (0, R.jsx)(Li, {
 						survey: e,
 						actor: "human",
 						result: s
-					}), /* @__PURE__ */ (0, R.jsx)(ki, {
+					}), /* @__PURE__ */ (0, R.jsx)(Li, {
 						survey: e,
 						actor: "agent",
 						result: c
@@ -13965,7 +14320,7 @@ function Ai({ survey: e, human: t, agentRun: n, onResult: r, onHistory: i, onHom
 		})
 	});
 }
-function ji({ points: e, survey: t }) {
+function zi({ points: e, survey: t }) {
 	let n = (0, C.useRef)(null), r = Math.max(1, ...e.map((e) => e.dimensionCount)), i = (e) => 90 + e / r * 622, a = (e) => 22 + (1 - e) * 202, o = Array.from(new Set(Array.from({ length: 5 }, (e, t) => Math.round(r * t / 4)))), s = /* @__PURE__ */ new Map();
 	e.forEach((e) => {
 		let t = `${e.dimensionCount}:${e.similarity.toFixed(6)}`, n = s.get(t);
@@ -14117,16 +14472,16 @@ function ji({ points: e, survey: t }) {
 		]
 	});
 }
-function Mi({ survey: e, history: t, onComparison: n, onHumanResult: r, onHome: i }) {
-	let a = t.human, o = Rn(t, a.id).sort(mi), s = Rn(t).filter((e) => e.benchmarkId !== a.id).sort(mi), c = Un(e.id, t), l = Gn(c), u = o.map((t) => ({
+function Bi({ survey: e, history: t, onComparison: n, onHumanResult: r, onHome: i }) {
+	let a = t.human, o = Rn(t, a.id).sort(vi), s = Rn(t).filter((e) => e.benchmarkId !== a.id).sort(vi), c = Un(e.id, t), l = Gn(c), u = o.map((t) => ({
 		run: t,
 		comparison: dn(e, a.answers, t.answers)
 	})), d = u.at(-1), f = u.length ? u.reduce((e, t) => t.comparison.similarity > e.comparison.similarity ? t : e) : void 0, p = o.filter((e) => e.dimensionCount === null).length;
-	return /* @__PURE__ */ (0, R.jsx)(yi, {
+	return /* @__PURE__ */ (0, R.jsx)(Ci, {
 		onHome: i,
 		children: /* @__PURE__ */ (0, R.jsxs)("div", {
 			className: "history-stage",
-			style: di(e),
+			style: hi(e),
 			children: [
 				/* @__PURE__ */ (0, R.jsxs)("section", {
 					className: "history-heading",
@@ -14153,7 +14508,7 @@ function Mi({ survey: e, history: t, onComparison: n, onHumanResult: r, onHome: 
 							children: [
 								/* @__PURE__ */ (0, R.jsxs)("span", {
 									className: "history-stat",
-									children: [/* @__PURE__ */ (0, R.jsx)("small", { children: "Persona agent" }), /* @__PURE__ */ (0, R.jsx)("strong", { children: fi(a.personaAgent) })]
+									children: [/* @__PURE__ */ (0, R.jsx)("small", { children: "Persona agent" }), /* @__PURE__ */ (0, R.jsx)("strong", { children: gi(a.personaAgent) })]
 								}),
 								/* @__PURE__ */ (0, R.jsxs)("span", {
 									className: "history-stat",
@@ -14199,7 +14554,7 @@ function Mi({ survey: e, history: t, onComparison: n, onHumanResult: r, onHome: 
 								})
 							] })
 						}),
-						c.length ? /* @__PURE__ */ (0, R.jsx)(ji, {
+						c.length ? /* @__PURE__ */ (0, R.jsx)(zi, {
 							points: c,
 							survey: e
 						}) : /* @__PURE__ */ (0, R.jsxs)("div", {
@@ -14268,7 +14623,7 @@ function Mi({ survey: e, history: t, onComparison: n, onHumanResult: r, onHome: 
 										className: "font-black text-slate-950",
 										children: ["Run ", t.sequence]
 									}),
-									/* @__PURE__ */ (0, R.jsx)(Ut, { children: fi(t.personaAgent) }),
+									/* @__PURE__ */ (0, R.jsx)(Ut, { children: gi(t.personaAgent) }),
 									/* @__PURE__ */ (0, R.jsx)(Ut, { children: t.dimensionCount ?? "Not recorded" }),
 									/* @__PURE__ */ (0, R.jsx)(Ut, { children: /* @__PURE__ */ (0, R.jsx)("span", {
 										className: "rounded-full px-2.5 py-1 text-xs font-black",
@@ -14283,7 +14638,7 @@ function Mi({ survey: e, history: t, onComparison: n, onHumanResult: r, onHome: 
 										" / ",
 										e.questions.length
 									] }),
-									/* @__PURE__ */ (0, R.jsx)(Ut, { children: li(t.completedAt) }),
+									/* @__PURE__ */ (0, R.jsx)(Ut, { children: pi(t.completedAt) }),
 									/* @__PURE__ */ (0, R.jsx)(Ut, {
 										className: "text-right",
 										children: /* @__PURE__ */ (0, R.jsx)("button", {
@@ -14340,10 +14695,10 @@ function Mi({ survey: e, history: t, onComparison: n, onHumanResult: r, onHome: 
 											}), /* @__PURE__ */ (0, R.jsxs)("span", {
 												className: "text-xs font-bold text-slate-500",
 												children: [
-													fi(t.personaAgent),
+													gi(t.personaAgent),
 													" -",
 													" ",
-													li(t.completedAt)
+													pi(t.completedAt)
 												]
 											})]
 										}, t.id);
@@ -14382,8 +14737,8 @@ function Mi({ survey: e, history: t, onComparison: n, onHumanResult: r, onHome: 
 		})
 	});
 }
-function Ni({ onHome: e }) {
-	return /* @__PURE__ */ (0, R.jsx)(yi, {
+function Vi({ onHome: e }) {
+	return /* @__PURE__ */ (0, R.jsx)(Ci, {
 		onHome: e,
 		children: /* @__PURE__ */ (0, R.jsxs)("article", {
 			className: "prose-card",
@@ -14446,7 +14801,7 @@ function Ni({ onHome: e }) {
 		})
 	});
 }
-function z({ notice: e }) {
+function Hi({ notice: e }) {
 	return /* @__PURE__ */ (0, R.jsxs)("output", {
 		className: "validation-save-status",
 		"aria-live": "polite",
@@ -14456,8 +14811,8 @@ function z({ notice: e }) {
 		}), /* @__PURE__ */ (0, R.jsx)("span", { children: e.message })]
 	});
 }
-function B({ hosted: e = !1 }) {
-	let [t, n] = (0, C.useState)({}), [r, i] = (0, C.useState)(ai), [a, o] = (0, C.useState)(!1), [s, c] = (0, C.useState)(e), [l, u] = (0, C.useState)(null), [d, f] = (0, C.useState)(!1), [p, m] = (0, C.useState)(!1), [h, g] = (0, C.useState)(null), [_, v] = (0, C.useState)(0), y = (0, C.useRef)({}), b = (0, C.useRef)(null), x = (0, C.useRef)({}), S = (0, C.useRef)(void 0), w = (0, C.useRef)(!1), T = (0, C.useRef)(!1), ee = (0, C.useRef)(null), E = (0, C.useRef)(!1), D = (0, C.useRef)(0), te = (0, C.useRef)(!0);
+function Ui({ hosted: e = !1 }) {
+	let [t, n] = (0, C.useState)({}), [r, i] = (0, C.useState)(li), [a, o] = (0, C.useState)(!1), [s, c] = (0, C.useState)(e), [l, u] = (0, C.useState)(null), [d, f] = (0, C.useState)(!1), [p, m] = (0, C.useState)(!1), [h, g] = (0, C.useState)(null), [_, v] = (0, C.useState)(0), y = (0, C.useRef)({}), b = (0, C.useRef)(null), x = (0, C.useRef)({}), S = (0, C.useRef)(void 0), w = (0, C.useRef)(!1), T = (0, C.useRef)(!1), ee = (0, C.useRef)(null), E = (0, C.useRef)(!1), D = (0, C.useRef)(0), te = (0, C.useRef)(!0);
 	(0, C.useEffect)(() => {
 		y.current = t;
 	}, [t]);
@@ -14482,7 +14837,7 @@ function B({ hosted: e = !1 }) {
 				if (!(o instanceof ur) || o.status !== 409 || !o.currentState) throw o;
 				let s = o.currentState;
 				if (s.contextId !== e.contextId) {
-					b.current = s, x.current = s.store, y.current = s.store, ee.current = null, te.current && (n(s.store), i(ai), u({
+					b.current = s, x.current = s.store, y.current = s.store, ee.current = null, te.current && (n(s.store), i(li), u({
 						kind: "saved",
 						message: "active persona changed - its results were loaded from disk."
 					}));
@@ -14493,7 +14848,7 @@ function B({ hosted: e = !1 }) {
 			b.current = a, x.current = a.store, ee.current = null;
 			let o = In(a.store, y.current);
 			if (_r(o) !== _r(y.current) && (y.current = o, te.current && n(o)), te.current) {
-				let e = ui(a.savedAt);
+				let e = mi(a.savedAt);
 				u({
 					kind: "saved",
 					message: e ? `saved to disk at ${e}` : "saved to disk"
@@ -14517,7 +14872,7 @@ function B({ hosted: e = !1 }) {
 		}), r = !1;
 		async function i() {
 			try {
-				let e = await pr(), t = ui(e.savedAt), i = t ? {
+				let e = await pr(), t = mi(e.savedAt), i = t ? {
 					kind: "saved",
 					message: `saved to disk at ${t}`
 				} : {
@@ -14568,7 +14923,7 @@ function B({ hosted: e = !1 }) {
 					s = Rr(s, r, Zt), c = r.batchId, l += r.successes.length, d += r.failures.length;
 				}
 				if (t) return;
-				y.current = s, n(s), c && g(c), i(ai), u({
+				y.current = s, n(s), c && g(c), i(li), u({
 					kind: d ? "error" : "saved",
 					message: d ? `${l} recovered Agent responses will be saved. ${d} runs did not finish.` : `${l} Agent responses recovered - saving them to disk.`
 				}), r = !0;
@@ -14598,7 +14953,7 @@ function B({ hosted: e = !1 }) {
 		a,
 		_
 	]);
-	let re = gi(t, r), O = "surveyId" in r ? Qt[r.surveyId] : void 0;
+	let re = bi(t, r), O = "surveyId" in r ? Qt[r.surveyId] : void 0;
 	function ie(e, t) {
 		n((n) => ({
 			...n,
@@ -14606,7 +14961,7 @@ function B({ hosted: e = !1 }) {
 		}));
 	}
 	function ae() {
-		i(ai), window.scrollTo({
+		i(li), window.scrollTo({
 			top: 0,
 			behavior: "smooth"
 		});
@@ -14621,7 +14976,7 @@ function B({ hosted: e = !1 }) {
 	async function k() {
 		try {
 			let e = await pr(), r = b.current;
-			if (r && e.contextId !== r.contextId) return b.current = e, x.current = e.store, y.current = e.store, ee.current = null, n(e.store), i(ai), u({
+			if (r && e.contextId !== r.contextId) return b.current = e, x.current = e.store, y.current = e.store, ee.current = null, n(e.store), i(li), u({
 				kind: "saved",
 				message: "active persona changed - its results were loaded from disk."
 			}), null;
@@ -14659,7 +15014,7 @@ function B({ hosted: e = !1 }) {
 			let t = oe();
 			if (!t) return;
 			let n = {
-				id: ci("human"),
+				id: fi("human"),
 				answers: {},
 				startedAt: (/* @__PURE__ */ new Date()).toISOString(),
 				personaAgent: t
@@ -14693,7 +15048,7 @@ function B({ hosted: e = !1 }) {
 				});
 				if (!te.current) return;
 				let a = Rr(y.current, r, Zt);
-				y.current = a, n(a), g(r.batchId), e || i(ai), u({
+				y.current = a, n(a), g(r.batchId), e || i(li), u({
 					kind: r.failures.length ? "error" : "saved",
 					message: r.failures.length ? `${r.successes.length} of 40 Agent responses completed and will be saved. ${r.failures.length} failed.` : "40 Agent responses complete - saving the experiment to disk."
 				}), e || window.scrollTo({
@@ -14765,7 +15120,7 @@ function B({ hosted: e = !1 }) {
 		let a = oe();
 		if (!a) return;
 		let o = {
-			id: ci("human"),
+			id: fi("human"),
 			answers: {},
 			startedAt: (/* @__PURE__ */ new Date()).toISOString(),
 			personaAgent: a
@@ -14854,7 +15209,7 @@ function B({ hosted: e = !1 }) {
 		t
 	]);
 	function ue() {
-		return /* @__PURE__ */ (0, R.jsx)(Si, {
+		return /* @__PURE__ */ (0, R.jsx)(Mi, {
 			store: t,
 			onHuman: A,
 			onRunAll: () => void se(),
@@ -14868,12 +15223,12 @@ function B({ hosted: e = !1 }) {
 	function P() {
 		if (!a) return /* @__PURE__ */ (0, R.jsx)("div", { className: "validation-loading min-h-screen" });
 		if (r.name === "home") return ue();
-		if (r.name === "license") return /* @__PURE__ */ (0, R.jsx)(Ni, { onHome: ae });
+		if (r.name === "license") return /* @__PURE__ */ (0, R.jsx)(Vi, { onHome: ae });
 		if (!O) return null;
 		let e = Ln(t, O.id);
 		if (r.name === "quiz") {
 			let t = r.actor === "human" ? e.human : Bn(e, r.runId);
-			return t ? /* @__PURE__ */ (0, R.jsx)(Ci, {
+			return t ? /* @__PURE__ */ (0, R.jsx)(Ni, {
 				survey: O,
 				actor: r.actor,
 				run: t,
@@ -14886,8 +15241,8 @@ function B({ hosted: e = !1 }) {
 		if (r.name === "result") {
 			let t = r.actor === "human" ? e.human : Bn(e, r.runId);
 			if (!t?.completedAt) return ue();
-			let n = !!(e.human?.completedAt && (r.actor === "human" || pi(e.human.personaAgent, t.personaAgent)));
-			return /* @__PURE__ */ (0, R.jsx)(Oi, {
+			let n = !!(e.human?.completedAt && (r.actor === "human" || _i(e.human.personaAgent, t.personaAgent)));
+			return /* @__PURE__ */ (0, R.jsx)(Ii, {
 				survey: O,
 				actor: r.actor,
 				run: t,
@@ -14903,7 +15258,7 @@ function B({ hosted: e = !1 }) {
 		}
 		if (r.name === "comparison") {
 			let t = Bn(e, r.runId);
-			return !e.human?.completedAt || !t?.completedAt || t.benchmarkId !== e.human.id || !pi(e.human.personaAgent, t.personaAgent) ? ue() : /* @__PURE__ */ (0, R.jsx)(Ai, {
+			return !e.human?.completedAt || !t?.completedAt || t.benchmarkId !== e.human.id || !_i(e.human.personaAgent, t.personaAgent) ? ue() : /* @__PURE__ */ (0, R.jsx)(Ri, {
 				survey: O,
 				human: e.human,
 				agentRun: t,
@@ -14920,7 +15275,7 @@ function B({ hosted: e = !1 }) {
 				onHome: ae
 			});
 		}
-		return !e.human?.completedAt || Rn(e, e.human.id).length === 0 ? ue() : /* @__PURE__ */ (0, R.jsx)(Mi, {
+		return !e.human?.completedAt || Rn(e, e.human.id).length === 0 ? ue() : /* @__PURE__ */ (0, R.jsx)(Bi, {
 			survey: O,
 			history: e,
 			onComparison: (e) => i({
@@ -14940,18 +15295,18 @@ function B({ hosted: e = !1 }) {
 	let de = a && re.name !== "license" && l !== null;
 	return /* @__PURE__ */ (0, R.jsxs)("div", {
 		className: [s ? "validation-embedded" : "", de ? "validation-save-visible" : ""].filter(Boolean).join(" ") || void 0,
-		children: [P(), de && /* @__PURE__ */ (0, R.jsx)(z, { notice: l })]
+		children: [P(), de && /* @__PURE__ */ (0, R.jsx)(Hi, { notice: l })]
 	});
 }
 //#endregion
 //#region app/validation-entry.tsx
-var Pi = document.getElementById("validation-root");
-if (!Pi) throw Error("The Validation mount point was not found.");
-var Fi = (0, N.createRoot)(Pi), Ii = 0;
-function Li() {
-	Fi.render(/* @__PURE__ */ (0, R.jsx)(B, { hosted: !0 }, Ii));
+var Wi = document.getElementById("validation-root");
+if (!Wi) throw Error("The Validation mount point was not found.");
+var Gi = (0, N.createRoot)(Wi), Ki = 0;
+function qi() {
+	Gi.render(/* @__PURE__ */ (0, R.jsx)(Ui, { hosted: !0 }, Ki));
 }
 window.addEventListener("matraix-validation-reload", () => {
-	Ii += 1, Li();
-}), Li();
+	Ki += 1, qi();
+}), qi();
 //#endregion

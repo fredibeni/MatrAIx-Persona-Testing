@@ -3,6 +3,7 @@
 import {
   useEffect,
   useEffectEvent,
+  useId,
   useRef,
   useState,
   type CSSProperties,
@@ -92,11 +93,14 @@ import {
 } from '@/lib/validation-agent';
 import { appendValidationAgentBatch } from '@/lib/validation-batch-store';
 import {
+  aggregateValidationTrends,
   aggregateValidationExperiment,
   validationExperimentWarning,
   validationExperimentOptions,
   type ValidationQuestionAggregate,
   type ValidationSurveyAggregate,
+  type ValidationTrendData,
+  type ValidationTrendMetricPoint,
 } from '@/lib/validation-results';
 
 type Actor = 'human' | 'agent';
@@ -415,6 +419,479 @@ function QuestionAggregateRow({ row }: { row: ValidationQuestionAggregate }) {
   );
 }
 
+type ValidationBenchmarkTrendMode = 'overall' | 'individual';
+
+interface ValidationTrendChartSeries {
+  id: string;
+  label: string;
+  points: ValidationTrendMetricPoint[];
+  styleIndex: number;
+}
+
+const validationTrendLinePatterns = [
+  undefined,
+  '8 5',
+  '2 5',
+  '11 4 2 4',
+] as const;
+
+function ValidationTrendMarker({
+  x,
+  y,
+  styleIndex,
+  size = 4,
+}: {
+  x: number;
+  y: number;
+  styleIndex: number;
+  size?: number;
+}) {
+  const markerFill =
+    styleIndex % 2 === 0
+      ? 'var(--validation-trend-line)'
+      : 'var(--validation-trend-marker-fill)';
+  const common = {
+    fill: markerFill,
+    stroke: 'var(--validation-trend-line)',
+    strokeWidth: 2,
+  };
+
+  switch (styleIndex % 4) {
+    case 1:
+      return (
+        <rect
+          x={x - size}
+          y={y - size}
+          width={size * 2}
+          height={size * 2}
+          rx="1"
+          {...common}
+        />
+      );
+    case 2:
+      return (
+        <polygon
+          points={`${x},${y - size - 1} ${x + size + 1},${y} ${x},${y + size + 1} ${x - size - 1},${y}`}
+          {...common}
+        />
+      );
+    case 3:
+      return (
+        <polygon
+          points={`${x},${y - size - 1} ${x + size + 1},${y + size} ${x - size - 1},${y + size}`}
+          {...common}
+        />
+      );
+    default:
+      return <circle cx={x} cy={y} r={size} {...common} />;
+  }
+}
+
+function validationTrendPointSummary(point: ValidationTrendMetricPoint) {
+  const experiments = `${point.experimentCount} experiment${point.experimentCount === 1 ? '' : 's'}`;
+  if (!point.partialExperimentCount) return experiments;
+  return `${experiments}, including ${point.partialExperimentCount} partial`;
+}
+
+function ValidationTrendInfo({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
+  const descriptionId = useId();
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="validation-trend-info">
+      <button
+        type="button"
+        aria-label={label}
+        aria-expanded={open}
+        aria-controls={descriptionId}
+        onClick={() => setOpen((current) => !current)}
+      >
+        <Info size={14} aria-hidden="true" />
+      </button>
+      <p id={descriptionId} hidden={!open}>
+        {children}
+      </p>
+    </div>
+  );
+}
+
+function ValidationTrendChart({
+  title,
+  description,
+  yAxisLabel,
+  series,
+  dimensionValues,
+  emptyMessage,
+}: {
+  title: string;
+  description: string;
+  yAxisLabel: string;
+  series: ValidationTrendChartSeries[];
+  dimensionValues: number[];
+  emptyMessage: string;
+}) {
+  const chartId = useId();
+  const width = 400;
+  const height = 250;
+  const left = 56;
+  const right = 12;
+  const top = 14;
+  const bottom = 52;
+  const plotBottom = height - bottom;
+  const allPoints = series.flatMap((item) => item.points);
+  const minimumDimension = dimensionValues[0] ?? 0;
+  const maximumDimension = dimensionValues.at(-1) ?? 0;
+  const x = (value: number) =>
+    minimumDimension === maximumDimension
+      ? left + (width - left - right) / 2
+      : left +
+        ((value - minimumDimension) / (maximumDimension - minimumDimension)) *
+          (width - left - right);
+  const y = (value: number) =>
+    top + (1 - Math.max(0, Math.min(1, value))) * (plotBottom - top);
+  const xTicks =
+    dimensionValues.length <= 6
+      ? dimensionValues
+      : Array.from(
+          new Set(
+            Array.from({ length: 6 }, (_, index) =>
+              Math.round((index * (dimensionValues.length - 1)) / 5),
+            ).map((index) => dimensionValues[index]),
+          ),
+        );
+
+  return (
+    <figure
+      className="validation-trend-chart"
+      aria-labelledby={`${chartId}-title ${chartId}-description`}
+    >
+      <h4 id={`${chartId}-title`} className="sr-only">
+        {title}
+      </h4>
+      <p id={`${chartId}-description`} className="sr-only">
+        {description} The horizontal axis is the number of dimensions filled.
+        The vertical axis runs from zero to one hundred percent. Exact plotted
+        values and contributing experiment counts are listed in the accessible
+        table.
+      </p>
+
+      {series.length > 1 ? (
+        <ul className="validation-trend-legend" aria-label="Chart series">
+          {series.map((item) => (
+            <li key={item.id}>
+              <svg viewBox="0 0 36 14" aria-hidden="true" focusable="false">
+                <line
+                  x1="2"
+                  x2="34"
+                  y1="7"
+                  y2="7"
+                  stroke="var(--validation-trend-line)"
+                  strokeWidth="2.5"
+                  strokeDasharray={
+                    validationTrendLinePatterns[item.styleIndex % 4]
+                  }
+                  strokeLinecap="round"
+                />
+                <ValidationTrendMarker
+                  x={18}
+                  y={7}
+                  styleIndex={item.styleIndex}
+                  size={3}
+                />
+              </svg>
+              <span>{item.label}</span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+
+      {allPoints.length ? (
+        <section
+          className="validation-trend-scroll"
+          aria-label={`${title} plot`}
+        >
+          <svg
+            viewBox={`0 0 ${width} ${height}`}
+            className="validation-trend-svg"
+            aria-hidden="true"
+            focusable="false"
+          >
+            {[0, 0.25, 0.5, 0.75, 1].map((value) => (
+              <g key={value}>
+                <line
+                  x1={left}
+                  x2={width - right}
+                  y1={y(value)}
+                  y2={y(value)}
+                  className="validation-trend-grid-line"
+                />
+                <text
+                  x={left - 9}
+                  y={y(value) + 4}
+                  textAnchor="end"
+                  className="validation-trend-tick"
+                >
+                  {Math.round(value * 100)}%
+                </text>
+              </g>
+            ))}
+
+            <line
+              x1={left}
+              x2={width - right}
+              y1={plotBottom}
+              y2={plotBottom}
+              className="validation-trend-axis-line"
+            />
+
+            {xTicks.map((value) => (
+              <g key={value}>
+                <line
+                  x1={x(value)}
+                  x2={x(value)}
+                  y1={plotBottom}
+                  y2={plotBottom + 5}
+                  className="validation-trend-axis-line"
+                />
+                <text
+                  x={x(value)}
+                  y={plotBottom + 20}
+                  textAnchor="middle"
+                  className="validation-trend-tick"
+                >
+                  {value}
+                </text>
+              </g>
+            ))}
+
+            <text
+              x={(left + width - right) / 2}
+              y={height - 8}
+              textAnchor="middle"
+              className="validation-trend-axis-label"
+            >
+              Number of dimensions filled
+            </text>
+            <text
+              transform={`translate(15 ${(top + plotBottom) / 2}) rotate(-90)`}
+              textAnchor="middle"
+              className="validation-trend-axis-label"
+            >
+              {yAxisLabel}
+            </text>
+
+            {series.map((item) => {
+              const plotted = item.points.filter(
+                (point) =>
+                  Number.isFinite(point.dimensionCount) &&
+                  Number.isFinite(point.value),
+              );
+              const linePoints = plotted
+                .map((point) => `${x(point.dimensionCount)},${y(point.value)}`)
+                .join(' ');
+              return (
+                <g key={item.id}>
+                  {plotted.length > 1 ? (
+                    <polyline
+                      points={linePoints}
+                      fill="none"
+                      stroke="var(--validation-trend-line)"
+                      strokeWidth="2.5"
+                      strokeDasharray={
+                        validationTrendLinePatterns[item.styleIndex % 4]
+                      }
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  ) : null}
+                  {plotted.map((point) => (
+                    <g
+                      key={`${item.id}:${point.dimensionCount}`}
+                      className="validation-trend-point"
+                    >
+                      <title>
+                        {item.label}, {point.dimensionCount} dimensions,{' '}
+                        {Math.round(point.value * 100)} percent,{' '}
+                        {validationTrendPointSummary(point)}
+                      </title>
+                      <ValidationTrendMarker
+                        x={x(point.dimensionCount)}
+                        y={y(point.value)}
+                        styleIndex={item.styleIndex}
+                      />
+                    </g>
+                  ))}
+                </g>
+              );
+            })}
+          </svg>
+        </section>
+      ) : (
+        <output className="validation-trend-empty">{emptyMessage}</output>
+      )}
+
+      {allPoints.length ? (
+        <table className="sr-only">
+          <caption>Exact values plotted in {title}</caption>
+          <thead>
+            <tr>
+              <th>Series</th>
+              <th>Dimensions filled</th>
+              <th>Average</th>
+              <th>Experiments averaged</th>
+              <th>Complete experiments</th>
+              <th>Partial experiments</th>
+            </tr>
+          </thead>
+          <tbody>
+            {series.flatMap((item) =>
+              item.points.map((point) => (
+                <tr key={`${item.id}:${point.dimensionCount}`}>
+                  <th scope="row">{item.label}</th>
+                  <td>{point.dimensionCount}</td>
+                  <td>{percent(point.value)}</td>
+                  <td>{point.experimentCount}</td>
+                  <td>{point.completeExperimentCount}</td>
+                  <td>{point.partialExperimentCount}</td>
+                </tr>
+              )),
+            )}
+          </tbody>
+        </table>
+      ) : null}
+    </figure>
+  );
+}
+
+function ValidationTrendSection({ data }: { data: ValidationTrendData }) {
+  const [benchmarkMode, setBenchmarkMode] =
+    useState<ValidationBenchmarkTrendMode>('overall');
+  const dimensionValues = Array.from(
+    new Set(
+      [
+        ...data.overallBenchmarkMatch,
+        ...data.agentConsistency,
+        ...Object.values(data.surveyBenchmarkMatches).flat(),
+      ].map((point) => point.dimensionCount),
+    ),
+  ).sort((left, right) => left - right);
+  const benchmarkSeries: ValidationTrendChartSeries[] =
+    benchmarkMode === 'overall'
+      ? [
+          {
+            id: 'overall-benchmark-match',
+            label: 'Overall benchmark match',
+            points: data.overallBenchmarkMatch,
+            styleIndex: 0,
+          },
+        ]
+      : surveys.map((survey, index) => ({
+          id: survey.id,
+          label: survey.title,
+          points: data.surveyBenchmarkMatches[survey.id],
+          styleIndex: index,
+        }));
+  const consistencySeries: ValidationTrendChartSeries[] = [
+    {
+      id: 'agent-consistency',
+      label: 'Overall Agent consistency',
+      points: data.agentConsistency,
+      styleIndex: 0,
+    },
+  ];
+
+  return (
+    <section
+      className="validation-trends"
+      aria-labelledby="validation-trends-title"
+    >
+      <header className="validation-trends-header">
+        <div>
+          <span className="section-kicker">Validation history</span>
+          <h2 id="validation-trends-title">
+            Performance by persona dimensions
+          </h2>
+        </div>
+        <p>
+          Each point averages experiments with the same number of filled
+          dimensions. Benchmark lines use the currently saved Human benchmarks.
+        </p>
+      </header>
+
+      <div className="validation-trends-grid">
+        <article className="validation-trend-card">
+          <header className="validation-trend-card-header">
+            <div className="validation-trend-title-row">
+              <h3>Benchmark match</h3>
+              <ValidationTrendInfo label="About benchmark match">
+                Average Agent match against the available Human benchmark.
+              </ValidationTrendInfo>
+            </div>
+            <label htmlFor="validation-benchmark-trend-mode">
+              <span>View</span>
+              <select
+                id="validation-benchmark-trend-mode"
+                aria-label="Benchmark match view"
+                value={benchmarkMode}
+                onChange={(event) =>
+                  setBenchmarkMode(
+                    event.target.value as ValidationBenchmarkTrendMode,
+                  )
+                }
+              >
+                <option value="overall">Overall benchmark match</option>
+                <option value="individual">Individual benchmark match</option>
+              </select>
+            </label>
+          </header>
+          <ValidationTrendChart
+            title={
+              benchmarkMode === 'overall'
+                ? 'Overall benchmark match by persona dimensions'
+                : 'Individual benchmark match by persona dimensions'
+            }
+            description={
+              benchmarkMode === 'overall'
+                ? 'One line shows the average overall benchmark match at each saved dimension count.'
+                : 'Four lines show average benchmark match for the four Validation surveys at each saved dimension count.'
+            }
+            yAxisLabel="Benchmark match"
+            series={benchmarkSeries}
+            dimensionValues={dimensionValues}
+            emptyMessage="Complete Human benchmarks and run Agent validation at a known dimension count to chart benchmark match."
+          />
+        </article>
+
+        <article className="validation-trend-card">
+          <header className="validation-trend-card-header">
+            <div className="validation-trend-title-row">
+              <h3>Agent consistency</h3>
+              <ValidationTrendInfo label="About Agent consistency">
+                Average agreement on the most common answer at each dimension
+                count.
+              </ValidationTrendInfo>
+            </div>
+          </header>
+          <ValidationTrendChart
+            title="Overall Agent consistency by persona dimensions"
+            description="One line shows average overall Agent consistency at each saved dimension count."
+            yAxisLabel="Agent consistency"
+            series={consistencySeries}
+            dimensionValues={dimensionValues}
+            emptyMessage="Run Agent validation at a known dimension count to chart Agent consistency."
+          />
+        </article>
+      </div>
+    </section>
+  );
+}
+
 function ResultsView({
   store,
   onHuman,
@@ -446,6 +923,7 @@ function ResultsView({
   const experimentWarning = validationExperimentWarning(
     aggregate?.experiment ?? null,
   );
+  const trendData = aggregateValidationTrends(store);
 
   return (
     <Shell simple>
@@ -485,6 +963,8 @@ function ResultsView({
       </section>
 
       <section className="mx-auto max-w-[1240px] px-5 pb-20 pt-16 sm:px-8 lg:px-10">
+        <ValidationTrendSection data={trendData} />
+
         <div className="validation-results-toolbar">
           <label htmlFor="validation-experiment-selector">Experiment</label>
           {experimentOptions.length ? (

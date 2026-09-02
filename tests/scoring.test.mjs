@@ -29,6 +29,7 @@ import {
 } from '../lib/validation-agent.ts';
 import {
   aggregateValidationExperiment,
+  aggregateValidationTrends,
   validationExperimentOptions,
   validationExperimentWarning,
 } from '../lib/validation-results.ts';
@@ -437,9 +438,7 @@ assert.equal(
   'the embedded theme must not shrink validation question titles',
 );
 assert.equal(
-  cssDeclarations(validationStylesSource, '.question-heading')[
-    'margin-bottom'
-  ],
+  cssDeclarations(validationStylesSource, '.question-heading')['margin-bottom'],
   cssDeclarations(updatePersonaStylesSource, '.question-heading')[
     'margin-bottom'
   ],
@@ -798,9 +797,8 @@ const questionSummaryLabelStart = questionSummaryMarkup.indexOf(
   'className="validation-question-summary-label"',
 );
 const questionChevronStart = questionSummaryMarkup.indexOf('<ChevronDown');
-const questionResultsTextStart = questionSummaryMarkup.indexOf(
-  'Question results',
-);
+const questionResultsTextStart =
+  questionSummaryMarkup.indexOf('Question results');
 assert.ok(
   questionSummaryLabelStart >= 0 &&
     questionChevronStart > questionSummaryLabelStart &&
@@ -875,6 +873,18 @@ assert.match(
 const resultsToolbarStart = validationPageSource.indexOf(
   '<div className="validation-results-toolbar">',
 );
+const validationTrendsStart = validationPageSource.indexOf(
+  '<ValidationTrendSection data={trendData} />',
+);
+const resultsViewStart = validationPageSource.indexOf('function ResultsView(');
+const resultsHeroStart = validationPageSource.indexOf(
+  '<section className="hero-wrap">',
+  resultsViewStart,
+);
+const resultsContentStart = validationPageSource.indexOf(
+  '<section className="mx-auto max-w-[1240px] px-5 pb-20 pt-16 sm:px-8 lg:px-10">',
+  resultsHeroStart,
+);
 const experimentWarningStart = validationPageSource.indexOf(
   'className="validation-experiment-warning"',
 );
@@ -886,6 +896,113 @@ const overallResultsEnd = validationPageSource.indexOf(
   overallResultsStart,
 );
 assert.ok(resultsToolbarStart >= 0, 'the experiment selector must be rendered');
+assert.ok(
+  resultsHeroStart >= 0 &&
+    resultsContentStart > resultsHeroStart &&
+    validationTrendsStart > resultsContentStart &&
+    validationTrendsStart < resultsToolbarStart,
+  'the validation history charts must render after the Results hero and before the experiment selector',
+);
+assert.match(
+  validationPageSource,
+  /useState<ValidationBenchmarkTrendMode>\('overall'\)/,
+  'the benchmark history chart must default to overall benchmark match',
+);
+assert.match(
+  validationPageSource,
+  /<option value="overall">Overall benchmark match<\/option>[\s\S]*?<option value="individual">Individual benchmark match<\/option>/,
+  'the benchmark history chart must offer overall and individual views',
+);
+assert.match(
+  validationPageSource,
+  /id="validation-benchmark-trend-mode"[\s\S]*?aria-label="Benchmark match view"/,
+  'the benchmark history selector must have an unambiguous accessible name',
+);
+assert.match(
+  validationPageSource,
+  /surveys\.map\(\(survey, index\) => \(\{[\s\S]*?points: data\.surveyBenchmarkMatches\[survey\.id\],[\s\S]*?styleIndex: index/,
+  'the individual benchmark view must render all four surveys in canonical order',
+);
+assert.match(
+  validationPageSource,
+  /id: 'agent-consistency',[\s\S]*?points: data\.agentConsistency/,
+  'the right-hand chart must always use the independent Agent consistency series',
+);
+assert.equal(
+  validationPageSource.match(/dimensionValues=\{dimensionValues\}/g)?.length,
+  2,
+  'both charts must share the same numeric dimension domain',
+);
+assert.match(
+  validationPageSource,
+  /\[0, 0\.25, 0\.5, 0\.75, 1\]\.map/,
+  'both history charts must keep a fixed zero to one hundred percent Y-axis',
+);
+assert.match(
+  validationPageSource,
+  />\s*Number of dimensions filled\s*</,
+  'both history charts must label the number of filled dimensions on the X-axis',
+);
+assert.match(
+  validationPageSource,
+  /<polyline[\s\S]*?<ValidationTrendMarker/,
+  'history charts must retain point markers, including when only one dimension is available',
+);
+assert.match(
+  validationPageSource,
+  /<table className="sr-only">[\s\S]*?Experiments averaged/,
+  'history charts must expose exact averages and sample counts accessibly',
+);
+assert.equal(
+  validationPageSource.match(/<ValidationTrendInfo label=/g)?.length,
+  2,
+  'both chart explanations must be hidden behind reusable info buttons',
+);
+assert.match(
+  validationPageSource,
+  /aria-label=\{label\}[\s\S]*?aria-expanded=\{open\}[\s\S]*?aria-controls=\{descriptionId\}/,
+  'the info buttons must expose their names, state, and controlled descriptions',
+);
+assert.match(
+  validationPageSource,
+  /<p id=\{descriptionId\} hidden=\{!open\}>/,
+  'each controlled chart description must remain mounted and hidden while collapsed',
+);
+assert.match(
+  validationPageSource,
+  /label="About benchmark match"[\s\S]*?label="About Agent consistency"/,
+  'both info controls must retain explicit accessible names',
+);
+assert.match(
+  validationStylesSource,
+  /\.validation-trend-info button\s*\{[\s\S]*?width:\s*24px;[\s\S]*?border-radius:\s*999px;/,
+  'chart explanations must use compact circular info controls',
+);
+assert.match(
+  validationStylesSource,
+  /\.validation-trends-grid\s*\{[\s\S]*?grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\);/,
+  'validation history charts must use two equal columns at wide widths',
+);
+assert.match(
+  validationStylesSource,
+  /@media \(max-width: 650px\) \{[\s\S]*?\.validation-trends-grid\s*\{\s*grid-template-columns:\s*1fr;/,
+  'validation history charts must stack at compact widths',
+);
+assert.match(
+  validationStylesSource,
+  /\.validation-trend-svg\s*\{[\s\S]*?width:\s*100%;[\s\S]*?min-width:\s*0;/,
+  'each chart must fit its card so both dimension endpoints remain visible',
+);
+assert.match(
+  validationStylesSource,
+  /\.validation-trend-scroll\s*\{[\s\S]*?overflow:\s*hidden;/,
+  'chart cards must not hide endpoints inside an unreachable horizontal scroller',
+);
+assert.match(
+  validationStylesSource,
+  /\.validation-trend-info p\s*\{[\s\S]*?top:\s*calc\(100% \+ 4px\);/,
+  'opened chart explanations must clear wrapped card titles and controls',
+);
 assert.ok(
   experimentWarningStart > resultsToolbarStart &&
     experimentWarningStart < overallResultsStart,
@@ -1833,6 +1950,283 @@ assert.equal(
   everyday.questions[0].options[0].id,
 );
 assert.equal(aggregated.surveys[0].questions[0].exactBenchmarkMatchRate, 2 / 3);
+
+const trendBatch154Partial = {
+  id: 'trend-154-partial',
+  startedAt: '2026-05-01T09:00:00.000Z',
+  responsesPerSurvey: 2,
+  surveyIds: ['everyday', 'dials'],
+};
+const trendBatch154Complete = {
+  id: 'trend-154-complete',
+  startedAt: '2026-05-02T09:00:00.000Z',
+  responsesPerSurvey: 2,
+  surveyIds: ['everyday', 'dials'],
+};
+const trendBatch198Complete = {
+  id: 'trend-198-complete',
+  startedAt: '2026-05-03T09:00:00.000Z',
+  responsesPerSurvey: 2,
+  surveyIds: ['everyday'],
+};
+const trendBatchUnknownDimensions = {
+  id: 'trend-unknown-dimensions',
+  startedAt: '2026-05-04T09:00:00.000Z',
+  responsesPerSurvey: 1,
+  surveyIds: ['everyday'],
+};
+const trendStore = {
+  everyday: {
+    human: {
+      id: 'trend-human-everyday',
+      answers: everydayA,
+      startedAt: '2026-04-30T09:00:00.000Z',
+      completedAt: '2026-04-30T09:05:00.000Z',
+      personaAgent: alfredPersona,
+    },
+    agentRuns: [
+      ...[everydayA, everydayB].map((answers, index) =>
+        experimentRun({
+          id: `trend-154-partial-everyday-${index + 1}`,
+          sequence: index + 1,
+          survey: everyday,
+          answers,
+          dimensionCount: 154,
+          completedAt: `2026-05-01T09:01:0${index}.000Z`,
+          experiment: trendBatch154Partial,
+        }),
+      ),
+      ...[everydayA, everydayA].map((answers, index) =>
+        experimentRun({
+          id: `trend-154-complete-everyday-${index + 1}`,
+          sequence: index + 1,
+          survey: everyday,
+          answers,
+          dimensionCount: 154,
+          completedAt: `2026-05-02T09:01:0${index}.000Z`,
+          experiment: trendBatch154Complete,
+        }),
+      ),
+      ...[everydayB, everydayB].map((answers, index) =>
+        experimentRun({
+          id: `trend-198-complete-everyday-${index + 1}`,
+          sequence: index + 1,
+          survey: everyday,
+          answers,
+          dimensionCount: 198,
+          completedAt: `2026-05-03T09:01:0${index}.000Z`,
+          experiment: trendBatch198Complete,
+        }),
+      ),
+      experimentRun({
+        id: 'trend-unknown-dimensions-everyday-1',
+        sequence: 1,
+        survey: everyday,
+        answers: everydayA,
+        dimensionCount: null,
+        completedAt: '2026-05-04T09:01:00.000Z',
+        experiment: trendBatchUnknownDimensions,
+      }),
+      experimentRun({
+        id: 'trend-legacy-everyday-1',
+        sequence: 1,
+        survey: everyday,
+        answers: everydayA,
+        dimensionCount: 140,
+        completedAt: '2026-04-29T09:01:00.000Z',
+      }),
+    ],
+  },
+  dials: {
+    human: {
+      id: 'trend-human-dials',
+      answers: lowDials,
+      startedAt: '2026-04-30T09:00:00.000Z',
+      completedAt: '2026-04-30T09:05:00.000Z',
+      personaAgent: alfredPersona,
+    },
+    agentRuns: [
+      experimentRun({
+        id: 'trend-154-partial-dials-1',
+        sequence: 1,
+        survey: dials,
+        answers: lowDials,
+        dimensionCount: 154,
+        completedAt: '2026-05-01T09:02:00.000Z',
+        experiment: trendBatch154Partial,
+      }),
+      ...[lowDials, highDials].map((answers, index) =>
+        experimentRun({
+          id: `trend-154-complete-dials-${index + 1}`,
+          sequence: index + 1,
+          survey: dials,
+          answers,
+          dimensionCount: 154,
+          completedAt: `2026-05-02T09:02:0${index}.000Z`,
+          experiment: trendBatch154Complete,
+        }),
+      ),
+    ],
+  },
+};
+const validationTrends = aggregateValidationTrends(trendStore);
+assert.deepEqual(
+  validationTrends.overallBenchmarkMatch.map(
+    ({ dimensionCount, experimentCount }) => [dimensionCount, experimentCount],
+  ),
+  [
+    [140, 1],
+    [154, 2],
+    [198, 1],
+  ],
+  'repeated dimension counts must collapse to one sorted point while unknown-dimension runs are excluded',
+);
+const overallBenchmark154 = validationTrends.overallBenchmarkMatch.find(
+  (point) => point.dimensionCount === 154,
+);
+const overallBenchmark198 = validationTrends.overallBenchmarkMatch.find(
+  (point) => point.dimensionCount === 198,
+);
+assert.ok(
+  Math.abs(overallBenchmark154.value - 17 / 24) < 1e-12,
+  'overall benchmark match must average experiment-level metrics equally',
+);
+assert.equal(
+  overallBenchmark198.value,
+  0,
+  'a valid zero benchmark match must remain chartable',
+);
+assert.deepEqual(
+  validationTrends.agentConsistency.map((point) => point.dimensionCount),
+  [154, 198],
+  'single-response legacy runs must not be presented as Agent consistency measurements',
+);
+assert.ok(
+  Math.abs(validationTrends.agentConsistency[0].value - 17 / 24) < 1e-12,
+  'Agent consistency must average independently from benchmark availability',
+);
+assert.equal(validationTrends.agentConsistency[1].value, 1);
+assert.deepEqual(
+  overallBenchmark154,
+  {
+    dimensionCount: 154,
+    value: overallBenchmark154.value,
+    experimentCount: 2,
+    completeExperimentCount: 1,
+    partialExperimentCount: 1,
+  },
+  'chart points must report complete and partial experiment contributions',
+);
+assert.ok(
+  Math.abs(
+    validationTrends.surveyBenchmarkMatches.everyday.find(
+      (point) => point.dimensionCount === 154,
+    ).value - 0.75,
+  ) < 1e-12,
+  'each survey benchmark line must be averaged independently',
+);
+assert.equal(validationTrends.surveyBenchmarkMatches.dials[0].value, 0.75);
+assert.deepEqual(validationTrends.surveyBenchmarkMatches['plot-twists'], []);
+assert.deepEqual(
+  validationTrends.surveyBenchmarkMatches['internet-creature'],
+  [],
+);
+
+const oneSuccessPartialBatch = {
+  id: 'trend-one-success-partial',
+  startedAt: '2026-05-05T09:00:00.000Z',
+  responsesPerSurvey: 2,
+  surveyIds: ['everyday'],
+};
+const oneSuccessPartialTrends = aggregateValidationTrends({
+  everyday: {
+    agentRuns: [
+      experimentRun({
+        id: 'trend-one-success-partial-everyday-1',
+        sequence: 1,
+        survey: everyday,
+        answers: everydayA,
+        dimensionCount: 222,
+        completedAt: '2026-05-05T09:01:00.000Z',
+        experiment: oneSuccessPartialBatch,
+      }),
+    ],
+  },
+});
+assert.deepEqual(
+  oneSuccessPartialTrends.agentConsistency,
+  [
+    {
+      dimensionCount: 222,
+      value: 1,
+      experimentCount: 1,
+      completeExperimentCount: 0,
+      partialExperimentCount: 1,
+    },
+  ],
+  'an explicit partial validation with one successful response must still contribute its available consistency metric',
+);
+
+const benchmarkedTrendBatch = {
+  id: 'trend-benchmarked-at-230',
+  startedAt: '2026-05-06T09:00:00.000Z',
+  responsesPerSurvey: 1,
+  surveyIds: ['everyday'],
+};
+const unbenchmarkedTrendBatch = {
+  id: 'trend-unbenchmarked-at-230',
+  startedAt: '2026-05-07T09:00:00.000Z',
+  responsesPerSurvey: 1,
+  surveyIds: ['internet-creature'],
+};
+const missingBenchmarkTrends = aggregateValidationTrends({
+  everyday: {
+    human: {
+      id: 'trend-missing-value-human-everyday',
+      answers: everydayA,
+      startedAt: '2026-05-05T09:00:00.000Z',
+      completedAt: '2026-05-05T09:05:00.000Z',
+      personaAgent: alfredPersona,
+    },
+    agentRuns: [
+      experimentRun({
+        id: 'trend-benchmarked-at-230-everyday-1',
+        sequence: 1,
+        survey: everyday,
+        answers: everydayA,
+        dimensionCount: 230,
+        completedAt: '2026-05-06T09:01:00.000Z',
+        experiment: benchmarkedTrendBatch,
+      }),
+    ],
+  },
+  'internet-creature': {
+    agentRuns: [
+      experimentRun({
+        id: 'trend-unbenchmarked-at-230-creature-1',
+        sequence: 1,
+        survey: silly,
+        answers: sillyA,
+        dimensionCount: 230,
+        completedAt: '2026-05-07T09:01:00.000Z',
+        experiment: unbenchmarkedTrendBatch,
+      }),
+    ],
+  },
+});
+assert.deepEqual(
+  missingBenchmarkTrends.overallBenchmarkMatch,
+  [
+    {
+      dimensionCount: 230,
+      value: 1,
+      experimentCount: 1,
+      completeExperimentCount: 1,
+      partialExperimentCount: 0,
+    },
+  ],
+  'a missing benchmark metric at a repeated dimension must be omitted from the average denominator rather than counted as zero',
+);
 
 const mismatchedBenchmarkStore = structuredClone(aggregateStore);
 mismatchedBenchmarkStore.everyday.human.personaAgent = secondPersona;
