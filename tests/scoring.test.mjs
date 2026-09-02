@@ -227,6 +227,14 @@ assert.doesNotMatch(
   /validation-answer-distribution/,
   'question results must not repeat answer-distribution chips',
 );
+const questionResultPromptRule = validationStylesSource.match(
+  /\.validation-embedded \.validation-question-result h3\s*\{([^}]*)\}/,
+);
+assert.match(
+  questionResultPromptRule?.[1] ?? '',
+  /font-weight:\s*400;/,
+  'question prompts must use regular-weight text',
+);
 const questionResultGridRule = validationStylesSource.match(
   /\.validation-embedded \.validation-question-result dl\s*\{([^}]*)\}/,
 );

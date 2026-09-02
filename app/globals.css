@@ -1997,7 +1997,7 @@ button:disabled {
   margin: 0;
   color: var(--validation-ink);
   font-size: 14px;
-  font-weight: 560;
+  font-weight: 400;
   line-height: 1.45;
 }
 
