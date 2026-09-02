@@ -13597,7 +13597,7 @@ function Mi({ data: e, hasAllHumanBenchmarks: t }) {
 		overallBenchmarkMatch: [],
 		agentConsistency: [],
 		surveyBenchmarkMatches: Xt.reduce((e, t) => (e[t.id] = [], e), {})
-	}, a = t ? void 0 : "Fill in all validation surveys to see results", o = Array.from(new Set([
+	}, a = t ? void 0 : "Fill in all human benchmarks to see results", o = Array.from(new Set([
 		...i.overallBenchmarkMatch,
 		...i.agentConsistency,
 		...Object.values(i.surveyBenchmarkMatches).flat()

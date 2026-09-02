@@ -1030,7 +1030,7 @@ assert.match(
 );
 assert.match(
   validationPageSource,
-  /'Fill in all validation surveys to see results'/,
+  /'Fill in all human benchmarks to see results'/,
   'incomplete validation history charts must explain how to unlock results',
 );
 assert.equal(

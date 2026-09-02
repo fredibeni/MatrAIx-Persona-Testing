@@ -931,7 +931,7 @@ function ValidationTrendSection({
   };
   const lockedMessage = hasAllHumanBenchmarks
     ? undefined
-    : 'Fill in all validation surveys to see results';
+    : 'Fill in all human benchmarks to see results';
   const dimensionValues = Array.from(
     new Set(
       [
