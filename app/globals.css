@@ -2396,6 +2396,11 @@ button:disabled {
   padding: 0 22px 4px;
 }
 
+.validation-embedded .result-detail-content,
+.validation-embedded .result-detail-content * {
+  font-weight: 400 !important;
+}
+
 .validation-embedded .result-hero::before,
 .validation-embedded .result-spark {
   display: none;

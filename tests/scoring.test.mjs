@@ -789,6 +789,11 @@ assert.match(
   /\.validation-embedded \.result-hero\s*\{[\s\S]*?display:\s*block;[\s\S]*?\.validation-embedded \.result-detail-content\s*\{[\s\S]*?margin-top:\s*20px;/,
   'the merged completed-result card must stack profile content below its summary',
 );
+assert.match(
+  validationStylesSource,
+  /\.validation-embedded \.result-detail-content,\s*\.validation-embedded \.result-detail-content \*\s*\{[\s\S]*?font-weight:\s*400 !important;/,
+  'all text in completed-result details must use regular weight',
+);
 const validationResultHeroRule = validationStylesSource.match(
   /\.validation-embedded \.result-hero\s*\{([^}]*)\}/,
 );
