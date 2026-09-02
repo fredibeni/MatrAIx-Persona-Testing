@@ -1281,7 +1281,7 @@ button:disabled {
     flex-direction: column;
   }
   .survey-human-run {
-    width: 100%;
+    align-self: flex-start;
     margin-left: 0;
   }
   .hero-grid {
@@ -1753,19 +1753,26 @@ button:disabled {
 .validation-embedded .validation-overall-results {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 13px;
-  margin-bottom: 13px;
+  gap: 12px;
+  margin-bottom: 10px;
 }
 
 .validation-embedded .validation-overall-results > div {
   border-radius: 13px;
   background: var(--validation-control);
-  padding: 14px;
+  padding: 12px 14px;
 }
 
-.validation-embedded .validation-overall-results span {
+.validation-embedded .validation-overall-metric-header {
+  position: relative;
+  display: flex;
+  min-height: 2.5em;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.validation-embedded .validation-overall-metric-header > span {
   display: block;
-  min-height: 3.75em;
   color: var(--validation-muted);
   font-size: 10px;
   font-weight: 760;
@@ -1774,9 +1781,33 @@ button:disabled {
   text-transform: uppercase;
 }
 
+.validation-embedded .validation-overall-metric-header .validation-trend-info {
+  position: relative;
+  flex: 0 0 auto;
+  margin-top: -3px;
+}
+
+.validation-embedded
+  .validation-overall-metric-header
+  .validation-trend-info
+  button {
+  width: 20px;
+  height: 20px;
+}
+
+.validation-embedded
+  .validation-overall-metric-header
+  .validation-trend-info
+  p {
+  top: calc(100% + 6px);
+  right: 0;
+  left: auto;
+  width: min(250px, calc(100vw - 40px));
+}
+
 .validation-embedded .validation-overall-results strong {
   display: block;
-  margin-top: 6px;
+  margin-top: 4px;
   color: var(--validation-ink);
   font-size: 22px;
   font-weight: 680;
@@ -1785,35 +1816,25 @@ button:disabled {
 
 .validation-embedded .validation-overall-results small {
   display: block;
-  margin-top: 7px;
+  margin-top: 4px;
   color: var(--validation-muted);
   font-size: 11px;
-  line-height: 1.4;
-}
-
-.validation-embedded .validation-results-method {
-  margin: 0 0 13px;
-  border-radius: 13px;
-  color: var(--validation-muted);
-  background: var(--validation-paper-soft);
-  padding: 13px 14px;
-  font-size: 12px;
-  line-height: 1.55;
+  line-height: 1.35;
 }
 
 .validation-embedded .validation-question-details {
-  margin-top: 12px;
+  margin-top: 8px;
   color: var(--validation-ink);
 }
 
 .validation-embedded .validation-question-details summary {
   display: flex;
-  min-height: 44px;
+  min-height: 40px;
   cursor: pointer;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 11px 0;
+  justify-content: flex-start;
+  gap: 8px;
+  padding: 8px 0;
   font-size: 13px;
   font-weight: 650;
   list-style: none;
@@ -1840,6 +1861,7 @@ button:disabled {
 
 .validation-embedded .validation-question-count {
   display: grid;
+  margin-left: 2px;
   min-width: 28px;
   min-height: 28px;
   place-items: center;
@@ -1926,7 +1948,7 @@ button:disabled {
   border: 0;
   border-radius: 18px;
   background: var(--validation-surface);
-  padding: 20px;
+  padding: 16px;
   box-shadow: 0 7px 22px rgba(0, 0, 0, 0.18);
   transition:
     border-color 150ms ease,
@@ -1947,9 +1969,9 @@ button:disabled {
 
 .validation-embedded .survey-description {
   min-height: 0;
-  margin-top: 12px !important;
+  margin-top: 8px !important;
   color: var(--validation-muted) !important;
-  line-height: 1.5;
+  line-height: 1.45;
 }
 
 .validation-embedded :is(.run-row, .answer-option, .chart-pan-button) {
@@ -1971,6 +1993,22 @@ button:disabled {
 .validation-embedded .run-row {
   min-height: 52px;
   padding: 9px 10px;
+}
+
+.validation-embedded .survey-human-run {
+  width: fit-content;
+  min-height: 40px;
+  max-width: 100%;
+  gap: 7px;
+  padding: 6px 9px;
+}
+
+.validation-embedded .survey-human-run-label {
+  min-width: 0;
+  color: var(--validation-ink);
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 .validation-embedded .run-row:disabled:hover {
@@ -2600,7 +2638,7 @@ button:disabled {
     grid-template-columns: 1fr;
   }
 
-  .validation-embedded .validation-overall-results span {
+  .validation-embedded .validation-overall-metric-header {
     min-height: 0;
   }
 

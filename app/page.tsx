@@ -336,14 +336,7 @@ function SurveyCard({
           disabled={interactionDisabled}
           className="run-row survey-human-run focus-ring"
         >
-          <span className="run-icon">
-            <UserRound size={18} />
-          </span>
-          <span className="min-w-0 flex-1 text-left">
-            <span className="block text-sm font-bold text-slate-900">
-              Human benchmark
-            </span>
-          </span>
+          <span className="survey-human-run-label">Human benchmark</span>
           <StatusPill status={humanStatus} />
           <ChevronRight size={17} className="text-slate-400" />
         </button>
@@ -1156,7 +1149,13 @@ function ResultsView({
 
         <section className="validation-overall-results" aria-live="polite">
           <div>
-            <span>Overall benchmark match</span>
+            <div className="validation-overall-metric-header">
+              <span>Overall benchmark match</span>
+              <ValidationTrendInfo label="About overall benchmark match">
+                Overall match pools every Agent answer against the available
+                Human answer for the same question.
+              </ValidationTrendInfo>
+            </div>
             <strong>
               {aggregate?.overall.benchmarkSimilarity === null || !aggregate
                 ? 'No benchmarks'
@@ -1169,7 +1168,13 @@ function ResultsView({
             </small>
           </div>
           <div>
-            <span>Overall Agent consistency</span>
+            <div className="validation-overall-metric-header">
+              <span>Overall Agent consistency</span>
+              <ValidationTrendInfo label="About overall Agent consistency">
+                Consistency measures how often Agents selected that
+                question&apos;s most common answer.
+              </ValidationTrendInfo>
+            </div>
             <strong>
               {!aggregate
                 ? '-'
@@ -1182,13 +1187,6 @@ function ResultsView({
             <small>Agreement with the most common answer per question</small>
           </div>
         </section>
-
-        <p className="validation-results-method">
-          Overall match pools every Agent answer against the available Human
-          answer for the same question. Consistency measures how often Agents
-          selected that question&apos;s most common answer. These are separate
-          signals.
-        </p>
 
         <div className="validation-survey-list flex flex-col gap-6">
           {surveys.map((survey) => (

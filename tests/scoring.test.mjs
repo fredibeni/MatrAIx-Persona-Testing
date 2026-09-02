@@ -165,9 +165,19 @@ assert.match(
   'the Human benchmark control must use its content width on wide layouts',
 );
 assert.match(
+  surveyCardSource,
+  /className="survey-human-run-label">Human benchmark<\/span>/,
+  'the Human benchmark control must retain a compact text label',
+);
+assert.doesNotMatch(
+  surveyCardSource,
+  /className="run-icon"/,
+  'the compact Human benchmark control must not include a person icon',
+);
+assert.match(
   validationStylesSource,
-  /@media \(max-width: 780px\) \{[\s\S]*?\.survey-card-header\s*\{[\s\S]*?flex-direction:\s*column;[\s\S]*?\}[\s\S]*?\.survey-human-run\s*\{[\s\S]*?width:\s*100%;[\s\S]*?\}/,
-  'compact survey cards must stack a full-width Human benchmark control',
+  /@media \(max-width: 780px\) \{[\s\S]*?\.survey-card-header\s*\{[\s\S]*?flex-direction:\s*column;[\s\S]*?\}[\s\S]*?\.survey-human-run\s*\{[\s\S]*?align-self:\s*flex-start;[\s\S]*?\}/,
+  'compact survey cards must retain a tight Human benchmark control',
 );
 const quizViewStart = validationPageSource.indexOf('function QuizView(');
 const quizViewEnd = validationPageSource.indexOf(
@@ -813,7 +823,12 @@ assert.match(
 assert.match(
   questionSummaryMarkup,
   /className="validation-question-count"/,
-  'the result count must remain a separate trailing badge',
+  'the result count must remain a separate badge beside Question results',
+);
+assert.match(
+  validationStylesSource,
+  /\.validation-embedded \.validation-question-details summary\s*\{[\s\S]*?justify-content:\s*flex-start;[\s\S]*?\}/,
+  'Question results counts must sit immediately after their label rather than at the far edge',
 );
 assert.match(
   validationStylesSource,
@@ -1025,8 +1040,8 @@ assert.match(
 );
 assert.equal(
   validationPageSource.match(/<ValidationTrendInfo label=/g)?.length,
-  3,
-  'all validation history explanations must be hidden behind reusable info buttons',
+  5,
+  'validation history and both overall metric explanations must be hidden behind reusable info buttons',
 );
 assert.match(
   validationPageSource,
@@ -1088,7 +1103,7 @@ const overallResultsMarkup = validationPageSource.slice(
   overallResultsEnd,
 );
 const overallMetricLabelRule = validationStylesSource.match(
-  /\.validation-embedded \.validation-overall-results span\s*\{([^}]*)\}/,
+  /\.validation-embedded \.validation-overall-metric-header\s*\{([^}]*)\}/,
 );
 assert.ok(
   overallMetricLabelRule,
@@ -1096,11 +1111,14 @@ assert.ok(
 );
 assert.match(
   overallMetricLabelRule?.[1] ?? '',
-  /min-height:\s*3\.75em;/,
-  'overall Results labels must reserve three aligned rows before their values',
+  /min-height:\s*2\.5em;/,
+  'overall Results labels must retain a compact aligned header row',
+);
+const overallMetricTextRule = validationStylesSource.match(
+  /\.validation-embedded \.validation-overall-metric-header > span\s*\{([^}]*)\}/,
 );
 assert.match(
-  overallMetricLabelRule?.[1] ?? '',
+  overallMetricTextRule?.[1] ?? '',
   /line-height:\s*1\.25;/,
   'overall Results label row height must stay fixed for aligned values',
 );
@@ -1119,7 +1137,7 @@ assert.ok(
 const compactOverallMetricLabelRule = validationStylesSource
   .slice(compactValidationStylesStart, compactValidationStylesEnd)
   .match(
-    /\.validation-embedded \.validation-overall-results span\s*\{([^}]*)\}/,
+    /\.validation-embedded \.validation-overall-metric-header\s*\{([^}]*)\}/,
   );
 assert.match(
   compactOverallMetricLabelRule?.[1] ?? '',
@@ -1157,9 +1175,23 @@ assert.match(
   'the overall Agent consistency card must remain',
 );
 assert.equal(
-  (overallResultsMarkup.match(/<div>/g) ?? []).length,
+  (
+    overallResultsMarkup.match(
+      /className="validation-overall-metric-header"/g,
+    ) ?? []
+  ).length,
   2,
   'the overall Results summary must render exactly its two remaining metric cards',
+);
+assert.equal(
+  (overallResultsMarkup.match(/<ValidationTrendInfo/g) ?? []).length,
+  2,
+  'each overall metric header must provide its own info button',
+);
+assert.doesNotMatch(
+  validationPageSource,
+  /className="validation-results-method"/,
+  'the combined Results methodology block must be removed',
 );
 
 const partialExperimentWarning = validationExperimentWarning({

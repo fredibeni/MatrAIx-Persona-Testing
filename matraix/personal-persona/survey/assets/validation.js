@@ -13229,15 +13229,8 @@ function Si({ survey: e, history: t, onHuman: n, aggregate: r, interactionDisabl
 					className: "run-row survey-human-run focus-ring",
 					children: [
 						/* @__PURE__ */ (0, R.jsx)("span", {
-							className: "run-icon",
-							children: /* @__PURE__ */ (0, R.jsx)(M, { size: 18 })
-						}),
-						/* @__PURE__ */ (0, R.jsx)("span", {
-							className: "min-w-0 flex-1 text-left",
-							children: /* @__PURE__ */ (0, R.jsx)("span", {
-								className: "block text-sm font-bold text-slate-900",
-								children: "Human benchmark"
-							})
+							className: "survey-human-run-label",
+							children: "Human benchmark"
 						}),
 						/* @__PURE__ */ (0, R.jsx)(yi, { status: o }),
 						/* @__PURE__ */ (0, R.jsx)(ie, {
@@ -13775,18 +13768,26 @@ function Ai({ store: e, onHuman: t, onRunAll: n, onLicense: r, runningExperiment
 					className: "validation-overall-results",
 					"aria-live": "polite",
 					children: [/* @__PURE__ */ (0, R.jsxs)("div", { children: [
-						/* @__PURE__ */ (0, R.jsx)("span", { children: "Overall benchmark match" }),
+						/* @__PURE__ */ (0, R.jsxs)("div", {
+							className: "validation-overall-metric-header",
+							children: [/* @__PURE__ */ (0, R.jsx)("span", { children: "Overall benchmark match" }), /* @__PURE__ */ (0, R.jsx)(Di, {
+								label: "About overall benchmark match",
+								children: "Overall match pools every Agent answer against the available Human answer for the same question."
+							})]
+						}),
 						/* @__PURE__ */ (0, R.jsx)("strong", { children: u?.overall.benchmarkSimilarity === null || !u ? "No benchmarks" : fn(u.overall.benchmarkSimilarity) }),
 						/* @__PURE__ */ (0, R.jsx)("small", { children: u ? `${u.overall.benchmarkedSurveyCount} of 4 surveys compared` : "Complete Human benchmarks to compare" })
 					] }), /* @__PURE__ */ (0, R.jsxs)("div", { children: [
-						/* @__PURE__ */ (0, R.jsx)("span", { children: "Overall Agent consistency" }),
+						/* @__PURE__ */ (0, R.jsxs)("div", {
+							className: "validation-overall-metric-header",
+							children: [/* @__PURE__ */ (0, R.jsx)("span", { children: "Overall Agent consistency" }), /* @__PURE__ */ (0, R.jsx)(Di, {
+								label: "About overall Agent consistency",
+								children: "Consistency measures how often Agents selected that question's most common answer."
+							})]
+						}),
 						/* @__PURE__ */ (0, R.jsx)("strong", { children: u ? u.experiment.expectedRuns === 1 ? "1 response" : u.overall.consistency === null ? "-" : fn(u.overall.consistency) : "-" }),
 						/* @__PURE__ */ (0, R.jsx)("small", { children: "Agreement with the most common answer per question" })
 					] })]
-				}),
-				/* @__PURE__ */ (0, R.jsx)("p", {
-					className: "validation-results-method",
-					children: "Overall match pools every Agent answer against the available Human answer for the same question. Consistency measures how often Agents selected that question's most common answer. These are separate signals."
 				}),
 				/* @__PURE__ */ (0, R.jsx)("div", {
 					className: "validation-survey-list flex flex-col gap-6",
