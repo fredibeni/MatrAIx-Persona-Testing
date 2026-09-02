@@ -904,7 +904,7 @@ const resultsToolbarStart = validationPageSource.indexOf(
   '<div className="validation-results-toolbar">',
 );
 const validationTrendsStart = validationPageSource.indexOf(
-  '<ValidationTrendSection data={trendData} />',
+  '<ValidationTrendSection',
 );
 const validationTrendChartStart = validationPageSource.indexOf(
   'function ValidationTrendChart(',
@@ -963,6 +963,31 @@ assert.match(
   /id="validation-benchmark-trend-mode"[\s\S]*?aria-label="Benchmark match view"/,
   'the benchmark history selector must have an unambiguous accessible name',
 );
+assert.match(
+  validationPageSource,
+  /const allHumanBenchmarksComplete = surveys\.every\([\s\S]*?store\[survey\.id\]\?\.human\?\.completedAt[\s\S]*?\);[\s\S]*?const trendData = allHumanBenchmarksComplete\s*\?\s*aggregateValidationTrends\(store\)\s*:\s*null;/,
+  'validation history aggregation must wait for all four completed Human benchmarks',
+);
+assert.match(
+  validationPageSource,
+  /hasAllHumanBenchmarks=\{allHumanBenchmarksComplete\}/,
+  'the validation history display must receive the Human benchmark completion state',
+);
+assert.match(
+  validationTrendChartSource,
+  /const plotVisible = !lockedMessage && allPoints\.length > 0/,
+  'locked validation history charts must not render plotted results',
+);
+assert.match(
+  validationPageSource,
+  /'Fill in all validation surveys to see results'/,
+  'incomplete validation history charts must explain how to unlock results',
+);
+assert.equal(
+  validationPageSource.match(/lockedMessage=\{lockedMessage\}/g)?.length,
+  2,
+  'both validation history charts must use the locked completion message',
+);
 assert.doesNotMatch(
   validationPageSource,
   /<span>View<\/span>/,
@@ -980,12 +1005,12 @@ assert.match(
 );
 assert.match(
   validationPageSource,
-  /surveys\.map\(\(survey, index\) => \(\{[\s\S]*?points: data\.surveyBenchmarkMatches\[survey\.id\],[\s\S]*?styleIndex: index/,
+  /surveys\.map\(\(survey, index\) => \(\{[\s\S]*?points: trendData\.surveyBenchmarkMatches\[survey\.id\],[\s\S]*?styleIndex: index/,
   'the individual benchmark view must render all four surveys in canonical order',
 );
 assert.match(
   validationPageSource,
-  /id: 'agent-consistency',[\s\S]*?points: data\.agentConsistency/,
+  /id: 'agent-consistency',[\s\S]*?points: trendData\.agentConsistency/,
   'the right-hand chart must always use the independent Agent consistency series',
 );
 assert.equal(

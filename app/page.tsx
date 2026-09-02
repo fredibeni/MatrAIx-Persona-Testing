@@ -520,6 +520,7 @@ function ValidationTrendChart({
   series,
   dimensionValues,
   emptyMessage,
+  lockedMessage,
 }: {
   title: string;
   description: string;
@@ -527,6 +528,7 @@ function ValidationTrendChart({
   series: ValidationTrendChartSeries[];
   dimensionValues: number[];
   emptyMessage: string;
+  lockedMessage?: string;
 }) {
   const chartId = useId();
   const tooltipId = `${chartId}-tooltip`;
@@ -541,6 +543,7 @@ function ValidationTrendChart({
   const bottom = 52;
   const plotBottom = height - bottom;
   const allPoints = series.flatMap((item) => item.points);
+  const plotVisible = !lockedMessage && allPoints.length > 0;
   const minimumDimension = dimensionValues[0] ?? 0;
   const maximumDimension = dimensionValues.at(-1) ?? 0;
   const x = (value: number) =>
@@ -645,13 +648,17 @@ function ValidationTrendChart({
         {title}
       </h4>
       <p id={`${chartId}-description`} className="sr-only">
-        {description} The horizontal axis is the number of dimensions filled.
-        The vertical axis runs from zero to one hundred percent. Exact plotted
-        values and contributing experiment counts are listed in the accessible
-        table.
+        {lockedMessage ?? (
+          <>
+            {description} The horizontal axis is the number of dimensions
+            filled. The vertical axis runs from zero to one hundred percent.
+            Exact plotted values and contributing experiment counts are listed
+            in the accessible table.
+          </>
+        )}
       </p>
 
-      {series.length > 1 ? (
+      {plotVisible && series.length > 1 ? (
         <ul className="validation-trend-legend" aria-label="Chart series">
           {series.map((item) => (
             <li key={item.id}>
@@ -678,7 +685,7 @@ function ValidationTrendChart({
         </ul>
       ) : null}
 
-      {allPoints.length ? (
+      {plotVisible ? (
         <section
           className="validation-trend-scroll"
           aria-label={`${title} plot`}
@@ -862,10 +869,12 @@ function ValidationTrendChart({
           </svg>
         </section>
       ) : (
-        <output className="validation-trend-empty">{emptyMessage}</output>
+        <output className="validation-trend-empty">
+          {lockedMessage ?? emptyMessage}
+        </output>
       )}
 
-      {allPoints.length ? (
+      {plotVisible ? (
         <table className="sr-only">
           <caption>Exact values plotted in {title}</caption>
           <thead>
@@ -898,15 +907,37 @@ function ValidationTrendChart({
   );
 }
 
-function ValidationTrendSection({ data }: { data: ValidationTrendData }) {
+function ValidationTrendSection({
+  data,
+  hasAllHumanBenchmarks,
+}: {
+  data: ValidationTrendData | null;
+  hasAllHumanBenchmarks: boolean;
+}) {
   const [benchmarkMode, setBenchmarkMode] =
     useState<ValidationBenchmarkTrendMode>('overall');
+  const trendData: ValidationTrendData = data ?? {
+    overallBenchmarkMatch: [],
+    agentConsistency: [],
+    surveyBenchmarkMatches: surveys.reduce<
+      Record<SurveyId, ValidationTrendMetricPoint[]>
+    >(
+      (matches, survey) => {
+        matches[survey.id] = [];
+        return matches;
+      },
+      {} as Record<SurveyId, ValidationTrendMetricPoint[]>,
+    ),
+  };
+  const lockedMessage = hasAllHumanBenchmarks
+    ? undefined
+    : 'Fill in all validation surveys to see results';
   const dimensionValues = Array.from(
     new Set(
       [
-        ...data.overallBenchmarkMatch,
-        ...data.agentConsistency,
-        ...Object.values(data.surveyBenchmarkMatches).flat(),
+        ...trendData.overallBenchmarkMatch,
+        ...trendData.agentConsistency,
+        ...Object.values(trendData.surveyBenchmarkMatches).flat(),
       ].map((point) => point.dimensionCount),
     ),
   ).sort((left, right) => left - right);
@@ -916,21 +947,21 @@ function ValidationTrendSection({ data }: { data: ValidationTrendData }) {
           {
             id: 'overall-benchmark-match',
             label: 'Overall benchmark match',
-            points: data.overallBenchmarkMatch,
+            points: trendData.overallBenchmarkMatch,
             styleIndex: 0,
           },
         ]
       : surveys.map((survey, index) => ({
           id: survey.id,
           label: survey.title,
-          points: data.surveyBenchmarkMatches[survey.id],
+          points: trendData.surveyBenchmarkMatches[survey.id],
           styleIndex: index,
         }));
   const consistencySeries: ValidationTrendChartSeries[] = [
     {
       id: 'agent-consistency',
       label: 'Overall Agent consistency',
-      points: data.agentConsistency,
+      points: trendData.agentConsistency,
       styleIndex: 0,
     },
   ];
@@ -993,6 +1024,7 @@ function ValidationTrendSection({ data }: { data: ValidationTrendData }) {
             series={benchmarkSeries}
             dimensionValues={dimensionValues}
             emptyMessage="Complete Human benchmarks and run Agent validation at a known dimension count to chart benchmark match."
+            lockedMessage={lockedMessage}
           />
         </article>
 
@@ -1013,6 +1045,7 @@ function ValidationTrendSection({ data }: { data: ValidationTrendData }) {
             series={consistencySeries}
             dimensionValues={dimensionValues}
             emptyMessage="Run Agent validation at a known dimension count to chart Agent consistency."
+            lockedMessage={lockedMessage}
           />
         </article>
       </div>
@@ -1055,7 +1088,12 @@ function ResultsView({
   const experimentWarning = validationExperimentWarning(
     aggregate?.experiment ?? null,
   );
-  const trendData = aggregateValidationTrends(store);
+  const allHumanBenchmarksComplete = surveys.every((survey) =>
+    Boolean(store[survey.id]?.human?.completedAt),
+  );
+  const trendData = allHumanBenchmarksComplete
+    ? aggregateValidationTrends(store)
+    : null;
 
   return (
     <Shell simple>
@@ -1095,7 +1133,10 @@ function ResultsView({
       </section>
 
       <section className="mx-auto max-w-[1240px] px-5 pb-20 pt-16 sm:px-8 lg:px-10">
-        <ValidationTrendSection data={trendData} />
+        <ValidationTrendSection
+          data={trendData}
+          hasAllHumanBenchmarks={allHumanBenchmarksComplete}
+        />
 
         <div className="validation-results-toolbar">
           <label

@@ -60,17 +60,17 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 		}
 	}
 	function x(e) {
-		if (h = !1, b(e), !m) if (n(c) !== null) m = !0, S || (S = !0, O());
+		if (h = !1, b(e), !m) if (n(c) !== null) m = !0, S || (S = !0, D());
 		else {
 			var t = n(l);
 			t !== null && ne(x, t.startTime - e);
 		}
 	}
 	var S = !1, C = -1, w = 5, T = -1;
-	function E() {
+	function ee() {
 		return g ? !0 : !(e.unstable_now() - T < w);
 	}
-	function D() {
+	function E() {
 		if (g = !1, S) {
 			var t = e.unstable_now();
 			T = t;
@@ -81,7 +81,7 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 					var a = f;
 					try {
 						b: {
-							for (b(t), d = n(c); d !== null && !(d.expirationTime > t && E());) {
+							for (b(t), d = n(c); d !== null && !(d.expirationTime > t && ee());) {
 								var o = d.callback;
 								if (typeof o == "function") {
 									d.callback = null, f = d.priorityLevel;
@@ -107,21 +107,21 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 					i = void 0;
 				}
 			} finally {
-				i ? O() : S = !1;
+				i ? D() : S = !1;
 			}
 		}
 	}
-	var O;
-	if (typeof y == "function") O = function() {
-		y(D);
+	var D;
+	if (typeof y == "function") D = function() {
+		y(E);
 	};
 	else if (typeof MessageChannel < "u") {
-		var ee = new MessageChannel(), te = ee.port2;
-		ee.port1.onmessage = D, O = function() {
+		var O = new MessageChannel(), te = O.port2;
+		O.port1.onmessage = E, D = function() {
 			te.postMessage(null);
 		};
-	} else O = function() {
-		_(D, 0);
+	} else D = function() {
+		_(E, 0);
 	};
 	function ne(t, n) {
 		C = _(function() {
@@ -192,8 +192,8 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 			startTime: a,
 			expirationTime: s,
 			sortIndex: -1
-		}, a > o ? (r.sortIndex = a, t(l, r), n(c) === null && r === n(l) && (h ? (v(C), C = -1) : h = !0, ne(x, a - o))) : (r.sortIndex = s, t(c, r), m || p || (m = !0, S || (S = !0, O()))), r;
-	}, e.unstable_shouldYield = E, e.unstable_wrapCallback = function(e) {
+		}, a > o ? (r.sortIndex = a, t(l, r), n(c) === null && r === n(l) && (h ? (v(C), C = -1) : h = !0, ne(x, a - o))) : (r.sortIndex = s, t(c, r), m || p || (m = !0, S || (S = !0, D()))), r;
+	}, e.unstable_shouldYield = ee, e.unstable_wrapCallback = function(e) {
 		var t = f;
 		return function() {
 			var n = f;
@@ -244,7 +244,7 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 		T: null,
 		S: null
 	}, T = Object.prototype.hasOwnProperty;
-	function E(e, n, r) {
+	function ee(e, n, r) {
 		var i = r.ref;
 		return {
 			$$typeof: t,
@@ -254,13 +254,13 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 			props: r
 		};
 	}
-	function D(e, t) {
-		return E(e.type, t, e.props);
+	function E(e, t) {
+		return ee(e.type, t, e.props);
 	}
-	function O(e) {
+	function D(e) {
 		return typeof e == "object" && !!e && e.$$typeof === t;
 	}
-	function ee(e) {
+	function O(e) {
 		var t = {
 			"=": "=0",
 			":": "=2"
@@ -271,7 +271,7 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 	}
 	var te = /\/+/g;
 	function ne(e, t) {
-		return typeof e == "object" && e && e.key != null ? ee("" + e.key) : t.toString(36);
+		return typeof e == "object" && e && e.key != null ? O("" + e.key) : t.toString(36);
 	}
 	function k(e) {
 		switch (e.status) {
@@ -309,7 +309,7 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 		}
 		if (c) return o = o(e), c = a === "" ? "." + ne(e, 0) : a, S(o) ? (i = "", c != null && (i = c.replace(te, "$&/") + "/"), re(o, r, i, "", function(e) {
 			return e;
-		})) : o != null && (O(o) && (o = D(o, i + (o.key == null || e && e.key === o.key ? "" : ("" + o.key).replace(te, "$&/") + "/") + c)), r.push(o)), 1;
+		})) : o != null && (D(o) && (o = E(o, i + (o.key == null || e && e.key === o.key ? "" : ("" + o.key).replace(te, "$&/") + "/") + c)), r.push(o)), 1;
 		c = 0;
 		var l = a === "" ? "." : a + ":";
 		if (S(e)) for (var u = 0; u < e.length; u++) a = e[u], s = l + ne(a, u), c += re(a, r, i, s, o);
@@ -372,7 +372,7 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 			}) || [];
 		},
 		only: function(e) {
-			if (!O(e)) throw Error("React.Children.only expected to receive a single React element child.");
+			if (!D(e)) throw Error("React.Children.only expected to receive a single React element child.");
 			return e;
 		}
 	};
@@ -397,7 +397,7 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 			for (var o = Array(a), s = 0; s < a; s++) o[s] = arguments[s + 2];
 			r.children = o;
 		}
-		return E(e.type, i, r);
+		return ee(e.type, i, r);
 	}, e.createContext = function(e) {
 		return e = {
 			$$typeof: s,
@@ -420,7 +420,7 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 			i.children = s;
 		}
 		if (e && e.defaultProps) for (r in o = e.defaultProps, o) i[r] === void 0 && (i[r] = o[r]);
-		return E(e, a, i);
+		return ee(e, a, i);
 	}, e.createRef = function() {
 		return { current: null };
 	}, e.forwardRef = function(e) {
@@ -428,7 +428,7 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 			$$typeof: c,
 			render: e
 		};
-	}, e.isValidElement = O, e.lazy = function(e) {
+	}, e.isValidElement = D, e.lazy = function(e) {
 		return {
 			$$typeof: d,
 			_payload: {
@@ -728,7 +728,7 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 		}
 		return null;
 	}
-	var h = Object.assign, g = Symbol.for("react.element"), _ = Symbol.for("react.transitional.element"), v = Symbol.for("react.portal"), y = Symbol.for("react.fragment"), b = Symbol.for("react.strict_mode"), x = Symbol.for("react.profiler"), S = Symbol.for("react.consumer"), C = Symbol.for("react.context"), w = Symbol.for("react.forward_ref"), T = Symbol.for("react.suspense"), E = Symbol.for("react.suspense_list"), D = Symbol.for("react.memo"), O = Symbol.for("react.lazy"), ee = Symbol.for("react.activity"), te = Symbol.for("react.memo_cache_sentinel"), ne = Symbol.iterator;
+	var h = Object.assign, g = Symbol.for("react.element"), _ = Symbol.for("react.transitional.element"), v = Symbol.for("react.portal"), y = Symbol.for("react.fragment"), b = Symbol.for("react.strict_mode"), x = Symbol.for("react.profiler"), S = Symbol.for("react.consumer"), C = Symbol.for("react.context"), w = Symbol.for("react.forward_ref"), T = Symbol.for("react.suspense"), ee = Symbol.for("react.suspense_list"), E = Symbol.for("react.memo"), D = Symbol.for("react.lazy"), O = Symbol.for("react.activity"), te = Symbol.for("react.memo_cache_sentinel"), ne = Symbol.iterator;
 	function k(e) {
 		return typeof e != "object" || !e ? null : (e = ne && e[ne] || e["@@iterator"], typeof e == "function" ? e : null);
 	}
@@ -742,8 +742,8 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 			case x: return "Profiler";
 			case b: return "StrictMode";
 			case T: return "Suspense";
-			case E: return "SuspenseList";
-			case ee: return "Activity";
+			case ee: return "SuspenseList";
+			case O: return "Activity";
 		}
 		if (typeof e == "object") switch (e.$$typeof) {
 			case v: return "Portal";
@@ -752,8 +752,8 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 			case w:
 				var t = e.render;
 				return e = e.displayName, e ||= (e = t.displayName || t.name || "", e === "" ? "ForwardRef" : "ForwardRef(" + e + ")"), e;
-			case D: return t = e.displayName || null, t === null ? ie(e.type) || "Memo" : t;
-			case O:
+			case E: return t = e.displayName || null, t === null ? ie(e.type) || "Memo" : t;
+			case D:
 				t = e._payload, e = e._init;
 				try {
 					return ie(e(t));
@@ -2025,14 +2025,14 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 		if (r = e, typeof e == "function") ci(e) && (s = 1);
 		else if (typeof e == "string") s = Uf(e, n, le.current) ? 26 : e === "html" || e === "head" || e === "body" ? 27 : 5;
 		else a: switch (e) {
-			case ee: return e = si(31, n, t, a), e.elementType = ee, e.lanes = o, e;
+			case O: return e = si(31, n, t, a), e.elementType = O, e.lanes = o, e;
 			case y: return fi(n.children, a, o, t);
 			case b:
 				s = 8, a |= 24;
 				break;
 			case x: return e = si(12, n, t, a | 2), e.elementType = x, e.lanes = o, e;
 			case T: return e = si(13, n, t, a), e.elementType = T, e.lanes = o, e;
-			case E: return e = si(19, n, t, a), e.elementType = E, e.lanes = o, e;
+			case ee: return e = si(19, n, t, a), e.elementType = ee, e.lanes = o, e;
 			default:
 				if (typeof e == "object" && e) switch (e.$$typeof) {
 					case C:
@@ -2044,10 +2044,10 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 					case w:
 						s = 11;
 						break a;
-					case D:
+					case E:
 						s = 14;
 						break a;
-					case O:
+					case D:
 						s = 16, r = null;
 						break a;
 				}
@@ -2471,7 +2471,7 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 		}
 		function l(e, t, n, r) {
 			var i = n.type;
-			return i === y ? d(e, t, n.props.children, r, n.key) : t !== null && (t.elementType === i || typeof i == "object" && i && i.$$typeof === O && Ea(i) === t.type) ? (t = a(t, n.props), Na(t, n), t.return = e, t) : (t = di(n.type, n.key, n.props, null, e.mode, r), Na(t, n), t.return = e, t);
+			return i === y ? d(e, t, n.props.children, r, n.key) : t !== null && (t.elementType === i || typeof i == "object" && i && i.$$typeof === D && Ea(i) === t.type) ? (t = a(t, n.props), Na(t, n), t.return = e, t) : (t = di(n.type, n.key, n.props, null, e.mode, r), Na(t, n), t.return = e, t);
 		}
 		function u(e, t, n, r) {
 			return t === null || t.tag !== 4 || t.stateNode.containerInfo !== n.containerInfo || t.stateNode.implementation !== n.implementation ? (t = hi(n, e.mode, r), t.return = e, t) : (t = a(t, n.children || []), t.return = e, t);
@@ -2485,7 +2485,7 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 				switch (t.$$typeof) {
 					case _: return n = di(t.type, t.key, t.props, null, e.mode, n), Na(n, t), n.return = e, n;
 					case v: return t = hi(t, e.mode, n), t.return = e, t;
-					case O: return t = Ea(t), f(e, t, n);
+					case D: return t = Ea(t), f(e, t, n);
 				}
 				if (ae(t) || k(t)) return t = fi(t, e.mode, n, null), t.return = e, t;
 				if (typeof t.then == "function") return f(e, Ma(t), n);
@@ -2501,7 +2501,7 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 				switch (n.$$typeof) {
 					case _: return n.key === i ? l(e, t, n, r) : null;
 					case v: return n.key === i ? u(e, t, n, r) : null;
-					case O: return n = Ea(n), p(e, t, n, r);
+					case D: return n = Ea(n), p(e, t, n, r);
 				}
 				if (ae(n) || k(n)) return i === null ? d(e, t, n, r, null) : null;
 				if (typeof n.then == "function") return p(e, t, Ma(n), r);
@@ -2516,7 +2516,7 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 				switch (r.$$typeof) {
 					case _: return e = e.get(r.key === null ? n : r.key) || null, l(t, e, r, i);
 					case v: return e = e.get(r.key === null ? n : r.key) || null, u(t, e, r, i);
-					case O: return r = Ea(r), m(e, t, n, r, i);
+					case D: return r = Ea(r), m(e, t, n, r, i);
 				}
 				if (ae(r) || k(r)) return e = e.get(n) || null, d(t, e, r, i, null);
 				if (typeof r.then == "function") return m(e, t, n, Ma(r), i);
@@ -2578,7 +2578,7 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 											n(e, r.sibling), c = a(r, o.props.children), c.return = e, e = c;
 											break a;
 										}
-									} else if (r.elementType === l || typeof l == "object" && l && l.$$typeof === O && Ea(l) === r.type) {
+									} else if (r.elementType === l || typeof l == "object" && l && l.$$typeof === D && Ea(l) === r.type) {
 										n(e, r.sibling), c = a(r, o.props), Na(c, o), c.return = e, e = c;
 										break a;
 									}
@@ -2606,7 +2606,7 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 							c = hi(o, e.mode, c), c.return = e, e = c;
 						}
 						return s(e);
-					case O: return o = Ea(o), b(e, r, o, c);
+					case D: return o = Ea(o), b(e, r, o, c);
 				}
 				if (ae(o)) return h(e, r, o, c);
 				if (k(o)) {
@@ -4179,7 +4179,7 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 							if (a === w) {
 								t.tag = 11, t = ac(null, t, e, r, n);
 								break a;
-							} else if (a === D) {
+							} else if (a === E) {
 								t.tag = 14, t = oc(null, t, e, r, n);
 								break a;
 							}
@@ -8018,7 +8018,7 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 }, S = (e) => {
 	for (let t in e) if (t.startsWith("aria-") || t === "role" || t === "title") return !0;
 	return !1;
-}, C = /* @__PURE__ */ c(f(), 1), w = (0, C.createContext)({}), T = () => (0, C.useContext)(w), E = (0, C.forwardRef)(({ color: e, size: t, strokeWidth: n, absoluteStrokeWidth: r, className: i = "", children: a, iconNode: o, ...s }, c) => {
+}, C = /* @__PURE__ */ c(f(), 1), w = (0, C.createContext)({}), T = () => (0, C.useContext)(w), ee = (0, C.forwardRef)(({ color: e, size: t, strokeWidth: n, absoluteStrokeWidth: r, className: i = "", children: a, iconNode: o, ...s }, c) => {
 	let { size: l = 24, strokeWidth: u = 2, absoluteStrokeWidth: d = !1, color: f = "currentColor", className: p = "" } = T() ?? {}, m = r ?? d ? Number(n ?? u) * 24 / Number(t ?? l) : n ?? u;
 	return (0, C.createElement)("svg", {
 		ref: c,
@@ -8031,27 +8031,27 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 		...!a && !S(s) && { "aria-hidden": "true" },
 		...s
 	}, [...o.map(([e, t]) => (0, C.createElement)(e, t)), ...Array.isArray(a) ? a : [a]]);
-}), D = (e, t) => {
-	let n = (0, C.forwardRef)(({ className: n, ...r }, i) => (0, C.createElement)(E, {
+}), E = (e, t) => {
+	let n = (0, C.forwardRef)(({ className: n, ...r }, i) => (0, C.createElement)(ee, {
 		ref: i,
 		iconNode: t,
 		className: _(`lucide-${v(b(e))}`, `lucide-${e}`, n),
 		...r
 	}));
 	return n.displayName = b(e), n;
-}, O = D("arrow-left", [["path", {
+}, D = E("arrow-left", [["path", {
 	d: "m12 19-7-7 7-7",
 	key: "1l729n"
 }], ["path", {
 	d: "M19 12H5",
 	key: "x3x0zl"
-}]]), ee = D("arrow-right", [["path", {
+}]]), O = E("arrow-right", [["path", {
 	d: "M5 12h14",
 	key: "1ays0h"
 }], ["path", {
 	d: "m12 5 7 7-7 7",
 	key: "xquz4c"
-}]]), te = D("bot", [
+}]]), te = E("bot", [
 	["path", {
 		d: "M12 8V4H8",
 		key: "hb8ula"
@@ -8080,16 +8080,16 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 		d: "M9 13v2",
 		key: "rq6x2g"
 	}]
-]), ne = D("check", [["path", {
+]), ne = E("check", [["path", {
 	d: "M20 6 9 17l-5-5",
 	key: "1gmf2c"
-}]]), k = D("chevron-down", [["path", {
+}]]), k = E("chevron-down", [["path", {
 	d: "m6 9 6 6 6-6",
 	key: "qrunsl"
-}]]), re = D("chevron-right", [["path", {
+}]]), re = E("chevron-right", [["path", {
 	d: "m9 18 6-6-6-6",
 	key: "mthhwq"
-}]]), ie = D("circle-check", [["circle", {
+}]]), ie = E("circle-check", [["circle", {
 	cx: "12",
 	cy: "12",
 	r: "10",
@@ -8097,7 +8097,7 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 }], ["path", {
 	d: "m9 12 2 2 4-4",
 	key: "dzmm74"
-}]]), ae = D("clipboard-check", [
+}]]), ae = E("clipboard-check", [
 	["rect", {
 		width: "8",
 		height: "4",
@@ -8115,13 +8115,13 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 		d: "m9 14 2 2 4-4",
 		key: "df797q"
 	}]
-]), A = D("house", [["path", {
+]), A = E("house", [["path", {
 	d: "M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8",
 	key: "5wwlr5"
 }], ["path", {
 	d: "M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z",
 	key: "r6nss1"
-}]]), j = D("info", [
+}]]), j = E("info", [
 	["circle", {
 		cx: "12",
 		cy: "12",
@@ -8136,10 +8136,10 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 		d: "M12 8h.01",
 		key: "e9boi3"
 	}]
-]), oe = D("loader-circle", [["path", {
+]), oe = E("loader-circle", [["path", {
 	d: "M21 12a9 9 0 1 1-6.219-8.56",
 	key: "13zald"
-}]]), se = D("rotate-ccw-clock", [
+}]]), se = E("rotate-ccw-clock", [
 	["path", {
 		d: "M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8",
 		key: "1357e3"
@@ -8152,19 +8152,19 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 		d: "M12 7v5l4 2",
 		key: "1fdv2h"
 	}]
-]), ce = D("rotate-ccw", [["path", {
+]), ce = E("rotate-ccw", [["path", {
 	d: "M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8",
 	key: "1357e3"
 }], ["path", {
 	d: "M3 3v5h5",
 	key: "1xhq8a"
-}]]), M = D("trending-up", [["path", {
+}]]), M = E("trending-up", [["path", {
 	d: "M16 7h6v6",
 	key: "box55l"
 }], ["path", {
 	d: "m22 7-8.5 8.5-5-5L2 17",
 	key: "1t1m79"
-}]]), N = D("user-round", [["circle", {
+}]]), N = E("user-round", [["circle", {
 	cx: "12",
 	cy: "8",
 	r: "5",
@@ -8470,13 +8470,13 @@ var ue = (e, t) => {
 		"full",
 		"auto",
 		...w()
-	], E = () => [
+	], ee = () => [
 		$e,
 		"none",
 		"subgrid",
 		R,
 		L
-	], D = () => [
+	], E = () => [
 		"auto",
 		{ span: [
 			"full",
@@ -8487,12 +8487,12 @@ var ue = (e, t) => {
 		$e,
 		R,
 		L
-	], O = () => [
+	], D = () => [
 		$e,
 		"auto",
 		R,
 		L
-	], ee = () => [
+	], O = () => [
 		"auto",
 		"min",
 		"max",
@@ -8876,14 +8876,14 @@ var ue = (e, t) => {
 				R,
 				L
 			] }],
-			"grid-cols": [{ "grid-cols": E() }],
-			"col-start-end": [{ col: D() }],
-			"col-start": [{ "col-start": O() }],
-			"col-end": [{ "col-end": O() }],
-			"grid-rows": [{ "grid-rows": E() }],
-			"row-start-end": [{ row: D() }],
-			"row-start": [{ "row-start": O() }],
-			"row-end": [{ "row-end": O() }],
+			"grid-cols": [{ "grid-cols": ee() }],
+			"col-start-end": [{ col: E() }],
+			"col-start": [{ "col-start": D() }],
+			"col-end": [{ "col-end": D() }],
+			"grid-rows": [{ "grid-rows": ee() }],
+			"row-start-end": [{ row: E() }],
+			"row-start": [{ "row-start": D() }],
+			"row-end": [{ "row-end": D() }],
 			"grid-flow": [{ "grid-flow": [
 				"row",
 				"col",
@@ -8891,8 +8891,8 @@ var ue = (e, t) => {
 				"row-dense",
 				"col-dense"
 			] }],
-			"auto-cols": [{ "auto-cols": ee() }],
-			"auto-rows": [{ "auto-rows": ee() }],
+			"auto-cols": [{ "auto-cols": O() }],
+			"auto-rows": [{ "auto-rows": O() }],
 			gap: [{ gap: w() }],
 			"gap-x": [{ "gap-x": w() }],
 			"gap-y": [{ "gap-y": w() }],
@@ -13353,46 +13353,46 @@ function Ai({ label: e, children: t }) {
 		})]
 	});
 }
-function ji({ title: e, description: t, yAxisLabel: n, series: r, dimensionValues: i, emptyMessage: a }) {
-	let o = (0, C.useId)(), s = `${o}-tooltip`, [c, l] = (0, C.useState)(null), [u, d] = (0, C.useState)(null), [f, p] = (0, C.useState)(null), m = r.flatMap((e) => e.points), h = i[0] ?? 0, g = i.at(-1) ?? 0, _ = (e) => h === g ? 222 : 56 + (e - h) / (g - h) * 332, v = (e) => 14 + (1 - Math.max(0, Math.min(1, e))) * 184, y = i.length <= 6 ? i : Array.from(new Set(Array.from({ length: 6 }, (e, t) => Math.round(t * (i.length - 1) / 5)).map((e) => i[e]))), b = r.map((e) => ({
+function ji({ title: e, description: t, yAxisLabel: n, series: r, dimensionValues: i, emptyMessage: a, lockedMessage: o }) {
+	let s = (0, C.useId)(), c = `${s}-tooltip`, [l, u] = (0, C.useState)(null), [d, f] = (0, C.useState)(null), [p, m] = (0, C.useState)(null), h = r.flatMap((e) => e.points), g = !o && h.length > 0, _ = i[0] ?? 0, v = i.at(-1) ?? 0, y = (e) => _ === v ? 222 : 56 + (e - _) / (v - _) * 332, b = (e) => 14 + (1 - Math.max(0, Math.min(1, e))) * 184, x = i.length <= 6 ? i : Array.from(new Set(Array.from({ length: 6 }, (e, t) => Math.round(t * (i.length - 1) / 5)).map((e) => i[e]))), S = r.map((e) => ({
 		...e,
 		points: e.points.filter((e) => Number.isFinite(e.dimensionCount) && Number.isFinite(e.value))
-	})), x = /* @__PURE__ */ new Map();
-	b.forEach((e) => {
+	})), w = /* @__PURE__ */ new Map();
+	S.forEach((e) => {
 		e.points.forEach((t) => {
 			let n = `${t.dimensionCount}:${t.value.toFixed(12)}`, r = {
 				seriesId: e.id,
 				label: e.label,
 				styleIndex: e.styleIndex
-			}, i = x.get(n);
-			i ? i.entries.push(r) : x.set(n, {
+			}, i = w.get(n);
+			i ? i.entries.push(r) : w.set(n, {
 				dimensionCount: t.dimensionCount,
 				value: t.value,
-				x: _(t.dimensionCount),
-				y: v(t.value),
+				x: y(t.dimensionCount),
+				y: b(t.value),
 				entries: [r]
 			});
 		});
 	});
-	let S = [...x.entries()].map(([e, t]) => ({
+	let T = [...w.entries()].map(([e, t]) => ({
 		...t,
 		id: `${e}:${t.entries.map((e) => e.seriesId).join("|")}`
-	})), w = c ?? (u && u !== f ? u : null), T = S.find((e) => e.id === w) ?? null, E = T ? 28 + T.entries.length * 14 : 0, D = T ? Math.max(4, Math.min(196, T.x + 10 + 200 <= 396 ? T.x + 10 : T.x - 200 - 10)) : 0, O = T ? Math.max(4, Math.min(250 - E - 4, T.y - E - 10 >= 4 ? T.y - E - 10 : T.y + 10)) : 0;
+	})), ee = l ?? (d && d !== p ? d : null), E = T.find((e) => e.id === ee) ?? null, D = E ? 28 + E.entries.length * 14 : 0, O = E ? Math.max(4, Math.min(196, E.x + 10 + 200 <= 396 ? E.x + 10 : E.x - 200 - 10)) : 0, te = E ? Math.max(4, Math.min(250 - D - 4, E.y - D - 10 >= 4 ? E.y - D - 10 : E.y + 10)) : 0;
 	return /* @__PURE__ */ (0, z.jsxs)("figure", {
 		className: "validation-trend-chart",
-		"aria-labelledby": `${o}-title ${o}-description`,
+		"aria-labelledby": `${s}-title ${s}-description`,
 		children: [
 			/* @__PURE__ */ (0, z.jsx)("h4", {
-				id: `${o}-title`,
+				id: `${s}-title`,
 				className: "sr-only",
 				children: e
 			}),
-			/* @__PURE__ */ (0, z.jsxs)("p", {
-				id: `${o}-description`,
+			/* @__PURE__ */ (0, z.jsx)("p", {
+				id: `${s}-description`,
 				className: "sr-only",
-				children: [t, " The horizontal axis is the number of dimensions filled. The vertical axis runs from zero to one hundred percent. Exact plotted values and contributing experiment counts are listed in the accessible table."]
+				children: o ?? /* @__PURE__ */ (0, z.jsxs)(z.Fragment, { children: [t, " The horizontal axis is the number of dimensions filled. The vertical axis runs from zero to one hundred percent. Exact plotted values and contributing experiment counts are listed in the accessible table."] })
 			}),
-			r.length > 1 ? /* @__PURE__ */ (0, z.jsx)("ul", {
+			g && r.length > 1 ? /* @__PURE__ */ (0, z.jsx)("ul", {
 				className: "validation-trend-legend",
 				"aria-label": "Chart series",
 				children: r.map((e) => /* @__PURE__ */ (0, z.jsxs)("li", { children: [/* @__PURE__ */ (0, z.jsxs)("svg", {
@@ -13415,7 +13415,7 @@ function ji({ title: e, description: t, yAxisLabel: n, series: r, dimensionValue
 					})]
 				}), /* @__PURE__ */ (0, z.jsx)("span", { children: e.label })] }, e.id))
 			}) : null,
-			m.length ? /* @__PURE__ */ (0, z.jsx)("section", {
+			g ? /* @__PURE__ */ (0, z.jsx)("section", {
 				className: "validation-trend-scroll",
 				"aria-label": `${e} plot`,
 				children: /* @__PURE__ */ (0, z.jsxs)("svg", {
@@ -13435,12 +13435,12 @@ function ji({ title: e, description: t, yAxisLabel: n, series: r, dimensionValue
 								].map((e) => /* @__PURE__ */ (0, z.jsxs)("g", { children: [/* @__PURE__ */ (0, z.jsx)("line", {
 									x1: 56,
 									x2: 388,
-									y1: v(e),
-									y2: v(e),
+									y1: b(e),
+									y2: b(e),
 									className: "validation-trend-grid-line"
 								}), /* @__PURE__ */ (0, z.jsxs)("text", {
 									x: 47,
-									y: v(e) + 4,
+									y: b(e) + 4,
 									textAnchor: "end",
 									className: "validation-trend-tick",
 									children: [Math.round(e * 100), "%"]
@@ -13452,14 +13452,14 @@ function ji({ title: e, description: t, yAxisLabel: n, series: r, dimensionValue
 									y2: 198,
 									className: "validation-trend-axis-line"
 								}),
-								y.map((e) => /* @__PURE__ */ (0, z.jsxs)("g", { children: [/* @__PURE__ */ (0, z.jsx)("line", {
-									x1: _(e),
-									x2: _(e),
+								x.map((e) => /* @__PURE__ */ (0, z.jsxs)("g", { children: [/* @__PURE__ */ (0, z.jsx)("line", {
+									x1: y(e),
+									x2: y(e),
 									y1: 198,
 									y2: 203,
 									className: "validation-trend-axis-line"
 								}), /* @__PURE__ */ (0, z.jsx)("text", {
-									x: _(e),
+									x: y(e),
 									y: 218,
 									textAnchor: "middle",
 									className: "validation-trend-tick",
@@ -13480,8 +13480,8 @@ function ji({ title: e, description: t, yAxisLabel: n, series: r, dimensionValue
 								})
 							]
 						}),
-						b.map((e) => {
-							let t = e.points.map((e) => `${_(e.dimensionCount)},${v(e.value)}`).join(" ");
+						S.map((e) => {
+							let t = e.points.map((e) => `${y(e.dimensionCount)},${b(e.value)}`).join(" ");
 							return e.points.length > 1 ? /* @__PURE__ */ (0, z.jsx)("polyline", {
 								points: t,
 								fill: "none",
@@ -13492,27 +13492,27 @@ function ji({ title: e, description: t, yAxisLabel: n, series: r, dimensionValue
 								"aria-hidden": "true"
 							}, e.id) : null;
 						}),
-						S.map((e) => {
-							let t = e.entries.map((e) => e.label), n = e.id === T?.id;
+						T.map((e) => {
+							let t = e.entries.map((e) => e.label), n = e.id === E?.id;
 							return /* @__PURE__ */ (0, z.jsxs)("g", {
 								className: "validation-trend-point",
 								role: "graphics-symbol",
 								tabIndex: 0,
 								focusable: "true",
 								"aria-label": ki(t, e.dimensionCount, e.value),
-								"aria-describedby": n ? s : void 0,
+								"aria-describedby": n ? c : void 0,
 								onMouseEnter: () => {
-									l(e.id), p(null);
+									u(e.id), m(null);
 								},
-								onMouseLeave: () => l(null),
+								onMouseLeave: () => u(null),
 								onFocus: () => {
-									d(e.id), p(null);
+									f(e.id), m(null);
 								},
 								onBlur: () => {
-									d(null), p(null);
+									f(null), m(null);
 								},
 								onKeyDown: (t) => {
-									t.key === "Escape" && (l(null), p(e.id));
+									t.key === "Escape" && (u(null), m(e.id));
 								},
 								children: [/* @__PURE__ */ (0, z.jsx)("circle", {
 									cx: e.x,
@@ -13527,31 +13527,31 @@ function ji({ title: e, description: t, yAxisLabel: n, series: r, dimensionValue
 								}, t.seriesId))]
 							}, e.id);
 						}),
-						T ? /* @__PURE__ */ (0, z.jsxs)("g", {
-							id: s,
+						E ? /* @__PURE__ */ (0, z.jsxs)("g", {
+							id: c,
 							role: "tooltip",
 							className: "validation-trend-tooltip",
 							pointerEvents: "none",
 							children: [
 								/* @__PURE__ */ (0, z.jsx)("rect", {
-									x: D,
-									y: O,
+									x: O,
+									y: te,
 									width: 200,
-									height: E,
+									height: D,
 									rx: 8
 								}),
 								/* @__PURE__ */ (0, z.jsxs)("text", {
-									x: D + 10,
-									y: O + 16,
+									x: O + 10,
+									y: te + 16,
 									className: "validation-trend-tooltip-coordinate",
-									children: [T.dimensionCount, " dimensions"]
+									children: [E.dimensionCount, " dimensions"]
 								}),
-								T.entries.map((e, t) => /* @__PURE__ */ (0, z.jsxs)("text", {
-									x: D + 10,
-									y: O + 34 + t * 14,
+								E.entries.map((e, t) => /* @__PURE__ */ (0, z.jsxs)("text", {
+									x: O + 10,
+									y: te + 34 + t * 14,
 									className: "validation-trend-tooltip-series",
 									children: [
-										dn(T.value),
+										dn(E.value),
 										" ",
 										e.label
 									]
@@ -13562,9 +13562,9 @@ function ji({ title: e, description: t, yAxisLabel: n, series: r, dimensionValue
 				})
 			}) : /* @__PURE__ */ (0, z.jsx)("output", {
 				className: "validation-trend-empty",
-				children: a
+				children: o ?? a
 			}),
-			m.length ? /* @__PURE__ */ (0, z.jsxs)("table", {
+			g ? /* @__PURE__ */ (0, z.jsxs)("table", {
 				className: "sr-only",
 				children: [
 					/* @__PURE__ */ (0, z.jsxs)("caption", { children: ["Exact values plotted in ", e] }),
@@ -13592,25 +13592,29 @@ function ji({ title: e, description: t, yAxisLabel: n, series: r, dimensionValue
 		]
 	});
 }
-function Mi({ data: e }) {
-	let [t, n] = (0, C.useState)("overall"), r = Array.from(new Set([
-		...e.overallBenchmarkMatch,
-		...e.agentConsistency,
-		...Object.values(e.surveyBenchmarkMatches).flat()
-	].map((e) => e.dimensionCount))).sort((e, t) => e - t), i = t === "overall" ? [{
+function Mi({ data: e, hasAllHumanBenchmarks: t }) {
+	let [n, r] = (0, C.useState)("overall"), i = e ?? {
+		overallBenchmarkMatch: [],
+		agentConsistency: [],
+		surveyBenchmarkMatches: Xt.reduce((e, t) => (e[t.id] = [], e), {})
+	}, a = t ? void 0 : "Fill in all validation surveys to see results", o = Array.from(new Set([
+		...i.overallBenchmarkMatch,
+		...i.agentConsistency,
+		...Object.values(i.surveyBenchmarkMatches).flat()
+	].map((e) => e.dimensionCount))).sort((e, t) => e - t), s = n === "overall" ? [{
 		id: "overall-benchmark-match",
 		label: "Overall benchmark match",
-		points: e.overallBenchmarkMatch,
+		points: i.overallBenchmarkMatch,
 		styleIndex: 0
-	}] : Xt.map((t, n) => ({
-		id: t.id,
-		label: t.title,
-		points: e.surveyBenchmarkMatches[t.id],
-		styleIndex: n
-	})), a = [{
+	}] : Xt.map((e, t) => ({
+		id: e.id,
+		label: e.title,
+		points: i.surveyBenchmarkMatches[e.id],
+		styleIndex: t
+	})), c = [{
 		id: "agent-consistency",
 		label: "Overall Agent consistency",
-		points: e.agentConsistency,
+		points: i.agentConsistency,
 		styleIndex: 0
 	}];
 	return /* @__PURE__ */ (0, z.jsxs)("section", {
@@ -13645,8 +13649,8 @@ function Mi({ data: e }) {
 							}), /* @__PURE__ */ (0, z.jsxs)("select", {
 								id: "validation-benchmark-trend-mode",
 								"aria-label": "Benchmark match view",
-								value: t,
-								onChange: (e) => n(e.target.value),
+								value: n,
+								onChange: (e) => r(e.target.value),
 								children: [/* @__PURE__ */ (0, z.jsx)("option", {
 									value: "overall",
 									children: "Overall benchmark match"
@@ -13661,12 +13665,13 @@ function Mi({ data: e }) {
 						})]
 					})
 				}), /* @__PURE__ */ (0, z.jsx)(ji, {
-					title: t === "overall" ? "Overall benchmark match by persona dimensions" : "Individual benchmark match by persona dimensions",
-					description: t === "overall" ? "One line shows the average overall benchmark match at each saved dimension count." : "Four lines show average benchmark match for the four Validation surveys at each saved dimension count.",
+					title: n === "overall" ? "Overall benchmark match by persona dimensions" : "Individual benchmark match by persona dimensions",
+					description: n === "overall" ? "One line shows the average overall benchmark match at each saved dimension count." : "Four lines show average benchmark match for the four Validation surveys at each saved dimension count.",
 					yAxisLabel: "Benchmark match",
-					series: i,
-					dimensionValues: r,
-					emptyMessage: "Complete Human benchmarks and run Agent validation at a known dimension count to chart benchmark match."
+					series: s,
+					dimensionValues: o,
+					emptyMessage: "Complete Human benchmarks and run Agent validation at a known dimension count to chart benchmark match.",
+					lockedMessage: a
 				})]
 			}), /* @__PURE__ */ (0, z.jsxs)("article", {
 				className: "validation-trend-card",
@@ -13683,16 +13688,17 @@ function Mi({ data: e }) {
 					title: "Overall Agent consistency by persona dimensions",
 					description: "One line shows average overall Agent consistency at each saved dimension count.",
 					yAxisLabel: "Agent consistency",
-					series: a,
-					dimensionValues: r,
-					emptyMessage: "Run Agent validation at a known dimension count to chart Agent consistency."
+					series: c,
+					dimensionValues: o,
+					emptyMessage: "Run Agent validation at a known dimension count to chart Agent consistency.",
+					lockedMessage: a
 				})]
 			})]
 		})]
 	});
 }
 function B({ store: e, onHuman: t, onRunAll: n, onLicense: r, runningExperiment: i, runDisabled: a, selectedExperimentId: o, onSelectExperiment: s, onDeleteExperiment: c }) {
-	let l = Xr(e), u = l.some((e) => e.id === o) ? o : l[0]?.id ?? null, d = u ? ai(e, u) : null, f = Br(d?.experiment ?? null), p = si(e);
+	let l = Xr(e), u = l.some((e) => e.id === o) ? o : l[0]?.id ?? null, d = u ? ai(e, u) : null, f = Br(d?.experiment ?? null), p = Xt.every((t) => !!e[t.id]?.human?.completedAt), m = p ? si(e) : null;
 	return /* @__PURE__ */ (0, z.jsxs)(Ci, {
 		simple: !0,
 		children: [/* @__PURE__ */ (0, z.jsxs)("section", {
@@ -13739,7 +13745,10 @@ function B({ store: e, onHuman: t, onRunAll: n, onLicense: r, runningExperiment:
 		}), /* @__PURE__ */ (0, z.jsxs)("section", {
 			className: "mx-auto max-w-[1240px] px-5 pb-20 pt-16 sm:px-8 lg:px-10",
 			children: [
-				/* @__PURE__ */ (0, z.jsx)(Mi, { data: p }),
+				/* @__PURE__ */ (0, z.jsx)(Mi, {
+					data: m,
+					hasAllHumanBenchmarks: p
+				}),
 				/* @__PURE__ */ (0, z.jsxs)("div", {
 					className: "validation-results-toolbar",
 					children: [
@@ -13942,7 +13951,7 @@ function V({ survey: e, actor: t, run: n, agentRun: r, onSaveAnswer: i, onComple
 							onClick: () => l((e) => Math.max(0, e - 1)),
 							disabled: c === 0 || u,
 							className: "secondary-button focus-ring",
-							children: [/* @__PURE__ */ (0, z.jsx)(O, { size: 17 }), " Previous"]
+							children: [/* @__PURE__ */ (0, z.jsx)(D, { size: 17 }), " Previous"]
 						})
 					}), /* @__PURE__ */ (0, z.jsxs)("button", {
 						type: "button",
@@ -13956,7 +13965,7 @@ function V({ survey: e, actor: t, run: n, agentRun: r, onSaveAnswer: i, onComple
 						children: [
 							g ? "Finish this run" : "Next",
 							" ",
-							/* @__PURE__ */ (0, z.jsx)(ee, { size: 17 })
+							/* @__PURE__ */ (0, z.jsx)(O, { size: 17 })
 						]
 					})]
 				})
@@ -14451,7 +14460,7 @@ function Bi({ points: e, survey: t }) {
 					}),
 					className: "chart-pan-button focus-ring",
 					"aria-label": "Pan chart left",
-					children: [/* @__PURE__ */ (0, z.jsx)(O, { size: 15 }), " Left"]
+					children: [/* @__PURE__ */ (0, z.jsx)(D, { size: 15 }), " Left"]
 				}), /* @__PURE__ */ (0, z.jsxs)("button", {
 					type: "button",
 					onClick: () => n.current?.scrollBy({
@@ -14460,7 +14469,7 @@ function Bi({ points: e, survey: t }) {
 					}),
 					className: "chart-pan-button focus-ring",
 					"aria-label": "Pan chart right",
-					children: ["Right ", /* @__PURE__ */ (0, z.jsx)(ee, { size: 15 })]
+					children: ["Right ", /* @__PURE__ */ (0, z.jsx)(O, { size: 15 })]
 				})]
 			}),
 			/* @__PURE__ */ (0, z.jsx)("div", {
@@ -14842,7 +14851,7 @@ function Hi({ onHome: e }) {
 					type: "button",
 					onClick: e,
 					className: "secondary-button focus-ring",
-					children: [/* @__PURE__ */ (0, z.jsx)(O, { size: 16 }), " Results"]
+					children: [/* @__PURE__ */ (0, z.jsx)(D, { size: 16 }), " Results"]
 				}),
 				/* @__PURE__ */ (0, z.jsx)("p", {
 					className: "section-kicker mt-10",
@@ -14865,7 +14874,7 @@ function Hi({ onHome: e }) {
 					href: "https://github.com/SillyBigTypeIndicator/SBTI",
 					target: "_blank",
 					rel: "noreferrer",
-					children: ["View the source repository ", /* @__PURE__ */ (0, z.jsx)(ee, { size: 15 })]
+					children: ["View the source repository ", /* @__PURE__ */ (0, z.jsx)(O, { size: 15 })]
 				}),
 				/* @__PURE__ */ (0, z.jsxs)("div", {
 					className: "mt-10 rounded-2xl bg-slate-950 p-6 text-xs leading-6 text-slate-300 sm:p-8",
@@ -14907,7 +14916,7 @@ function Ui({ notice: e }) {
 	});
 }
 function Wi({ hosted: e = !1 }) {
-	let [t, n] = (0, C.useState)({}), [r, i] = (0, C.useState)(li), [a, o] = (0, C.useState)(!1), [s, c] = (0, C.useState)(e), [l, u] = (0, C.useState)(null), [d, f] = (0, C.useState)(!1), [p, m] = (0, C.useState)(!1), [h, g] = (0, C.useState)(null), [_, v] = (0, C.useState)(0), y = (0, C.useRef)({}), b = (0, C.useRef)(null), x = (0, C.useRef)({}), S = (0, C.useRef)(void 0), w = (0, C.useRef)(!1), T = (0, C.useRef)(!1), E = (0, C.useRef)(null), D = (0, C.useRef)(!1), O = (0, C.useRef)(0), ee = (0, C.useRef)(!0);
+	let [t, n] = (0, C.useState)({}), [r, i] = (0, C.useState)(li), [a, o] = (0, C.useState)(!1), [s, c] = (0, C.useState)(e), [l, u] = (0, C.useState)(null), [d, f] = (0, C.useState)(!1), [p, m] = (0, C.useState)(!1), [h, g] = (0, C.useState)(null), [_, v] = (0, C.useState)(0), y = (0, C.useRef)({}), b = (0, C.useRef)(null), x = (0, C.useRef)({}), S = (0, C.useRef)(void 0), w = (0, C.useRef)(!1), T = (0, C.useRef)(!1), ee = (0, C.useRef)(null), E = (0, C.useRef)(!1), D = (0, C.useRef)(0), O = (0, C.useRef)(!0);
 	(0, C.useEffect)(() => {
 		y.current = t;
 	}, [t]);
@@ -14919,7 +14928,7 @@ function Wi({ hosted: e = !1 }) {
 			return;
 		}
 		let t = Fn(x.current, y.current), r = gr(t);
-		if (r === gr(x.current) || r === E.current) return;
+		if (r === gr(x.current) || r === ee.current) return;
 		w.current = !0, u({
 			kind: "saving",
 			message: "saving to disk..."
@@ -14932,7 +14941,7 @@ function Wi({ hosted: e = !1 }) {
 				if (!(o instanceof lr) || o.status !== 409 || !o.currentState) throw o;
 				let s = o.currentState;
 				if (s.contextId !== e.contextId) {
-					b.current = s, x.current = s.store, y.current = s.store, E.current = null, ee.current && (n(s.store), i(li), u({
+					b.current = s, x.current = s.store, y.current = s.store, ee.current = null, O.current && (n(s.store), i(li), u({
 						kind: "saved",
 						message: "active persona changed - its results were loaded from disk."
 					}));
@@ -14940,9 +14949,9 @@ function Wi({ hosted: e = !1 }) {
 				}
 				t = Fn(s.store, y.current), r = gr(t), a = r === gr(s.store) ? s : await hr(s.contextId, s.saveRevision, t);
 			}
-			b.current = a, x.current = a.store, E.current = null;
+			b.current = a, x.current = a.store, ee.current = null;
 			let o = Fn(a.store, y.current);
-			if (gr(o) !== gr(y.current) && (y.current = o, ee.current && n(o)), ee.current) {
+			if (gr(o) !== gr(y.current) && (y.current = o, O.current && n(o)), O.current) {
 				let e = mi(a.savedAt);
 				u({
 					kind: "saved",
@@ -14950,18 +14959,18 @@ function Wi({ hosted: e = !1 }) {
 				});
 			}
 		} catch {
-			E.current = r, ee.current && u({
+			ee.current = r, O.current && u({
 				kind: "error",
 				message: "changes are not saved to disk - check that the MatrAIx app is running."
 			});
 		} finally {
 			w.current = !1;
-			let e = gr(y.current), t = e !== gr(x.current) && e !== E.current;
-			ee.current && (T.current || t) && (T.current = !1, v((e) => e + 1));
+			let e = gr(y.current), t = e !== gr(x.current) && e !== ee.current;
+			O.current && (T.current || t) && (T.current = !1, v((e) => e + 1));
 		}
 	});
 	(0, C.useEffect)(() => {
-		ee.current = !0;
+		O.current = !0;
 		let t = window.requestAnimationFrame(() => {
 			c(e || new URLSearchParams(window.location.search).get("embedded") === "1");
 		}), r = !1;
@@ -14986,14 +14995,14 @@ function Wi({ hosted: e = !1 }) {
 			o(!0);
 		}
 		return i(), () => {
-			r = !0, ee.current = !1, window.cancelAnimationFrame(t), S.current !== void 0 && window.clearTimeout(S.current);
+			r = !0, O.current = !1, window.cancelAnimationFrame(t), S.current !== void 0 && window.clearTimeout(S.current);
 		};
 	}, [e]), (0, C.useEffect)(() => {
 		if (!a || !b.current) return;
-		let e = O.current + 1;
-		O.current = e;
+		let e = D.current + 1;
+		D.current = e;
 		let t = !1, r = !1;
-		D.current = !0, m(!1);
+		E.current = !0, m(!1);
 		async function o() {
 			let a = b.current;
 			if (a) try {
@@ -15010,7 +15019,7 @@ function Wi({ hosted: e = !1 }) {
 				let s = y.current, c = null, l = 0, d = 0;
 				for (let n of o) {
 					let r = await Mr(n, Xt, void 0, void 0, (n) => {
-						!t && O.current === e && u({
+						!t && D.current === e && u({
 							kind: "saving",
 							message: `recovering Agent experiment - ${n.completedRuns} of ${n.requestedRuns} responses complete...`
 						});
@@ -15029,7 +15038,7 @@ function Wi({ hosted: e = !1 }) {
 					message: e instanceof Cr ? `${e.message} Reload Validation to recover the saved experiment before starting another.` : "The saved Agent experiment could not be recovered. Reload Validation before starting another."
 				});
 			} finally {
-				!t && O.current === e && (D.current = !1, f(!1), r && m(!0));
+				!t && D.current === e && (E.current = !1, f(!1), r && m(!0));
 			}
 		}
 		return o(), () => {
@@ -15038,7 +15047,7 @@ function Wi({ hosted: e = !1 }) {
 	}, [a]), (0, C.useEffect)(() => {
 		if (!a || !b.current) return;
 		let e = gr(t);
-		if (!(e === gr(x.current) || e === E.current)) return S.current !== void 0 && window.clearTimeout(S.current), S.current = window.setTimeout(() => {
+		if (!(e === gr(x.current) || e === ee.current)) return S.current !== void 0 && window.clearTimeout(S.current), S.current = window.setTimeout(() => {
 			S.current = void 0, te();
 		}, 300), () => {
 			S.current !== void 0 && (window.clearTimeout(S.current), S.current = void 0);
@@ -15079,12 +15088,12 @@ function Wi({ hosted: e = !1 }) {
 	async function j() {
 		try {
 			let e = await fr(), r = b.current;
-			if (r && e.contextId !== r.contextId) return b.current = e, x.current = e.store, y.current = e.store, E.current = null, n(e.store), i(li), u({
+			if (r && e.contextId !== r.contextId) return b.current = e, x.current = e.store, y.current = e.store, ee.current = null, n(e.store), i(li), u({
 				kind: "saved",
 				message: "active persona changed - its results were loaded from disk."
 			}), null;
 			let a = Fn(e.store, y.current);
-			return b.current = e, x.current = e.store, y.current = a, E.current = null, gr(a) !== gr(t) && n(a), e;
+			return b.current = e, x.current = e.store, y.current = a, ee.current = null, gr(a) !== gr(t) && n(a), e;
 		} catch {
 			return u({
 				kind: "error",
@@ -15093,7 +15102,7 @@ function Wi({ hosted: e = !1 }) {
 		}
 	}
 	function oe(e) {
-		if (D.current) {
+		if (E.current) {
 			u({
 				kind: "saving",
 				message: "finish the active Agent experiment before editing benchmarks."
@@ -15135,8 +15144,8 @@ function Wi({ hosted: e = !1 }) {
 		window.scrollTo({ top: 0 });
 	}
 	async function se({ background: e = !1 } = {}) {
-		if (!(!p || D.current)) {
-			D.current = !0, f(!0), u({
+		if (!(!p || E.current)) {
+			E.current = !0, f(!0), u({
 				kind: "saving",
 				message: "running 40 clean Agent responses - 10 concurrent runs for each survey..."
 			});
@@ -15144,12 +15153,12 @@ function Wi({ hosted: e = !1 }) {
 				let t = await j();
 				if (!t) return;
 				let r = await Nr(Xt, t.contextId, t.personaRevision, void 0, void 0, (e) => {
-					ee.current && u({
+					O.current && u({
 						kind: "saving",
 						message: `running Agent experiment - ${e.completedRuns} of ${e.requestedRuns} responses complete...`
 					});
 				});
-				if (!ee.current) return;
+				if (!O.current) return;
 				let a = Rr(y.current, r, Xt);
 				y.current = a, n(a), g(r.batchId), e || i(li), u({
 					kind: r.failures.length ? "error" : "saved",
@@ -15159,13 +15168,13 @@ function Wi({ hosted: e = !1 }) {
 					behavior: "smooth"
 				});
 			} catch (e) {
-				if (!ee.current) return;
+				if (!O.current) return;
 				u({
 					kind: "error",
 					message: e instanceof Cr ? `${e.message} Reload Validation to recover any responses already saved by the experiment.` : "The Agent experiment could not be loaded yet. Reload Validation to recover any saved responses."
 				});
 			} finally {
-				D.current = !1, ee.current && f(!1);
+				E.current = !1, O.current && f(!1);
 			}
 		}
 	}
