@@ -1587,6 +1587,7 @@ function ResultView({
   agentRun,
   hasCompletedHuman,
   onHistory,
+  onHumanEdit,
   onHumanChange,
   onHome,
 }: {
@@ -1596,6 +1597,7 @@ function ResultView({
   agentRun?: AgentRun;
   hasCompletedHuman: boolean;
   onHistory: () => void;
+  onHumanEdit: () => void;
   onHumanChange: () => void;
   onHome: () => void;
 }) {
@@ -1656,18 +1658,27 @@ function ResultView({
 
         <div className="mx-auto mt-7 flex max-w-[900px] flex-wrap items-center justify-center gap-3 pb-14">
           {!isAgent && (
-            <button
-              type="button"
-              onClick={onHumanChange}
-              className="secondary-button focus-ring"
-            >
-              <RotateCcw size={16} /> Retake benchmark
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={onHumanEdit}
+                className="secondary-button result-action-button focus-ring"
+              >
+                <ArrowLeft size={16} /> Back
+              </button>
+              <button
+                type="button"
+                onClick={onHumanChange}
+                className="secondary-button result-action-button focus-ring"
+              >
+                <RotateCcw size={16} /> Retake
+              </button>
+            </>
           )}
           <button
             type="button"
             onClick={onHome}
-            className="secondary-button focus-ring"
+            className="secondary-button result-action-button focus-ring"
           >
             <Home size={16} /> Results
           </button>
@@ -1675,7 +1686,7 @@ function ResultView({
             <button
               type="button"
               onClick={onHistory}
-              className="secondary-button focus-ring"
+              className="secondary-button result-action-button focus-ring"
             >
               <History size={16} /> Earlier run history
             </button>
@@ -3100,6 +3111,22 @@ export function ValidationApp({ hosted = false }: { hosted?: boolean }) {
     window.scrollTo({ top: 0 });
   }
 
+  function editHumanBenchmark(surveyId: SurveyId) {
+    const history = surveyHistory(store, surveyId);
+    const human = history.human;
+    if (!human?.completedAt) return;
+    updateSurvey(surveyId, (current) =>
+      current.human?.id === human.id
+        ? {
+            ...current,
+            human: { ...current.human, completedAt: undefined },
+          }
+        : current,
+    );
+    setView({ name: 'quiz', surveyId, actor: 'human', runId: human.id });
+    window.scrollTo({ top: 0 });
+  }
+
   const runAgentBatchFromValidationHost = useEffectEvent(() => {
     void runAllAgentSurveys({ background: true });
   });
@@ -3292,6 +3319,7 @@ export function ValidationApp({ hosted = false }: { hosted?: boolean }) {
           onHistory={() =>
             setView({ name: 'history', surveyId: view.surveyId })
           }
+          onHumanEdit={() => editHumanBenchmark(view.surveyId)}
           onHumanChange={() => changeHumanBenchmark(view.surveyId)}
           onHome={goHome}
         />

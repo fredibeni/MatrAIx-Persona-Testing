@@ -14077,10 +14077,10 @@ function Ii({ result: e, survey: t, compact: n = !1 }) {
 		compact: n
 	});
 }
-function Li({ survey: e, actor: t, run: n, agentRun: r, hasCompletedHuman: i, onHistory: a, onHumanChange: o, onHome: s }) {
-	let c = cn(e, n.answers), l = t === "agent" && r, u = ci[t];
+function Li({ survey: e, actor: t, run: n, agentRun: r, hasCompletedHuman: i, onHistory: a, onHumanEdit: o, onHumanChange: s, onHome: c }) {
+	let l = cn(e, n.answers), u = t === "agent" && r, d = ci[t];
 	return /* @__PURE__ */ (0, z.jsx)(Ci, {
-		onHome: s,
+		onHome: c,
 		children: /* @__PURE__ */ (0, z.jsxs)("div", {
 			className: "result-stage",
 			style: hi(e),
@@ -14104,9 +14104,9 @@ function Li({ survey: e, actor: t, run: n, agentRun: r, hasCompletedHuman: i, on
 								/* @__PURE__ */ (0, z.jsxs)("div", {
 									className: "mx-auto flex w-fit items-center gap-2 rounded-full bg-white/70 px-4 py-2 text-xs font-black uppercase tracking-[0.13em] text-slate-600 shadow-sm",
 									children: [
-										/* @__PURE__ */ (0, z.jsx)(u.Icon, { size: 15 }),
+										/* @__PURE__ */ (0, z.jsx)(d.Icon, { size: 15 }),
 										" ",
-										l ? `Agent run ${r.sequence}` : "Human benchmark",
+										u ? `Agent run ${r.sequence}` : "Human benchmark",
 										" -",
 										" ",
 										e.shortTitle
@@ -14116,7 +14116,7 @@ function Li({ survey: e, actor: t, run: n, agentRun: r, hasCompletedHuman: i, on
 									className: "mx-auto mt-4 w-fit rounded-full bg-white/70 px-3 py-1.5 text-xs font-black text-slate-600 shadow-sm",
 									children: ["Persona agent: ", gi(n.personaAgent)]
 								}),
-								l && /* @__PURE__ */ (0, z.jsxs)("div", {
+								u && /* @__PURE__ */ (0, z.jsxs)("div", {
 									className: "mx-auto mt-2 w-fit rounded-full px-3 py-1.5 text-xs font-black",
 									style: {
 										backgroundColor: e.color,
@@ -14126,11 +14126,11 @@ function Li({ survey: e, actor: t, run: n, agentRun: r, hasCompletedHuman: i, on
 								}),
 								/* @__PURE__ */ (0, z.jsx)("h1", {
 									className: "font-display mx-auto mt-3 max-w-[850px] text-center text-[28px] font-black leading-[0.9] tracking-[-0.065em] text-slate-950",
-									children: c.title
+									children: l.title
 								}),
-								"description" in c && /* @__PURE__ */ (0, z.jsx)("p", {
+								"description" in l && /* @__PURE__ */ (0, z.jsx)("p", {
 									className: "mx-auto mt-6 max-w-[620px] text-center text-[14px] leading-7 text-slate-600",
-									children: c.description
+									children: l.description
 								})
 							]
 						})
@@ -14144,29 +14144,34 @@ function Li({ survey: e, actor: t, run: n, agentRun: r, hasCompletedHuman: i, on
 						className: "section-kicker",
 						children: "Result detail"
 					}), /* @__PURE__ */ (0, z.jsx)(Ii, {
-						result: c,
+						result: l,
 						survey: e
 					})]
 				}),
 				/* @__PURE__ */ (0, z.jsxs)("div", {
 					className: "mx-auto mt-7 flex max-w-[900px] flex-wrap items-center justify-center gap-3 pb-14",
 					children: [
-						!l && /* @__PURE__ */ (0, z.jsxs)("button", {
+						!u && /* @__PURE__ */ (0, z.jsxs)(z.Fragment, { children: [/* @__PURE__ */ (0, z.jsxs)("button", {
 							type: "button",
 							onClick: o,
-							className: "secondary-button focus-ring",
-							children: [/* @__PURE__ */ (0, z.jsx)(ce, { size: 16 }), " Retake benchmark"]
-						}),
-						/* @__PURE__ */ (0, z.jsxs)("button", {
+							className: "secondary-button result-action-button focus-ring",
+							children: [/* @__PURE__ */ (0, z.jsx)(D, { size: 16 }), " Back"]
+						}), /* @__PURE__ */ (0, z.jsxs)("button", {
 							type: "button",
 							onClick: s,
-							className: "secondary-button focus-ring",
+							className: "secondary-button result-action-button focus-ring",
+							children: [/* @__PURE__ */ (0, z.jsx)(ce, { size: 16 }), " Retake"]
+						})] }),
+						/* @__PURE__ */ (0, z.jsxs)("button", {
+							type: "button",
+							onClick: c,
+							className: "secondary-button result-action-button focus-ring",
 							children: [/* @__PURE__ */ (0, z.jsx)(A, { size: 16 }), " Results"]
 						}),
-						l && i && /* @__PURE__ */ (0, z.jsxs)("button", {
+						u && i && /* @__PURE__ */ (0, z.jsxs)("button", {
 							type: "button",
 							onClick: a,
-							className: "secondary-button focus-ring",
+							className: "secondary-button result-action-button focus-ring",
 							children: [/* @__PURE__ */ (0, z.jsx)(se, { size: 16 }), " Earlier run history"]
 						})
 					]
@@ -15250,9 +15255,24 @@ function Wi({ hosted: e = !1 }) {
 			runId: o.id
 		}), window.scrollTo({ top: 0 });
 	}
-	let P = (0, C.useEffectEvent)(() => {
+	function P(e) {
+		let n = In(t, e).human;
+		n?.completedAt && (re(e, (e) => e.human?.id === n.id ? {
+			...e,
+			human: {
+				...e.human,
+				completedAt: void 0
+			}
+		} : e), i({
+			name: "quiz",
+			surveyId: e,
+			actor: "human",
+			runId: n.id
+		}), window.scrollTo({ top: 0 }));
+	}
+	let le = (0, C.useEffectEvent)(() => {
 		se({ background: !0 });
-	}), le = (0, C.useEffectEvent)((e) => {
+	}), F = (0, C.useEffectEvent)((e) => {
 		if (e.name === "home") {
 			ie();
 			return;
@@ -15295,12 +15315,12 @@ function Wi({ hosted: e = !1 }) {
 				return;
 			}
 			if (Qn(e)) {
-				P();
+				le();
 				return;
 			}
 			if (!er(e)) return;
 			let t = e.target;
-			le(t);
+			F(t);
 		}
 		function i(e) {
 			e instanceof CustomEvent && r(e.detail);
@@ -15320,7 +15340,7 @@ function Wi({ hosted: e = !1 }) {
 		d,
 		t
 	]);
-	function F() {
+	function ue() {
 		return /* @__PURE__ */ (0, z.jsx)(B, {
 			store: t,
 			onHuman: oe,
@@ -15333,9 +15353,9 @@ function Wi({ hosted: e = !1 }) {
 			onDeleteExperiment: ae
 		});
 	}
-	function ue() {
+	function de() {
 		if (!a) return /* @__PURE__ */ (0, z.jsx)("div", { className: "validation-loading min-h-screen" });
-		if (r.name === "home") return F();
+		if (r.name === "home") return ue();
 		if (r.name === "license") return /* @__PURE__ */ (0, z.jsx)(Hi, { onHome: ie });
 		if (!k) return null;
 		let e = In(t, k.id);
@@ -15349,11 +15369,11 @@ function Wi({ hosted: e = !1 }) {
 				onSaveAnswer: (e, t) => ce(r.surveyId, r.actor, r.runId, e, t),
 				onComplete: () => M(r.surveyId, r.actor, r.runId),
 				onHome: ie
-			}, r.runId) : F();
+			}, r.runId) : ue();
 		}
 		if (r.name === "result") {
 			let t = r.actor === "human" ? e.human : zn(e, r.runId);
-			if (!t?.completedAt) return F();
+			if (!t?.completedAt) return ue();
 			let n = !!(e.human?.completedAt && (r.actor === "human" || _i(e.human.personaAgent, t.personaAgent)));
 			return /* @__PURE__ */ (0, z.jsx)(Li, {
 				survey: k,
@@ -15365,13 +15385,14 @@ function Wi({ hosted: e = !1 }) {
 					name: "history",
 					surveyId: r.surveyId
 				}),
+				onHumanEdit: () => P(r.surveyId),
 				onHumanChange: () => N(r.surveyId),
 				onHome: ie
 			});
 		}
 		if (r.name === "comparison") {
 			let t = zn(e, r.runId);
-			return !e.human?.completedAt || !t?.completedAt || t.benchmarkId !== e.human.id || !_i(e.human.personaAgent, t.personaAgent) ? F() : /* @__PURE__ */ (0, z.jsx)(zi, {
+			return !e.human?.completedAt || !t?.completedAt || t.benchmarkId !== e.human.id || !_i(e.human.personaAgent, t.personaAgent) ? ue() : /* @__PURE__ */ (0, z.jsx)(zi, {
 				survey: k,
 				human: e.human,
 				agentRun: t,
@@ -15388,7 +15409,7 @@ function Wi({ hosted: e = !1 }) {
 				onHome: ie
 			});
 		}
-		return !e.human?.completedAt || Ln(e, e.human.id).length === 0 ? F() : /* @__PURE__ */ (0, z.jsx)(Vi, {
+		return !e.human?.completedAt || Ln(e, e.human.id).length === 0 ? ue() : /* @__PURE__ */ (0, z.jsx)(Vi, {
 			survey: k,
 			history: e,
 			onComparison: (e) => i({
@@ -15405,10 +15426,10 @@ function Wi({ hosted: e = !1 }) {
 			onHome: ie
 		});
 	}
-	let de = a && ne.name !== "license" && l !== null;
+	let fe = a && ne.name !== "license" && l !== null;
 	return /* @__PURE__ */ (0, z.jsxs)("div", {
-		className: [s ? "validation-embedded" : "", de ? "validation-save-visible" : ""].filter(Boolean).join(" ") || void 0,
-		children: [ue(), de && /* @__PURE__ */ (0, z.jsx)(Ui, { notice: l })]
+		className: [s ? "validation-embedded" : "", fe ? "validation-save-visible" : ""].filter(Boolean).join(" ") || void 0,
+		children: [de(), fe && /* @__PURE__ */ (0, z.jsx)(Ui, { notice: l })]
 	});
 }
 //#endregion

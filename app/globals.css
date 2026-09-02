@@ -2130,6 +2130,10 @@ button:disabled {
   background: var(--validation-hover);
 }
 
+.validation-embedded .result-action-button {
+  font-weight: 400;
+}
+
 .validation-embedded .secondary-button:disabled {
   color: #71717a;
   background: var(--validation-hover);

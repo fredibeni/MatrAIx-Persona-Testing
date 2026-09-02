@@ -761,8 +761,23 @@ assert.match(
 );
 assert.match(
   resultViewSource,
-  /onClick=\{onHumanChange\}[\s\S]*?<RotateCcw[\s\S]*?Retake benchmark/,
-  'completed Human results must retain the Retake benchmark control',
+  /onClick=\{onHumanEdit\}[\s\S]*?<ArrowLeft[\s\S]*?Back[\s\S]*?onClick=\{onHumanChange\}[\s\S]*?<RotateCcw[\s\S]*?Retake/,
+  'completed Human results must offer Back before Retake',
+);
+assert.doesNotMatch(
+  resultViewSource,
+  /Retake benchmark/,
+  'the Human result action must use the shorter Retake label',
+);
+assert.match(
+  validationPageSource,
+  /function editHumanBenchmark\(surveyId: SurveyId\)[\s\S]*?completedAt: undefined[\s\S]*?setView\(\{ name: 'quiz', surveyId, actor: 'human', runId: human\.id \}\)/,
+  'Back must reopen the completed Human benchmark for editing with its existing answers',
+);
+assert.match(
+  validationStylesSource,
+  /\.validation-embedded \.result-action-button\s*\{[\s\S]*?font-weight:\s*400;/,
+  'completed-result actions must use regular-weight labels',
 );
 const resultActionsStart = resultViewSource.indexOf(
   'className="mx-auto mt-7 flex max-w-[900px]',
@@ -772,16 +787,18 @@ assert.ok(
   'the completed-result action row must remain discoverable',
 );
 const resultActionsSource = resultViewSource.slice(resultActionsStart);
+const backActionStart = resultActionsSource.indexOf('onClick={onHumanEdit}');
 const retakeActionStart = resultActionsSource.indexOf(
   'onClick={onHumanChange}',
 );
 const resultsActionStart = resultActionsSource.indexOf('onClick={onHome}');
 const historyActionStart = resultActionsSource.indexOf('onClick={onHistory}');
 assert.ok(
-  retakeActionStart >= 0 &&
+  backActionStart >= 0 &&
+    retakeActionStart > backActionStart &&
     resultsActionStart > retakeActionStart &&
     historyActionStart > resultsActionStart,
-  'Human results must render Retake benchmark before Results while Agent results keep Results before Earlier run history',
+  'Human results must render Back and Retake before Results while Agent results keep Results before Earlier run history',
 );
 assert.match(
   resultActionsSource.slice(resultsActionStart, historyActionStart),
