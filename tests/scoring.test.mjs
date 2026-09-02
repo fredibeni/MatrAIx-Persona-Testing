@@ -937,8 +937,8 @@ const resultsToolbarRule = validationStylesSource.match(
 );
 assert.match(
   resultsToolbarRule?.[1] ?? '',
-  /grid-template-columns:\s*max-content minmax\(180px, 280px\);/,
-  'the experiment selector must sit directly beside its label',
+  /grid-template-columns:\s*max-content minmax\(200px, 220px\);/,
+  'the experiment selector must sit directly beside its label with a tight width',
 );
 assert.match(
   validationStylesSource,
