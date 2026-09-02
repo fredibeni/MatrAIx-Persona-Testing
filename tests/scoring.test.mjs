@@ -244,8 +244,8 @@ const questionResultPromptRule = validationStylesSource.match(
 );
 assert.match(
   questionResultPromptRule?.[1] ?? '',
-  /font-weight:\s*400;/,
-  'question prompts must use regular-weight text',
+  /font-weight:\s*700;/,
+  'question prompts must use bold text',
 );
 const questionResultGridRule = validationStylesSource.match(
   /\.validation-embedded \.validation-question-result dl\s*\{([^}]*)\}/,
