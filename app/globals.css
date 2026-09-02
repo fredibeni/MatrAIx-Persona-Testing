@@ -1713,9 +1713,9 @@ button:disabled {
   color: var(--validation-ink);
   background: var(--validation-control);
   padding: 0 12px;
-  font-size: 14px;
-  font-weight: 650;
-  letter-spacing: 0;
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.11em;
   text-transform: uppercase;
 }
 

@@ -1127,8 +1127,18 @@ assert.match(
 );
 assert.match(
   embeddedTrendSelectorRule?.[1] ?? '',
-  /font-size:\s*14px;/,
-  'the benchmark history selector must match the Experiment dropdown text size',
+  /font-size:\s*11px;/,
+  'the benchmark history selector must match the Agent consistency title size',
+);
+assert.match(
+  embeddedTrendSelectorRule?.[1] ?? '',
+  /font-weight:\s*750;/,
+  'the benchmark history selector must match the Agent consistency title weight',
+);
+assert.match(
+  embeddedTrendSelectorRule?.[1] ?? '',
+  /letter-spacing:\s*0\.11em;/,
+  'the benchmark history selector must match the Agent consistency title tracking',
 );
 assert.match(
   embeddedTrendSelectorRule?.[1] ?? '',
