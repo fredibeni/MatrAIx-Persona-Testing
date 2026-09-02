@@ -921,6 +921,11 @@ const overallResultsEnd = validationPageSource.indexOf(
   overallResultsStart,
 );
 assert.ok(resultsToolbarStart >= 0, 'the experiment selector must be rendered');
+assert.match(
+  validationStylesSource,
+  /\.validation-embedded\.validation-save-visible \.hero-wrap\s*\{\s*margin-top:\s*-24px;\s*\}/,
+  'the Validation results title must share the saved-status row at the top of the page',
+);
 assert.ok(
   resultsHeroStart >= 0 &&
     resultsContentStart > resultsHeroStart &&

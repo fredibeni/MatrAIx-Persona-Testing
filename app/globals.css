@@ -2504,6 +2504,10 @@ button:disabled {
   padding-top: 24px;
 }
 
+.validation-embedded.validation-save-visible .hero-wrap {
+  margin-top: -24px;
+}
+
 .validation-embedded .validation-save-status {
   position: absolute;
   top: 34px;
