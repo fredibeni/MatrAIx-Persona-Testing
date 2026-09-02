@@ -955,8 +955,8 @@ assert.match(
 );
 assert.equal(
   validationPageSource.match(/<ValidationTrendInfo label=/g)?.length,
-  2,
-  'both chart explanations must be hidden behind reusable info buttons',
+  3,
+  'all validation history explanations must be hidden behind reusable info buttons',
 );
 assert.match(
   validationPageSource,
@@ -970,8 +970,8 @@ assert.match(
 );
 assert.match(
   validationPageSource,
-  /label="About benchmark match"[\s\S]*?label="About Agent consistency"/,
-  'both info controls must retain explicit accessible names',
+  /label="About validation history calculations"[\s\S]*?label="About benchmark match"[\s\S]*?label="About Agent consistency"/,
+  'all validation history info controls must retain explicit accessible names',
 );
 assert.match(
   validationStylesSource,
@@ -2032,7 +2032,7 @@ const trendStore = {
         sequence: 1,
         survey: everyday,
         answers: everydayA,
-        dimensionCount: 140,
+        dimensionCount: 198,
         completedAt: '2026-04-29T09:01:00.000Z',
       }),
     ],
@@ -2075,9 +2075,8 @@ assert.deepEqual(
     ({ dimensionCount, experimentCount }) => [dimensionCount, experimentCount],
   ),
   [
-    [140, 1],
     [154, 2],
-    [198, 1],
+    [198, 2],
   ],
   'repeated dimension counts must collapse to one sorted point while unknown-dimension runs are excluded',
 );
@@ -2093,19 +2092,29 @@ assert.ok(
 );
 assert.equal(
   overallBenchmark198.value,
-  0,
-  'a valid zero benchmark match must remain chartable',
+  0.5,
+  'repeated legacy and current validations must be averaged into one dimension point',
 );
 assert.deepEqual(
   validationTrends.agentConsistency.map((point) => point.dimensionCount),
   [154, 198],
-  'single-response legacy runs must not be presented as Agent consistency measurements',
+  'Agent consistency must include every saved validation result with a known dimension count',
 );
 assert.ok(
   Math.abs(validationTrends.agentConsistency[0].value - 17 / 24) < 1e-12,
   'Agent consistency must average independently from benchmark availability',
 );
-assert.equal(validationTrends.agentConsistency[1].value, 1);
+assert.deepEqual(
+  validationTrends.agentConsistency[1],
+  {
+    dimensionCount: 198,
+    value: 1,
+    experimentCount: 2,
+    completeExperimentCount: 2,
+    partialExperimentCount: 0,
+  },
+  'repeated consistency results at one dimension count must collapse into one averaged point',
+);
 assert.deepEqual(
   overallBenchmark154,
   {

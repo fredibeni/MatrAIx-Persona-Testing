@@ -814,14 +814,17 @@ function ValidationTrendSection({ data }: { data: ValidationTrendData }) {
       <header className="validation-trends-header">
         <div>
           <span className="section-kicker">Validation history</span>
-          <h2 id="validation-trends-title">
-            Performance by persona dimensions
-          </h2>
+          <div className="validation-trend-title-row">
+            <h2 id="validation-trends-title">
+              Performance by persona dimensions
+            </h2>
+            <ValidationTrendInfo label="About validation history calculations">
+              Each point averages experiments with the same number of filled
+              dimensions. Benchmark lines use the currently saved Human
+              benchmarks.
+            </ValidationTrendInfo>
+          </div>
         </div>
-        <p>
-          Each point averages experiments with the same number of filled
-          dimensions. Benchmark lines use the currently saved Human benchmarks.
-        </p>
       </header>
 
       <div className="validation-trends-grid">

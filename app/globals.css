@@ -1003,9 +1003,9 @@ button:disabled {
   margin-bottom: 18px;
 }
 .validation-trends-header {
+  position: relative;
   display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
+  align-items: flex-start;
   gap: 24px;
   margin-bottom: 13px;
 }
@@ -1016,13 +1016,6 @@ button:disabled {
   font-weight: 850;
   letter-spacing: -0.035em;
   line-height: 1.15;
-}
-.validation-trends-header > p {
-  max-width: 520px;
-  margin: 0;
-  color: #64748b;
-  font-size: 0.8rem;
-  line-height: 1.55;
 }
 .validation-trends-grid {
   display: grid;
@@ -1621,7 +1614,6 @@ button:disabled {
   color: var(--validation-ink);
 }
 
-.validation-embedded .validation-trends-header > p,
 .validation-embedded .validation-trend-card-header label,
 .validation-embedded .validation-trend-legend li,
 .validation-embedded .validation-trend-empty {

@@ -544,14 +544,7 @@ export function aggregateValidationExperiment(
 interface ValidationTrendObservation {
   dimensionCount: number;
   status: ValidationExperimentStatus;
-  explicit: boolean;
   aggregate: ValidationExperimentAggregate;
-}
-
-function isExplicitExperiment(experiment: ValidationExperimentOption) {
-  return Object.values(experiment.runsBySurvey)
-    .flatMap((runs) => runs ?? [])
-    .some((run) => run.experiment?.id === experiment.id);
 }
 
 function aggregateTrendMetric(
@@ -598,7 +591,6 @@ export function aggregateValidationTrends(
         {
           dimensionCount: experiment.dimensionCount,
           status: experiment.status,
-          explicit: isExplicitExperiment(experiment),
           aggregate: aggregateValidationExperimentOption(store, experiment),
         },
       ];
@@ -611,11 +603,7 @@ export function aggregateValidationTrends(
       (aggregate) => aggregate.overall.benchmarkSimilarity,
     ),
     agentConsistency: aggregateTrendMetric(
-      observations.filter(
-        (observation) =>
-          observation.explicit ||
-          observation.aggregate.overall.completedRuns > 1,
-      ),
+      observations,
       (aggregate) => aggregate.overall.consistency,
     ),
     surveyBenchmarkMatches: Object.fromEntries(
