@@ -13824,7 +13824,7 @@ function B({ store: e, onHuman: t, onRunAll: n, onLicense: r, runningExperiment:
 					children: /* @__PURE__ */ (0, z.jsx)("button", {
 						type: "button",
 						onClick: r,
-						className: "quiet-button text-sm font-bold text-slate-600 hover:text-slate-950 focus-ring",
+						className: "quiet-button validation-license-button font-bold text-slate-600 hover:text-slate-950 focus-ring",
 						children: "Sources and license"
 					})
 				})

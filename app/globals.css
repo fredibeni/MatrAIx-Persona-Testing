@@ -2134,6 +2134,10 @@ button:disabled {
   font-weight: 400;
 }
 
+.validation-embedded .validation-license-button {
+  font-size: 14px !important;
+}
+
 .validation-embedded .secondary-button:disabled {
   color: #71717a;
   background: var(--validation-hover);

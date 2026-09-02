@@ -668,6 +668,16 @@ assert.match(
 );
 
 const resultViewStart = validationPageSource.indexOf('function ResultView(');
+assert.match(
+  validationPageSource,
+  /onClick=\{onLicense\}[\s\S]*?className="quiet-button validation-license-button[^"]*"[\s\S]*?Sources and license/,
+  'the Validation Sources and license action must use an exact 14px size',
+);
+assert.match(
+  validationStylesSource,
+  /\.validation-embedded \.validation-license-button\s*\{[\s\S]*?font-size:\s*14px !important;/,
+  'the embedded Validation Sources and license action must override inherited sizing',
+);
 const resultViewEnd = validationPageSource.indexOf(
   'function MiniResult(',
   resultViewStart,

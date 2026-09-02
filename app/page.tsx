@@ -1242,7 +1242,7 @@ function ResultsView({
           <button
             type="button"
             onClick={onLicense}
-            className="quiet-button text-sm font-bold text-slate-600 hover:text-slate-950 focus-ring"
+            className="quiet-button validation-license-button font-bold text-slate-600 hover:text-slate-950 focus-ring"
           >
             Sources and license
           </button>
