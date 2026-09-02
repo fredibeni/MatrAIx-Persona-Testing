@@ -1122,6 +1122,11 @@ assert.match(
 );
 assert.match(
   embeddedTrendSelectorRule?.[1] ?? '',
+  /min-height:\s*25px;/,
+  'the benchmark history selector must share the compact chart-heading row height',
+);
+assert.match(
+  embeddedTrendSelectorRule?.[1] ?? '',
   /background:\s*var\(--validation-control\);/,
   'the benchmark history selector must match the high-contrast Experiment dropdown treatment',
 );

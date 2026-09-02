@@ -1707,7 +1707,7 @@ button:disabled {
 }
 
 .validation-embedded .validation-trend-card-header .validation-trend-selector {
-  min-height: 38px;
+  min-height: 25px;
   flex-direction: row;
   gap: 8px;
   color: var(--validation-ink);
@@ -1747,6 +1747,7 @@ button:disabled {
   .validation-trend-card-header
   .validation-trend-selector
   select {
+  min-height: 25px;
   color: inherit;
   background: transparent;
 }
