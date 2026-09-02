@@ -2089,6 +2089,10 @@ button:disabled {
   white-space: nowrap;
 }
 
+.validation-embedded .survey-human-run .status-pill {
+  font-weight: 400;
+}
+
 .validation-embedded .run-row:disabled:hover {
   background: var(--validation-paper-soft);
 }

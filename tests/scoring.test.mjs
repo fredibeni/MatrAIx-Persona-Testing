@@ -169,6 +169,14 @@ assert.match(
   /className="survey-human-run-label">Human benchmark<\/span>/,
   'the Human benchmark control must retain a compact text label',
 );
+const surveyHumanStatusPillRule = validationStylesSource.match(
+  /\.validation-embedded \.survey-human-run \.status-pill\s*\{([^}]*)\}/,
+);
+assert.match(
+  surveyHumanStatusPillRule?.[1] ?? '',
+  /font-weight:\s*400;/,
+  'Human benchmark status pills must use regular-weight text',
+);
 assert.doesNotMatch(
   surveyCardSource,
   /className="run-icon"/,
