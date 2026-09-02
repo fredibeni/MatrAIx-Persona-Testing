@@ -222,6 +222,11 @@ assert.match(
   /Math\.round\(row\.exactBenchmarkMatchRate \* row\.answerCount\)\}\/\$\{row\.answerCount\}/,
   'per-question Benchmark match must show the count of matching runs',
 );
+assert.match(
+  questionAggregateRowSource,
+  /\$\{row\.consensusCount\}\/\$\{row\.answerCount\}/,
+  'per-question Agent consistency must show the count of matching runs',
+);
 assert.doesNotMatch(
   questionAggregateRowSource,
   /validation-answer-distribution/,

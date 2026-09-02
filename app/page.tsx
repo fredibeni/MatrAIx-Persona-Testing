@@ -397,7 +397,7 @@ function QuestionAggregateRow({ row }: { row: ValidationQuestionAggregate }) {
           <dd>
             {row.answerCount < 2 || row.consistency === null
               ? 'Needs 2 responses'
-              : percent(row.consistency)}
+              : `${row.consensusCount}/${row.answerCount}`}
           </dd>
         </div>
       </dl>
