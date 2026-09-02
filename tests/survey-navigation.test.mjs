@@ -354,8 +354,8 @@ assert.match(
 );
 assert.match(
   document.getElementById('questions').innerHTML,
-  />Next survey</,
-  'The completion view must offer Next survey',
+  />Next</,
+  'The completion view must offer Next',
 );
 assert.match(
   document.getElementById('questions').innerHTML,

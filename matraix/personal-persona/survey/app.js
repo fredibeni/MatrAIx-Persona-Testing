@@ -1222,7 +1222,7 @@ function renderSectionFinished() {
           <span class="section-finished-validation-title">Run validation in background</span>
           <span class="section-finished-validation-subtitle">(recommended)</span>
         </button>
-        <button class="primary-button" type="button" data-finished-next ${nextIndex < 0 ? 'disabled' : ''}>Next survey</button>
+        <button class="primary-button" type="button" data-finished-next ${nextIndex < 0 ? 'disabled' : ''}>Next</button>
       </div>
     </section>
   `;
