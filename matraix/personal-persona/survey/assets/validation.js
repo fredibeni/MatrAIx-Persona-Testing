@@ -13660,10 +13660,10 @@ function Mi({ data: e, hasAllHumanBenchmarks: t }) {
 									onChange: (e) => r(e.target.value),
 									children: [/* @__PURE__ */ (0, z.jsx)("option", {
 										value: "overall",
-										children: "Overall benchmark match"
+										children: "OVERALL BENCHMARK MATCH"
 									}), /* @__PURE__ */ (0, z.jsx)("option", {
 										value: "individual",
-										children: "Individual benchmark match"
+										children: "INDIVIDUAL BENCHMARK MATCH"
 									})]
 								})
 							]

@@ -1038,8 +1038,8 @@ assert.match(
 );
 assert.match(
   validationPageSource,
-  /<option value="overall">Overall benchmark match<\/option>[\s\S]*?<option value="individual">Individual benchmark match<\/option>/,
-  'the benchmark history chart must offer overall and individual views',
+  /<option value="overall">OVERALL BENCHMARK MATCH<\/option>[\s\S]*?<option value="individual">INDIVIDUAL BENCHMARK MATCH<\/option>/,
+  'the benchmark history chart must offer all-caps overall and individual views',
 );
 assert.match(
   validationPageSource,
@@ -1129,6 +1129,11 @@ assert.match(
   embeddedTrendSelectorRule?.[1] ?? '',
   /font-size:\s*14px;/,
   'the benchmark history selector must match the Experiment dropdown text size',
+);
+assert.match(
+  embeddedTrendSelectorRule?.[1] ?? '',
+  /text-transform:\s*uppercase;/,
+  'the benchmark history selector must render its selected view in all caps',
 );
 assert.match(
   validationPageSource,

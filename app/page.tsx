@@ -1005,8 +1005,8 @@ function ValidationTrendSection({
                     )
                   }
                 >
-                  <option value="overall">Overall benchmark match</option>
-                  <option value="individual">Individual benchmark match</option>
+                  <option value="overall">OVERALL BENCHMARK MATCH</option>
+                  <option value="individual">INDIVIDUAL BENCHMARK MATCH</option>
                 </select>
               </label>
               <ValidationTrendInfo label="About benchmark match">
