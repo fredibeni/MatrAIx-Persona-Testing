@@ -13289,48 +13289,30 @@ function Ci({ row: e }) {
 	});
 }
 var wi = [
-	void 0,
-	"8 5",
-	"2 5",
-	"11 4 2 4"
+	"var(--validation-trend-series-1)",
+	"var(--validation-trend-series-2)",
+	"var(--validation-trend-series-3)",
+	"var(--validation-trend-series-4)"
 ];
-function Ti({ x: e, y: t, styleIndex: n, size: r = 4 }) {
-	let i = {
-		className: "validation-trend-marker",
-		fill: n % 2 == 0 ? "var(--validation-trend-line)" : "var(--validation-trend-marker-fill)",
-		stroke: "var(--validation-trend-line)",
-		strokeWidth: 2,
-		"aria-hidden": !0
-	};
-	switch (n % 4) {
-		case 1: return /* @__PURE__ */ (0, R.jsx)("rect", {
-			x: e - r,
-			y: t - r,
-			width: r * 2,
-			height: r * 2,
-			rx: "1",
-			...i
-		});
-		case 2: return /* @__PURE__ */ (0, R.jsx)("polygon", {
-			points: `${e},${t - r - 1} ${e + r + 1},${t} ${e},${t + r + 1} ${e - r - 1},${t}`,
-			...i
-		});
-		case 3: return /* @__PURE__ */ (0, R.jsx)("polygon", {
-			points: `${e},${t - r - 1} ${e + r + 1},${t + r} ${e - r - 1},${t + r}`,
-			...i
-		});
-		default: return /* @__PURE__ */ (0, R.jsx)("circle", {
-			cx: e,
-			cy: t,
-			r,
-			...i
-		});
-	}
+function Ti(e) {
+	return wi[e % wi.length];
 }
-function Ei(e, t, n) {
+function Ei({ x: e, y: t, styleIndex: n, size: r = 4 }) {
+	return /* @__PURE__ */ (0, R.jsx)("circle", {
+		className: "validation-trend-marker",
+		cx: e,
+		cy: t,
+		r,
+		fill: Ti(n),
+		stroke: "var(--validation-trend-marker-fill)",
+		strokeWidth: 2,
+		"aria-hidden": "true"
+	});
+}
+function Di(e, t, n) {
 	return `${t} dimensions. ${e.map((e) => `${fn(n)} ${e}`).join(". ")}.`;
 }
-function Di({ label: e, children: t }) {
+function Oi({ label: e, children: t }) {
 	let n = (0, C.useId)(), [r, i] = (0, C.useState)(!1);
 	return /* @__PURE__ */ (0, R.jsxs)("div", {
 		className: "validation-trend-info",
@@ -13351,7 +13333,7 @@ function Di({ label: e, children: t }) {
 		})]
 	});
 }
-function Oi({ title: e, description: t, yAxisLabel: n, series: r, dimensionValues: i, emptyMessage: a }) {
+function ki({ title: e, description: t, yAxisLabel: n, series: r, dimensionValues: i, emptyMessage: a }) {
 	let o = (0, C.useId)(), s = `${o}-tooltip`, [c, l] = (0, C.useState)(null), [u, d] = (0, C.useState)(null), [f, p] = (0, C.useState)(null), m = r.flatMap((e) => e.points), h = i[0] ?? 0, g = i.at(-1) ?? 0, _ = (e) => h === g ? 222 : 56 + (e - h) / (g - h) * 332, v = (e) => 14 + (1 - Math.max(0, Math.min(1, e))) * 184, y = i.length <= 6 ? i : Array.from(new Set(Array.from({ length: 6 }, (e, t) => Math.round(t * (i.length - 1) / 5)).map((e) => i[e]))), b = r.map((e) => ({
 		...e,
 		points: e.points.filter((e) => Number.isFinite(e.dimensionCount) && Number.isFinite(e.value))
@@ -13402,11 +13384,10 @@ function Oi({ title: e, description: t, yAxisLabel: n, series: r, dimensionValue
 						x2: "34",
 						y1: "7",
 						y2: "7",
-						stroke: "var(--validation-trend-line)",
+						stroke: Ti(e.styleIndex),
 						strokeWidth: "2.5",
-						strokeDasharray: wi[e.styleIndex % 4],
 						strokeLinecap: "round"
-					}), /* @__PURE__ */ (0, R.jsx)(Ti, {
+					}), /* @__PURE__ */ (0, R.jsx)(Ei, {
 						x: 18,
 						y: 7,
 						styleIndex: e.styleIndex,
@@ -13484,9 +13465,8 @@ function Oi({ title: e, description: t, yAxisLabel: n, series: r, dimensionValue
 							return e.points.length > 1 ? /* @__PURE__ */ (0, R.jsx)("polyline", {
 								points: t,
 								fill: "none",
-								stroke: "var(--validation-trend-line)",
+								stroke: Ti(e.styleIndex),
 								strokeWidth: "2.5",
-								strokeDasharray: wi[e.styleIndex % 4],
 								strokeLinecap: "round",
 								strokeLinejoin: "round",
 								"aria-hidden": "true"
@@ -13499,7 +13479,7 @@ function Oi({ title: e, description: t, yAxisLabel: n, series: r, dimensionValue
 								role: "graphics-symbol",
 								tabIndex: 0,
 								focusable: "true",
-								"aria-label": Ei(t, e.dimensionCount, e.value),
+								"aria-label": Di(t, e.dimensionCount, e.value),
 								"aria-describedby": n ? s : void 0,
 								onMouseEnter: () => {
 									l(e.id), p(null);
@@ -13520,7 +13500,7 @@ function Oi({ title: e, description: t, yAxisLabel: n, series: r, dimensionValue
 									r: 12,
 									className: "validation-trend-hit-target",
 									"aria-hidden": "true"
-								}), e.entries.map((t) => /* @__PURE__ */ (0, R.jsx)(Ti, {
+								}), e.entries.map((t) => /* @__PURE__ */ (0, R.jsx)(Ei, {
 									x: e.x,
 									y: e.y,
 									styleIndex: t.styleIndex
@@ -13592,7 +13572,7 @@ function Oi({ title: e, description: t, yAxisLabel: n, series: r, dimensionValue
 		]
 	});
 }
-function ki({ data: e }) {
+function Ai({ data: e }) {
 	let [t, n] = (0, C.useState)("overall"), r = Array.from(new Set([
 		...e.overallBenchmarkMatch,
 		...e.agentConsistency,
@@ -13623,7 +13603,7 @@ function ki({ data: e }) {
 				children: [/* @__PURE__ */ (0, R.jsx)("span", {
 					className: "section-kicker",
 					children: "Validation history"
-				}), /* @__PURE__ */ (0, R.jsx)(Di, {
+				}), /* @__PURE__ */ (0, R.jsx)(Oi, {
 					label: "About validation history calculations",
 					children: "Each point averages experiments with the same number of filled dimensions. Benchmark lines use the currently saved Human benchmarks."
 				})]
@@ -13639,7 +13619,7 @@ function ki({ data: e }) {
 					className: "validation-trend-card-header",
 					children: [/* @__PURE__ */ (0, R.jsxs)("div", {
 						className: "validation-trend-title-row",
-						children: [/* @__PURE__ */ (0, R.jsx)("h3", { children: "Benchmark match" }), /* @__PURE__ */ (0, R.jsx)(Di, {
+						children: [/* @__PURE__ */ (0, R.jsx)("h3", { children: "Benchmark match" }), /* @__PURE__ */ (0, R.jsx)(Oi, {
 							label: "About benchmark match",
 							children: "Average Agent match against the available Human benchmark."
 						})]
@@ -13662,7 +13642,7 @@ function ki({ data: e }) {
 							})]
 						})]
 					})]
-				}), /* @__PURE__ */ (0, R.jsx)(Oi, {
+				}), /* @__PURE__ */ (0, R.jsx)(ki, {
 					title: t === "overall" ? "Overall benchmark match by persona dimensions" : "Individual benchmark match by persona dimensions",
 					description: t === "overall" ? "One line shows the average overall benchmark match at each saved dimension count." : "Four lines show average benchmark match for the four Validation surveys at each saved dimension count.",
 					yAxisLabel: "Benchmark match",
@@ -13676,12 +13656,12 @@ function ki({ data: e }) {
 					className: "validation-trend-card-header",
 					children: /* @__PURE__ */ (0, R.jsxs)("div", {
 						className: "validation-trend-title-row",
-						children: [/* @__PURE__ */ (0, R.jsx)("h3", { children: "Agent consistency" }), /* @__PURE__ */ (0, R.jsx)(Di, {
+						children: [/* @__PURE__ */ (0, R.jsx)("h3", { children: "Agent consistency" }), /* @__PURE__ */ (0, R.jsx)(Oi, {
 							label: "About Agent consistency",
 							children: "Average agreement on the most common answer at each dimension count."
 						})]
 					})
-				}), /* @__PURE__ */ (0, R.jsx)(Oi, {
+				}), /* @__PURE__ */ (0, R.jsx)(ki, {
 					title: "Overall Agent consistency by persona dimensions",
 					description: "One line shows average overall Agent consistency at each saved dimension count.",
 					yAxisLabel: "Agent consistency",
@@ -13693,7 +13673,7 @@ function ki({ data: e }) {
 		})]
 	});
 }
-function Ai({ store: e, onHuman: t, onRunAll: n, onLicense: r, runningExperiment: i, runDisabled: a, selectedExperimentId: o, onSelectExperiment: s }) {
+function ji({ store: e, onHuman: t, onRunAll: n, onLicense: r, runningExperiment: i, runDisabled: a, selectedExperimentId: o, onSelectExperiment: s }) {
 	let c = Yr(e), l = c.some((e) => e.id === o) ? o : c[0]?.id ?? null, u = l ? ii(e, l) : null, d = zr(u?.experiment ?? null), f = oi(e);
 	return /* @__PURE__ */ (0, R.jsxs)(xi, {
 		simple: !0,
@@ -13741,7 +13721,7 @@ function Ai({ store: e, onHuman: t, onRunAll: n, onLicense: r, runningExperiment
 		}), /* @__PURE__ */ (0, R.jsxs)("section", {
 			className: "mx-auto max-w-[1240px] px-5 pb-20 pt-16 sm:px-8 lg:px-10",
 			children: [
-				/* @__PURE__ */ (0, R.jsx)(ki, { data: f }),
+				/* @__PURE__ */ (0, R.jsx)(Ai, { data: f }),
 				/* @__PURE__ */ (0, R.jsxs)("div", {
 					className: "validation-results-toolbar",
 					children: [
@@ -13770,7 +13750,7 @@ function Ai({ store: e, onHuman: t, onRunAll: n, onLicense: r, runningExperiment
 					children: [/* @__PURE__ */ (0, R.jsxs)("div", { children: [
 						/* @__PURE__ */ (0, R.jsxs)("div", {
 							className: "validation-overall-metric-header",
-							children: [/* @__PURE__ */ (0, R.jsx)("span", { children: "Overall benchmark match" }), /* @__PURE__ */ (0, R.jsx)(Di, {
+							children: [/* @__PURE__ */ (0, R.jsx)("span", { children: "Overall benchmark match" }), /* @__PURE__ */ (0, R.jsx)(Oi, {
 								label: "About overall benchmark match",
 								children: "Overall match pools every Agent answer against the available Human answer for the same question."
 							})]
@@ -13780,7 +13760,7 @@ function Ai({ store: e, onHuman: t, onRunAll: n, onLicense: r, runningExperiment
 					] }), /* @__PURE__ */ (0, R.jsxs)("div", { children: [
 						/* @__PURE__ */ (0, R.jsxs)("div", {
 							className: "validation-overall-metric-header",
-							children: [/* @__PURE__ */ (0, R.jsx)("span", { children: "Overall Agent consistency" }), /* @__PURE__ */ (0, R.jsx)(Di, {
+							children: [/* @__PURE__ */ (0, R.jsx)("span", { children: "Overall Agent consistency" }), /* @__PURE__ */ (0, R.jsx)(Oi, {
 								label: "About overall Agent consistency",
 								children: "Consistency measures how often Agents selected that question's most common answer."
 							})]
@@ -13812,7 +13792,7 @@ function Ai({ store: e, onHuman: t, onRunAll: n, onLicense: r, runningExperiment
 		})]
 	});
 }
-function ji({ survey: e, actor: t, run: n, agentRun: r, onSaveAnswer: i, onComplete: a, onHome: o }) {
+function Mi({ survey: e, actor: t, run: n, agentRun: r, onSaveAnswer: i, onComplete: a, onHome: o }) {
 	let s = e.questions.findIndex((e) => !n.answers[e.id]), [c, l] = (0, C.useState)(s === -1 ? e.questions.length - 1 : s), [u, d] = (0, C.useState)(!1), f = e.questions[c], p = n.answers[f.id], m = (c + 1) / e.questions.length * 100, h = si[t], g = c === e.questions.length - 1, _ = (0, C.useRef)(null), v = (0, C.useRef)(!1), y = (0, C.useRef)(void 0);
 	(0, C.useEffect)(() => (v.current = !1, _.current?.focus({ preventScroll: !0 }), () => {
 		y.current !== void 0 && (window.clearTimeout(y.current), y.current = void 0);
@@ -13953,7 +13933,7 @@ function ji({ survey: e, actor: t, run: n, agentRun: r, onSaveAnswer: i, onCompl
 		})
 	});
 }
-function Mi({ result: e, survey: t }) {
+function B({ result: e, survey: t }) {
 	return /* @__PURE__ */ (0, R.jsx)("div", {
 		className: "mt-8 space-y-4",
 		children: Object.entries(e.scores).map(([e, n]) => /* @__PURE__ */ (0, R.jsxs)("div", { children: [/* @__PURE__ */ (0, R.jsxs)("div", {
@@ -13971,7 +13951,7 @@ function Mi({ result: e, survey: t }) {
 		})] }, e))
 	});
 }
-function B({ result: e, survey: t, compact: n = !1 }) {
+function V({ result: e, survey: t, compact: n = !1 }) {
 	return /* @__PURE__ */ (0, R.jsx)("div", {
 		className: `mt-7 ${n ? "space-y-4" : "grid gap-4 sm:grid-cols-2"}`,
 		children: e.values.map((e) => /* @__PURE__ */ (0, R.jsxs)("div", {
@@ -14013,7 +13993,7 @@ function B({ result: e, survey: t, compact: n = !1 }) {
 		}, e.id))
 	});
 }
-function V({ result: e, survey: t, compact: n = !1 }) {
+function Ni({ result: e, survey: t, compact: n = !1 }) {
 	return /* @__PURE__ */ (0, R.jsx)("div", {
 		className: "mt-7 space-y-5",
 		children: tn.map((r, i) => /* @__PURE__ */ (0, R.jsxs)("div", { children: [
@@ -14043,21 +14023,21 @@ function V({ result: e, survey: t, compact: n = !1 }) {
 		] }, r.key))
 	});
 }
-function Ni({ result: e, survey: t, compact: n = !1 }) {
-	return e.kind === "categorical" ? /* @__PURE__ */ (0, R.jsx)(Mi, {
+function Pi({ result: e, survey: t, compact: n = !1 }) {
+	return e.kind === "categorical" ? /* @__PURE__ */ (0, R.jsx)(B, {
 		result: e,
 		survey: t
-	}) : e.kind === "scale" ? /* @__PURE__ */ (0, R.jsx)(B, {
+	}) : e.kind === "scale" ? /* @__PURE__ */ (0, R.jsx)(V, {
 		result: e,
 		survey: t,
 		compact: n
-	}) : /* @__PURE__ */ (0, R.jsx)(V, {
+	}) : /* @__PURE__ */ (0, R.jsx)(Ni, {
 		result: e,
 		survey: t,
 		compact: n
 	});
 }
-function Pi({ survey: e, actor: t, run: n, agentRun: r, hasCompletedHuman: i, onHistory: a, onHumanChange: o, onHome: s }) {
+function Fi({ survey: e, actor: t, run: n, agentRun: r, hasCompletedHuman: i, onHistory: a, onHumanChange: o, onHome: s }) {
 	let c = ln(e, n.answers), l = t === "agent" && r, u = si[t];
 	return /* @__PURE__ */ (0, R.jsx)(xi, {
 		onHome: s,
@@ -14123,7 +14103,7 @@ function Pi({ survey: e, actor: t, run: n, agentRun: r, hasCompletedHuman: i, on
 						id: "result-detail-heading",
 						className: "section-kicker",
 						children: "Result detail"
-					}), /* @__PURE__ */ (0, R.jsx)(Ni, {
+					}), /* @__PURE__ */ (0, R.jsx)(Pi, {
 						result: c,
 						survey: e
 					})]
@@ -14155,7 +14135,7 @@ function Pi({ survey: e, actor: t, run: n, agentRun: r, hasCompletedHuman: i, on
 		})
 	});
 }
-function Fi({ survey: e, actor: t, result: n }) {
+function Ii({ survey: e, actor: t, result: n }) {
 	let r = si[t];
 	return /* @__PURE__ */ (0, R.jsxs)("div", {
 		className: "comparison-result-card",
@@ -14181,7 +14161,7 @@ function Fi({ survey: e, actor: t, result: n }) {
 				className: "mt-4 text-sm leading-6 text-slate-600",
 				children: n.description
 			}),
-			/* @__PURE__ */ (0, R.jsx)(Ni, {
+			/* @__PURE__ */ (0, R.jsx)(Pi, {
 				result: n,
 				survey: e,
 				compact: !0
@@ -14189,7 +14169,7 @@ function Fi({ survey: e, actor: t, result: n }) {
 		]
 	});
 }
-function Ii({ survey: e, human: t, agentRun: n, onResult: r, onHistory: i, onHome: a }) {
+function Li({ survey: e, human: t, agentRun: n, onResult: r, onHistory: i, onHome: a }) {
 	let o = dn(e, t.answers, n.answers), s = ln(e, t.answers), c = ln(e, n.answers), l = o.exactMatches === e.questions.length ? "Every answer matched." : `${o.exactMatches} of ${e.questions.length} answers matched exactly.`;
 	return /* @__PURE__ */ (0, R.jsx)(xi, {
 		onHome: a,
@@ -14276,11 +14256,11 @@ function Ii({ survey: e, human: t, agentRun: n, onResult: r, onHistory: i, onHom
 				}),
 				/* @__PURE__ */ (0, R.jsxs)("section", {
 					className: "mx-auto mt-10 grid max-w-[1080px] gap-5 lg:grid-cols-2",
-					children: [/* @__PURE__ */ (0, R.jsx)(Fi, {
+					children: [/* @__PURE__ */ (0, R.jsx)(Ii, {
 						survey: e,
 						actor: "human",
 						result: s
-					}), /* @__PURE__ */ (0, R.jsx)(Fi, {
+					}), /* @__PURE__ */ (0, R.jsx)(Ii, {
 						survey: e,
 						actor: "agent",
 						result: c
@@ -14404,7 +14384,7 @@ function Ii({ survey: e, human: t, agentRun: n, onResult: r, onHistory: i, onHom
 		})
 	});
 }
-function Li({ points: e, survey: t }) {
+function Ri({ points: e, survey: t }) {
 	let n = (0, C.useRef)(null), r = Math.max(1, ...e.map((e) => e.dimensionCount)), i = (e) => 90 + e / r * 622, a = (e) => 22 + (1 - e) * 202, o = Array.from(new Set(Array.from({ length: 5 }, (e, t) => Math.round(r * t / 4)))), s = /* @__PURE__ */ new Map();
 	e.forEach((e) => {
 		let t = `${e.dimensionCount}:${e.similarity.toFixed(6)}`, n = s.get(t);
@@ -14556,7 +14536,7 @@ function Li({ points: e, survey: t }) {
 		]
 	});
 }
-function Ri({ survey: e, history: t, onComparison: n, onHumanResult: r, onHome: i }) {
+function zi({ survey: e, history: t, onComparison: n, onHumanResult: r, onHome: i }) {
 	let a = t.human, o = Rn(t, a.id).sort(gi), s = Rn(t).filter((e) => e.benchmarkId !== a.id).sort(gi), c = Un(e.id, t), l = Gn(c), u = o.map((t) => ({
 		run: t,
 		comparison: dn(e, a.answers, t.answers)
@@ -14638,7 +14618,7 @@ function Ri({ survey: e, history: t, onComparison: n, onHumanResult: r, onHome: 
 								})
 							] })
 						}),
-						c.length ? /* @__PURE__ */ (0, R.jsx)(Li, {
+						c.length ? /* @__PURE__ */ (0, R.jsx)(Ri, {
 							points: c,
 							survey: e
 						}) : /* @__PURE__ */ (0, R.jsxs)("div", {
@@ -14821,7 +14801,7 @@ function Ri({ survey: e, history: t, onComparison: n, onHumanResult: r, onHome: 
 		})
 	});
 }
-function zi({ onHome: e }) {
+function Bi({ onHome: e }) {
 	return /* @__PURE__ */ (0, R.jsx)(xi, {
 		onHome: e,
 		children: /* @__PURE__ */ (0, R.jsxs)("article", {
@@ -14885,7 +14865,7 @@ function zi({ onHome: e }) {
 		})
 	});
 }
-function Bi({ notice: e }) {
+function Vi({ notice: e }) {
 	return /* @__PURE__ */ (0, R.jsxs)("output", {
 		className: "validation-save-status",
 		"aria-live": "polite",
@@ -14895,7 +14875,7 @@ function Bi({ notice: e }) {
 		}), /* @__PURE__ */ (0, R.jsx)("span", { children: e.message })]
 	});
 }
-function Vi({ hosted: e = !1 }) {
+function Hi({ hosted: e = !1 }) {
 	let [t, n] = (0, C.useState)({}), [r, i] = (0, C.useState)(z), [a, o] = (0, C.useState)(!1), [s, c] = (0, C.useState)(e), [l, u] = (0, C.useState)(null), [d, f] = (0, C.useState)(!1), [p, m] = (0, C.useState)(!1), [h, g] = (0, C.useState)(null), [_, v] = (0, C.useState)(0), y = (0, C.useRef)({}), b = (0, C.useRef)(null), x = (0, C.useRef)({}), S = (0, C.useRef)(void 0), w = (0, C.useRef)(!1), T = (0, C.useRef)(!1), ee = (0, C.useRef)(null), E = (0, C.useRef)(!1), D = (0, C.useRef)(0), te = (0, C.useRef)(!0);
 	(0, C.useEffect)(() => {
 		y.current = t;
@@ -15293,7 +15273,7 @@ function Vi({ hosted: e = !1 }) {
 		t
 	]);
 	function ue() {
-		return /* @__PURE__ */ (0, R.jsx)(Ai, {
+		return /* @__PURE__ */ (0, R.jsx)(ji, {
 			store: t,
 			onHuman: A,
 			onRunAll: () => void se(),
@@ -15307,12 +15287,12 @@ function Vi({ hosted: e = !1 }) {
 	function P() {
 		if (!a) return /* @__PURE__ */ (0, R.jsx)("div", { className: "validation-loading min-h-screen" });
 		if (r.name === "home") return ue();
-		if (r.name === "license") return /* @__PURE__ */ (0, R.jsx)(zi, { onHome: ae });
+		if (r.name === "license") return /* @__PURE__ */ (0, R.jsx)(Bi, { onHome: ae });
 		if (!O) return null;
 		let e = Ln(t, O.id);
 		if (r.name === "quiz") {
 			let t = r.actor === "human" ? e.human : Bn(e, r.runId);
-			return t ? /* @__PURE__ */ (0, R.jsx)(ji, {
+			return t ? /* @__PURE__ */ (0, R.jsx)(Mi, {
 				survey: O,
 				actor: r.actor,
 				run: t,
@@ -15326,7 +15306,7 @@ function Vi({ hosted: e = !1 }) {
 			let t = r.actor === "human" ? e.human : Bn(e, r.runId);
 			if (!t?.completedAt) return ue();
 			let n = !!(e.human?.completedAt && (r.actor === "human" || hi(e.human.personaAgent, t.personaAgent)));
-			return /* @__PURE__ */ (0, R.jsx)(Pi, {
+			return /* @__PURE__ */ (0, R.jsx)(Fi, {
 				survey: O,
 				actor: r.actor,
 				run: t,
@@ -15342,7 +15322,7 @@ function Vi({ hosted: e = !1 }) {
 		}
 		if (r.name === "comparison") {
 			let t = Bn(e, r.runId);
-			return !e.human?.completedAt || !t?.completedAt || t.benchmarkId !== e.human.id || !hi(e.human.personaAgent, t.personaAgent) ? ue() : /* @__PURE__ */ (0, R.jsx)(Ii, {
+			return !e.human?.completedAt || !t?.completedAt || t.benchmarkId !== e.human.id || !hi(e.human.personaAgent, t.personaAgent) ? ue() : /* @__PURE__ */ (0, R.jsx)(Li, {
 				survey: O,
 				human: e.human,
 				agentRun: t,
@@ -15359,7 +15339,7 @@ function Vi({ hosted: e = !1 }) {
 				onHome: ae
 			});
 		}
-		return !e.human?.completedAt || Rn(e, e.human.id).length === 0 ? ue() : /* @__PURE__ */ (0, R.jsx)(Ri, {
+		return !e.human?.completedAt || Rn(e, e.human.id).length === 0 ? ue() : /* @__PURE__ */ (0, R.jsx)(zi, {
 			survey: O,
 			history: e,
 			onComparison: (e) => i({
@@ -15379,18 +15359,18 @@ function Vi({ hosted: e = !1 }) {
 	let de = a && re.name !== "license" && l !== null;
 	return /* @__PURE__ */ (0, R.jsxs)("div", {
 		className: [s ? "validation-embedded" : "", de ? "validation-save-visible" : ""].filter(Boolean).join(" ") || void 0,
-		children: [P(), de && /* @__PURE__ */ (0, R.jsx)(Bi, { notice: l })]
+		children: [P(), de && /* @__PURE__ */ (0, R.jsx)(Vi, { notice: l })]
 	});
 }
 //#endregion
 //#region app/validation-entry.tsx
-var Hi = document.getElementById("validation-root");
-if (!Hi) throw Error("The Validation mount point was not found.");
-var Ui = (0, N.createRoot)(Hi), Wi = 0;
-function Gi() {
-	Ui.render(/* @__PURE__ */ (0, R.jsx)(Vi, { hosted: !0 }, Wi));
+var Ui = document.getElementById("validation-root");
+if (!Ui) throw Error("The Validation mount point was not found.");
+var Wi = (0, N.createRoot)(Ui), Gi = 0;
+function Ki() {
+	Wi.render(/* @__PURE__ */ (0, R.jsx)(Hi, { hosted: !0 }, Gi));
 }
 window.addEventListener("matraix-validation-reload", () => {
-	Wi += 1, Gi();
-}), Gi();
+	Gi += 1, Ki();
+}), Ki();
 //#endregion

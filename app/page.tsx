@@ -434,12 +434,18 @@ interface ValidationTrendPointCluster {
   }>;
 }
 
-const validationTrendLinePatterns = [
-  undefined,
-  '8 5',
-  '2 5',
-  '11 4 2 4',
+const validationTrendSeriesColors = [
+  'var(--validation-trend-series-1)',
+  'var(--validation-trend-series-2)',
+  'var(--validation-trend-series-3)',
+  'var(--validation-trend-series-4)',
 ] as const;
+
+function validationTrendColor(styleIndex: number) {
+  return validationTrendSeriesColors[
+    styleIndex % validationTrendSeriesColors.length
+  ];
+}
 
 function ValidationTrendMarker({
   x,
@@ -452,47 +458,18 @@ function ValidationTrendMarker({
   styleIndex: number;
   size?: number;
 }) {
-  const markerFill =
-    styleIndex % 2 === 0
-      ? 'var(--validation-trend-line)'
-      : 'var(--validation-trend-marker-fill)';
-  const common = {
-    className: 'validation-trend-marker',
-    fill: markerFill,
-    stroke: 'var(--validation-trend-line)',
-    strokeWidth: 2,
-    'aria-hidden': true,
-  };
-
-  switch (styleIndex % 4) {
-    case 1:
-      return (
-        <rect
-          x={x - size}
-          y={y - size}
-          width={size * 2}
-          height={size * 2}
-          rx="1"
-          {...common}
-        />
-      );
-    case 2:
-      return (
-        <polygon
-          points={`${x},${y - size - 1} ${x + size + 1},${y} ${x},${y + size + 1} ${x - size - 1},${y}`}
-          {...common}
-        />
-      );
-    case 3:
-      return (
-        <polygon
-          points={`${x},${y - size - 1} ${x + size + 1},${y + size} ${x - size - 1},${y + size}`}
-          {...common}
-        />
-      );
-    default:
-      return <circle cx={x} cy={y} r={size} {...common} />;
-  }
+  return (
+    <circle
+      className="validation-trend-marker"
+      cx={x}
+      cy={y}
+      r={size}
+      fill={validationTrendColor(styleIndex)}
+      stroke="var(--validation-trend-marker-fill)"
+      strokeWidth={2}
+      aria-hidden="true"
+    />
+  );
 }
 
 function validationTrendCoordinateLabel(
@@ -681,11 +658,8 @@ function ValidationTrendChart({
                   x2="34"
                   y1="7"
                   y2="7"
-                  stroke="var(--validation-trend-line)"
+                  stroke={validationTrendColor(item.styleIndex)}
                   strokeWidth="2.5"
-                  strokeDasharray={
-                    validationTrendLinePatterns[item.styleIndex % 4]
-                  }
                   strokeLinecap="round"
                 />
                 <ValidationTrendMarker
@@ -786,11 +760,8 @@ function ValidationTrendChart({
                   key={item.id}
                   points={linePoints}
                   fill="none"
-                  stroke="var(--validation-trend-line)"
+                  stroke={validationTrendColor(item.styleIndex)}
                   strokeWidth="2.5"
-                  strokeDasharray={
-                    validationTrendLinePatterns[item.styleIndex % 4]
-                  }
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   aria-hidden="true"

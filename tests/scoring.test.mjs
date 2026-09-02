@@ -979,6 +979,31 @@ assert.match(
   'history charts must retain point markers, including when only one dimension is available',
 );
 assert.match(
+  validationPageSource,
+  /const validationTrendSeriesColors = \[[\s\S]*?--validation-trend-series-1[\s\S]*?--validation-trend-series-4/,
+  'individual benchmark series must define four distinct chart colours',
+);
+assert.match(
+  validationPageSource,
+  /function ValidationTrendMarker[\s\S]*?<circle[\s\S]*?fill=\{validationTrendColor\(styleIndex\)\}/,
+  'individual benchmark points must use the series colour with a consistent marker shape',
+);
+assert.match(
+  validationTrendChartSource,
+  /stroke=\{validationTrendColor\(item\.styleIndex\)\}/,
+  'legend keys and plotted lines must use their series colour',
+);
+assert.doesNotMatch(
+  validationTrendChartSource,
+  /strokeDasharray=/,
+  'individual benchmark series must use colour rather than dash patterns',
+);
+assert.doesNotMatch(
+  validationPageSource,
+  /validationTrendLinePatterns/,
+  'validation charts must not retain pattern-based series encoding',
+);
+assert.match(
   validationTrendChartSource,
   /className="validation-trend-svg"[\s\S]*?Hover or focus a data point for its coordinates/,
   'interactive charts must expose their purpose without hiding the SVG from assistive technology',

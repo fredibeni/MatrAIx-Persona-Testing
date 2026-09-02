@@ -31,6 +31,10 @@
   --validation-on-accent: #17130a;
   --validation-trend-line: #8a5700;
   --validation-trend-marker-fill: #ffffff;
+  --validation-trend-series-1: #8a5700;
+  --validation-trend-series-2: #2563eb;
+  --validation-trend-series-3: #047857;
+  --validation-trend-series-4: #be185d;
   --validation-trend-grid: #e2e8f0;
   --validation-trend-axis: #94a3b8;
   --validation-trend-tick: #64748b;
@@ -1414,6 +1418,10 @@ button:disabled {
   --validation-on-accent: var(--validation-on-gold);
   --validation-trend-line: var(--validation-gold-light);
   --validation-trend-marker-fill: var(--validation-surface);
+  --validation-trend-series-1: var(--validation-gold-light);
+  --validation-trend-series-2: #93c5fd;
+  --validation-trend-series-3: #86efac;
+  --validation-trend-series-4: #f9a8d4;
   --validation-trend-grid: var(--validation-line);
   --validation-trend-axis: var(--validation-line-strong);
   --validation-trend-tick: var(--validation-muted);
