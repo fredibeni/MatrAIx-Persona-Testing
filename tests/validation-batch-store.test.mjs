@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
-import { appendValidationAgentBatch } from '../lib/validation-batch-store.ts';
+import {
+  appendValidationAgentBatch,
+  deleteValidationExperimentRuns,
+} from '../lib/validation-batch-store.ts';
 import { surveys } from '../lib/surveys.ts';
 
 const startedAt = '2026-09-01T09:00:00.000Z';
@@ -139,6 +142,37 @@ assert.deepEqual(appended.dials.agentRuns[0].experiment, {
 const repeated = appendValidationAgentBatch(appended, batch, surveys);
 assert.equal(repeated, appended, 'reapplying the same batch is a no-op');
 assert.deepEqual(repeated, appended);
+
+const appendedSnapshot = structuredClone(appended);
+const deletedExperiment = deleteValidationExperimentRuns(appended, {
+  everyday: everydayBatchRuns,
+  dials: appended.dials.agentRuns,
+});
+assert.deepEqual(
+  appended,
+  appendedSnapshot,
+  'deleting an experiment must not mutate the input store',
+);
+assert.deepEqual(
+  deletedExperiment.everyday.agentRuns.map((run) => run.id),
+  ['older-run'],
+  'deleting an experiment must retain runs from other experiments',
+);
+assert.equal(
+  deletedExperiment.dials.agentRuns.length,
+  0,
+  'deleting an experiment must remove its results across surveys',
+);
+assert.deepEqual(
+  deletedExperiment.everyday.deletedAgentRuns.map((deletion) => deletion.id),
+  everydayBatchRuns.map((run) => run.id),
+  'deleting an experiment must retain tombstones for every removed result',
+);
+assert.equal(
+  appendValidationAgentBatch(deletedExperiment, batch, surveys),
+  deletedExperiment,
+  'deleted experiment results must not return if a saved batch is recovered',
+);
 
 const collisionStore = structuredClone(originalStore);
 collisionStore.everyday.agentRuns.push({

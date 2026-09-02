@@ -5,6 +5,12 @@ import type {
 } from './validation-agent.ts';
 import type { SurveyDefinition, SurveyId } from './surveys.ts';
 
+type ValidationExperimentRuns = Partial<
+  Record<SurveyId, readonly Pick<AgentRun, 'id'>[]>
+>;
+
+const permanentValidationDeletionTimestamp = new Date(0).toISOString();
+
 function batchRunId(
   batchId: string,
   surveyId: SurveyId,
@@ -96,6 +102,48 @@ export function appendValidationAgentBatch(
     if (!changed) return;
     if (nextStore === store) nextStore = { ...store };
     nextStore[survey.id] = { ...history, agentRuns };
+  });
+
+  return nextStore;
+}
+
+export function deleteValidationExperimentRuns(
+  store: SurveyStore,
+  runsBySurvey: ValidationExperimentRuns,
+): SurveyStore {
+  let nextStore = store;
+
+  (
+    Object.entries(runsBySurvey) as Array<
+      [SurveyId, readonly Pick<AgentRun, 'id'>[] | undefined]
+    >
+  ).forEach(([surveyId, selectedRuns]) => {
+    if (!selectedRuns?.length) return;
+
+    const history = surveyHistory(store, surveyId);
+    const runIds = new Set(selectedRuns.map((run) => run.id));
+    const agentRuns = history.agentRuns.filter((run) => !runIds.has(run.id));
+    if (agentRuns.length === history.agentRuns.length) return;
+
+    const deletedAgentRuns = new Map(
+      (history.deletedAgentRuns ?? []).map((deletion) => [
+        deletion.id,
+        deletion,
+      ]),
+    );
+    runIds.forEach((id) => {
+      deletedAgentRuns.set(id, {
+        id,
+        deletedAt: permanentValidationDeletionTimestamp,
+      });
+    });
+
+    if (nextStore === store) nextStore = { ...store };
+    nextStore[surveyId] = {
+      ...history,
+      agentRuns,
+      deletedAgentRuns: [...deletedAgentRuns.values()],
+    };
   });
 
   return nextStore;

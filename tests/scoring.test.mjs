@@ -885,6 +885,21 @@ assert.match(
   /@media \(max-width: 780px\) \{[\s\S]*?\.validation-embedded \.validation-results-toolbar\s*\{\s*grid-template-columns:\s*1fr;\s*\}/,
   'the compact experiment toolbar must keep its stacked layout',
 );
+assert.match(
+  validationPageSource,
+  /className="validation-experiment-controls"[\s\S]*?id="validation-experiment-selector"[\s\S]*?className="validation-experiment-delete focus-ring"[\s\S]*?>\s*Delete\s*</,
+  'the selected validation run must have a Delete control beside its selector',
+);
+assert.match(
+  validationPageSource,
+  /Are you sure you want to delete this validation run's results: "\$\{experiment\.label\}"\?/,
+  'deleting a validation run must confirm the selected run label',
+);
+assert.match(
+  validationStylesSource,
+  /\.validation-embedded \.validation-experiment-controls\s*\{[\s\S]*?display:\s*flex;[\s\S]*?\.validation-embedded \.validation-experiment-delete\s*\{[\s\S]*?min-height:\s*42px;/,
+  'the Delete control must stay aligned with the experiment selector',
+);
 const resultsToolbarStart = validationPageSource.indexOf(
   '<div className="validation-results-toolbar">',
 );

@@ -91,7 +91,10 @@ import {
   ValidationAgentError,
   waitForValidationAgentBatch,
 } from '@/lib/validation-agent';
-import { appendValidationAgentBatch } from '@/lib/validation-batch-store';
+import {
+  appendValidationAgentBatch,
+  deleteValidationExperimentRuns,
+} from '@/lib/validation-batch-store';
 import {
   aggregateValidationTrends,
   aggregateValidationExperiment,
@@ -1026,6 +1029,7 @@ function ResultsView({
   runDisabled,
   selectedExperimentId,
   onSelectExperiment,
+  onDeleteExperiment,
 }: {
   store: SurveyStore;
   onHuman: (surveyId: SurveyId) => void;
@@ -1035,6 +1039,9 @@ function ResultsView({
   runDisabled: boolean;
   selectedExperimentId: string | null;
   onSelectExperiment: (experimentId: string) => void;
+  onDeleteExperiment: (
+    experiment: ReturnType<typeof validationExperimentOptions>[number],
+  ) => void;
 }) {
   const experimentOptions = validationExperimentOptions(store);
   const resolvedExperimentId = experimentOptions.some(
@@ -1098,17 +1105,32 @@ function ResultsView({
             Experiment breakdown
           </label>
           {experimentOptions.length ? (
-            <select
-              id="validation-experiment-selector"
-              value={resolvedExperimentId ?? ''}
-              onChange={(event) => onSelectExperiment(event.target.value)}
-            >
-              {experimentOptions.map((option) => (
-                <option key={option.id} value={option.id}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+            <div className="validation-experiment-controls">
+              <select
+                id="validation-experiment-selector"
+                value={resolvedExperimentId ?? ''}
+                onChange={(event) => onSelectExperiment(event.target.value)}
+              >
+                {experimentOptions.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                className="validation-experiment-delete focus-ring"
+                disabled={runningExperiment}
+                onClick={() => {
+                  const selected = experimentOptions.find(
+                    (option) => option.id === resolvedExperimentId,
+                  );
+                  if (selected) onDeleteExperiment(selected);
+                }}
+              >
+                Delete
+              </button>
+            </div>
           ) : (
             <span>No Agent experiments yet</span>
           )}
@@ -2740,6 +2762,35 @@ export function ValidationApp({ hosted = false }: { hosted?: boolean }) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
+  function deleteValidationExperiment(
+    experiment: ReturnType<typeof validationExperimentOptions>[number],
+  ) {
+    if (
+      runningExperiment ||
+      !window.confirm(
+        `Are you sure you want to delete this validation run's results: "${experiment.label}"?`,
+      )
+    ) {
+      return;
+    }
+
+    const nextStore = deleteValidationExperimentRuns(
+      storeRef.current,
+      experiment.runsBySurvey,
+    );
+    if (nextStore === storeRef.current) return;
+
+    storeRef.current = nextStore;
+    setStore(nextStore);
+    setSelectedExperimentId(
+      validationExperimentOptions(nextStore)[0]?.id ?? null,
+    );
+    setSaveNotice({
+      kind: 'saved',
+      message: `${experiment.label} validation run results deleted.`,
+    });
+  }
+
   function activePersonaAgent() {
     const personaAgent = diskStateRef.current?.personaAgent;
     if (!personaAgent) {
@@ -3139,6 +3190,7 @@ export function ValidationApp({ hosted = false }: { hosted?: boolean }) {
         runDisabled={runningExperiment || !batchRecoveryComplete}
         selectedExperimentId={selectedExperimentId}
         onSelectExperiment={setSelectedExperimentId}
+        onDeleteExperiment={deleteValidationExperiment}
       />
     );
   }

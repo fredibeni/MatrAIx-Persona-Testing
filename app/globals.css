@@ -1744,7 +1744,16 @@ button:disabled {
   text-transform: uppercase;
 }
 
+.validation-embedded .validation-experiment-controls {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+}
+
 .validation-embedded .validation-results-toolbar select {
+  min-width: 0;
+  flex: 1 1 auto;
   min-height: 42px;
   appearance: auto;
   border: 0;
@@ -1756,6 +1765,29 @@ button:disabled {
   font: inherit;
   font-size: 14px;
   font-weight: 650;
+}
+
+.validation-embedded .validation-experiment-delete {
+  min-height: 42px;
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: 10px;
+  color: #fecaca;
+  background: var(--validation-control);
+  padding: 0 14px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.validation-embedded .validation-experiment-delete:hover:not(:disabled) {
+  color: #fee2e2;
+  background: #4c1d28;
+}
+
+.validation-embedded .validation-experiment-delete:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 .validation-embedded .validation-results-toolbar select:focus-visible {
