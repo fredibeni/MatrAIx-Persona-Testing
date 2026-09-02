@@ -398,8 +398,8 @@ function QuestionAggregateRow({
           <dt>Agent consensus</dt>
           <dd>{row.consensusAnswerLabel ?? 'No response'}</dd>
         </div>
-        <div>
-          <dt>Benchmark match</dt>
+        <div className="validation-question-metric">
+          <dt>Benchmark match:</dt>
           <dd>
             {row.exactBenchmarkMatchRate === null
               ? '-'
@@ -408,8 +408,8 @@ function QuestionAggregateRow({
                 : `${Math.round(row.exactBenchmarkMatchRate * row.answerCount)}/${row.answerCount}`}
           </dd>
         </div>
-        <div>
-          <dt>Agent consistency</dt>
+        <div className="validation-question-metric">
+          <dt>Agent consistency:</dt>
           <dd>
             {row.answerCount < 2 || row.consistency === null
               ? 'Needs 2 responses'

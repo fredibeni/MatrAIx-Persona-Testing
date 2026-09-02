@@ -221,7 +221,7 @@ assert.doesNotMatch(
 );
 assert.match(
   questionAggregateRowSource,
-  /<dt>Human benchmark<\/dt>[\s\S]*?<dt>Agent consensus<\/dt>[\s\S]*?<dt>Benchmark match<\/dt>[\s\S]*?<dt>Agent consistency<\/dt>/,
+  /<dt>Human benchmark<\/dt>[\s\S]*?<dt>Agent consensus<\/dt>[\s\S]*?<dt>Benchmark match:<\/dt>[\s\S]*?<dt>Agent consistency:<\/dt>/,
   'question results must show Human benchmark before Agent consensus and Benchmark match before Agent consistency',
 );
 assert.doesNotMatch(
@@ -263,7 +263,17 @@ const questionResultGridRule = validationStylesSource.match(
 assert.match(
   questionResultGridRule?.[1] ?? '',
   /grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\);/,
-  'question result answer and metric cards must use two equal-width columns',
+  'question result answers and metrics must use two equal-width columns',
+);
+assert.match(
+  validationStylesSource,
+  /\.validation-embedded\s+\.validation-question-result\s+dl\s+>\s+\.validation-question-metric\s*\{[\s\S]*?display:\s*flex;[\s\S]*?background:\s*transparent;[\s\S]*?padding:\s*0;[\s\S]*?\}/,
+  'question metric values must appear inline with their headers and without surrounding boxes',
+);
+assert.match(
+  validationStylesSource,
+  /\.validation-embedded\s+\.validation-question-result\s+\.validation-question-metric\s+dd\s*\{\s*margin:\s*0;\s*\}/,
+  'question metric values must sit directly to the right of their headers',
 );
 const questionResultRule = validationStylesSource.match(
   /\.validation-embedded \.validation-question-result\s*\{([^}]*)\}/,

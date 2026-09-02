@@ -13299,8 +13299,14 @@ function Ei({ row: e, showPercentages: t = !1 }) {
 		children: [/* @__PURE__ */ (0, z.jsx)("h3", { children: e.prompt }), /* @__PURE__ */ (0, z.jsxs)("dl", { children: [
 			/* @__PURE__ */ (0, z.jsxs)("div", { children: [/* @__PURE__ */ (0, z.jsx)("dt", { children: "Human benchmark" }), /* @__PURE__ */ (0, z.jsx)("dd", { children: e.humanAnswerLabel ?? "Not completed" })] }),
 			/* @__PURE__ */ (0, z.jsxs)("div", { children: [/* @__PURE__ */ (0, z.jsx)("dt", { children: "Agent consensus" }), /* @__PURE__ */ (0, z.jsx)("dd", { children: e.consensusAnswerLabel ?? "No response" })] }),
-			/* @__PURE__ */ (0, z.jsxs)("div", { children: [/* @__PURE__ */ (0, z.jsx)("dt", { children: "Benchmark match" }), /* @__PURE__ */ (0, z.jsx)("dd", { children: e.exactBenchmarkMatchRate === null ? "-" : t ? un(e.exactBenchmarkMatchRate) : `${Math.round(e.exactBenchmarkMatchRate * e.answerCount)}/${e.answerCount}` })] }),
-			/* @__PURE__ */ (0, z.jsxs)("div", { children: [/* @__PURE__ */ (0, z.jsx)("dt", { children: "Agent consistency" }), /* @__PURE__ */ (0, z.jsx)("dd", { children: e.answerCount < 2 || e.consistency === null ? "Needs 2 responses" : t ? un(e.consistency) : `${e.consensusCount}/${e.answerCount}` })] })
+			/* @__PURE__ */ (0, z.jsxs)("div", {
+				className: "validation-question-metric",
+				children: [/* @__PURE__ */ (0, z.jsx)("dt", { children: "Benchmark match:" }), /* @__PURE__ */ (0, z.jsx)("dd", { children: e.exactBenchmarkMatchRate === null ? "-" : t ? un(e.exactBenchmarkMatchRate) : `${Math.round(e.exactBenchmarkMatchRate * e.answerCount)}/${e.answerCount}` })]
+			}),
+			/* @__PURE__ */ (0, z.jsxs)("div", {
+				className: "validation-question-metric",
+				children: [/* @__PURE__ */ (0, z.jsx)("dt", { children: "Agent consistency:" }), /* @__PURE__ */ (0, z.jsx)("dd", { children: e.answerCount < 2 || e.consistency === null ? "Needs 2 responses" : t ? un(e.consistency) : `${e.consensusCount}/${e.answerCount}` })]
+			})
 		] })]
 	});
 }
