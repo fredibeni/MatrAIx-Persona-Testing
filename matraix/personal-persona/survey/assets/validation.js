@@ -13595,10 +13595,10 @@ function Ai({ data: e }) {
 	}];
 	return /* @__PURE__ */ (0, R.jsxs)("section", {
 		className: "validation-trends",
-		"aria-labelledby": "validation-trends-title",
+		"aria-label": "Validation history",
 		children: [/* @__PURE__ */ (0, R.jsx)("header", {
 			className: "validation-trends-header",
-			children: /* @__PURE__ */ (0, R.jsxs)("div", { children: [/* @__PURE__ */ (0, R.jsxs)("div", {
+			children: /* @__PURE__ */ (0, R.jsx)("div", { children: /* @__PURE__ */ (0, R.jsxs)("div", {
 				className: "validation-trend-kicker-row",
 				children: [/* @__PURE__ */ (0, R.jsx)("span", {
 					className: "section-kicker",
@@ -13607,10 +13607,7 @@ function Ai({ data: e }) {
 					label: "About validation history calculations",
 					children: "Each point averages experiments with the same number of filled dimensions. Benchmark lines use the currently saved Human benchmarks."
 				})]
-			}), /* @__PURE__ */ (0, R.jsx)("h2", {
-				id: "validation-trends-title",
-				children: "Performance by persona dimensions"
-			})] })
+			}) })
 		}), /* @__PURE__ */ (0, R.jsxs)("div", {
 			className: "validation-trends-grid",
 			children: [/* @__PURE__ */ (0, R.jsxs)("article", {
@@ -13726,8 +13723,9 @@ function ji({ store: e, onHuman: t, onRunAll: n, onLicense: r, runningExperiment
 					className: "validation-results-toolbar",
 					children: [
 						/* @__PURE__ */ (0, R.jsx)("label", {
+							className: "section-kicker",
 							htmlFor: "validation-experiment-selector",
-							children: "Experiment"
+							children: "Experiment breakdown"
 						}),
 						c.length ? /* @__PURE__ */ (0, R.jsx)("select", {
 							id: "validation-experiment-selector",

@@ -1017,14 +1017,6 @@ button:disabled {
   gap: 24px;
   margin-bottom: 13px;
 }
-.validation-trends-header h2 {
-  margin: 4px 0 0;
-  color: #111827;
-  font-size: 1.45rem;
-  font-weight: 850;
-  letter-spacing: -0.035em;
-  line-height: 1.15;
-}
 .validation-trend-kicker-row {
   display: flex;
   align-items: center;
@@ -1667,7 +1659,6 @@ button:disabled {
   line-height: 1.5;
 }
 
-.validation-embedded .validation-trends-header h2,
 .validation-embedded .validation-trend-card-header h3 {
   color: var(--validation-ink);
 }
@@ -1719,10 +1710,10 @@ button:disabled {
 }
 
 .validation-embedded .validation-results-toolbar label {
-  color: var(--validation-muted);
+  color: var(--validation-gold-light);
   font-size: 11px;
-  font-weight: 760;
-  letter-spacing: 0.08em;
+  font-weight: 750;
+  letter-spacing: 0.11em;
   text-transform: uppercase;
 }
 

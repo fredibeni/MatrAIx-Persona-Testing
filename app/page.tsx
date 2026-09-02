@@ -933,10 +933,7 @@ function ValidationTrendSection({ data }: { data: ValidationTrendData }) {
   ];
 
   return (
-    <section
-      className="validation-trends"
-      aria-labelledby="validation-trends-title"
-    >
+    <section className="validation-trends" aria-label="Validation history">
       <header className="validation-trends-header">
         <div>
           <div className="validation-trend-kicker-row">
@@ -947,9 +944,6 @@ function ValidationTrendSection({ data }: { data: ValidationTrendData }) {
               benchmarks.
             </ValidationTrendInfo>
           </div>
-          <h2 id="validation-trends-title">
-            Performance by persona dimensions
-          </h2>
         </div>
       </header>
 
@@ -1095,7 +1089,12 @@ function ResultsView({
         <ValidationTrendSection data={trendData} />
 
         <div className="validation-results-toolbar">
-          <label htmlFor="validation-experiment-selector">Experiment</label>
+          <label
+            className="section-kicker"
+            htmlFor="validation-experiment-selector"
+          >
+            Experiment breakdown
+          </label>
           {experimentOptions.length ? (
             <select
               id="validation-experiment-selector"

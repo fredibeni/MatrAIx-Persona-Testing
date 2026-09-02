@@ -1085,8 +1085,23 @@ assert.match(
 );
 assert.match(
   validationPageSource,
-  /className="validation-trend-kicker-row"[\s\S]*?Validation history[\s\S]*?label="About validation history calculations"[\s\S]*?<h2 id="validation-trends-title">/,
+  /className="validation-trend-kicker-row"[\s\S]*?Validation history[\s\S]*?label="About validation history calculations"/,
   'the Validation history info control must sit beside the section kicker',
+);
+assert.match(
+  validationPageSource,
+  /<section className="validation-trends" aria-label="Validation history">/,
+  'the validation history region must retain an accessible name without a visible title',
+);
+assert.doesNotMatch(
+  validationPageSource,
+  /Performance by persona dimensions/,
+  'the redundant validation history title must not render',
+);
+assert.match(
+  validationPageSource,
+  /className="section-kicker"[\s\S]*?htmlFor="validation-experiment-selector"[\s\S]*?Experiment breakdown/,
+  'the experiment selector must use the Validation history eyebrow treatment and label',
 );
 assert.match(
   validationStylesSource,
