@@ -428,6 +428,19 @@ interface ValidationTrendChartSeries {
   styleIndex: number;
 }
 
+interface ValidationTrendPointCluster {
+  id: string;
+  dimensionCount: number;
+  value: number;
+  x: number;
+  y: number;
+  entries: Array<{
+    seriesId: string;
+    label: string;
+    styleIndex: number;
+  }>;
+}
+
 const validationTrendLinePatterns = [
   undefined,
   '8 5',
@@ -451,9 +464,11 @@ function ValidationTrendMarker({
       ? 'var(--validation-trend-line)'
       : 'var(--validation-trend-marker-fill)';
   const common = {
+    className: 'validation-trend-marker',
     fill: markerFill,
     stroke: 'var(--validation-trend-line)',
     strokeWidth: 2,
+    'aria-hidden': true,
   };
 
   switch (styleIndex % 4) {
@@ -487,10 +502,14 @@ function ValidationTrendMarker({
   }
 }
 
-function validationTrendPointSummary(point: ValidationTrendMetricPoint) {
-  const experiments = `${point.experimentCount} experiment${point.experimentCount === 1 ? '' : 's'}`;
-  if (!point.partialExperimentCount) return experiments;
-  return `${experiments}, including ${point.partialExperimentCount} partial`;
+function validationTrendCoordinateLabel(
+  labels: string[],
+  dimensionCount: number,
+  value: number,
+) {
+  return `${dimensionCount} dimensions. ${labels
+    .map((label) => `${percent(value)} ${label}`)
+    .join('. ')}.`;
 }
 
 function ValidationTrendInfo({
@@ -537,6 +556,10 @@ function ValidationTrendChart({
   emptyMessage: string;
 }) {
   const chartId = useId();
+  const tooltipId = `${chartId}-tooltip`;
+  const [hoveredPointId, setHoveredPointId] = useState<string | null>(null);
+  const [focusedPointId, setFocusedPointId] = useState<string | null>(null);
+  const [dismissedPointId, setDismissedPointId] = useState<string | null>(null);
   const width = 400;
   const height = 250;
   const left = 56;
@@ -565,6 +588,80 @@ function ValidationTrendChart({
             ).map((index) => dimensionValues[index]),
           ),
         );
+  const plottedSeries = series.map((item) => ({
+    ...item,
+    points: item.points.filter(
+      (point) =>
+        Number.isFinite(point.dimensionCount) && Number.isFinite(point.value),
+    ),
+  }));
+  const pointClustersByCoordinate = new Map<
+    string,
+    Omit<ValidationTrendPointCluster, 'id'>
+  >();
+
+  plottedSeries.forEach((item) => {
+    item.points.forEach((point) => {
+      const coordinateId = `${point.dimensionCount}:${point.value.toFixed(12)}`;
+      const entry = {
+        seriesId: item.id,
+        label: item.label,
+        styleIndex: item.styleIndex,
+      };
+      const existing = pointClustersByCoordinate.get(coordinateId);
+      if (existing) {
+        existing.entries.push(entry);
+      } else {
+        pointClustersByCoordinate.set(coordinateId, {
+          dimensionCount: point.dimensionCount,
+          value: point.value,
+          x: x(point.dimensionCount),
+          y: y(point.value),
+          entries: [entry],
+        });
+      }
+    });
+  });
+
+  const pointClusters: ValidationTrendPointCluster[] = [
+    ...pointClustersByCoordinate.entries(),
+  ].map(([coordinateId, cluster]) => ({
+    ...cluster,
+    id: `${coordinateId}:${cluster.entries
+      .map((entry) => entry.seriesId)
+      .join('|')}`,
+  }));
+  const activePointId =
+    hoveredPointId ??
+    (focusedPointId && focusedPointId !== dismissedPointId
+      ? focusedPointId
+      : null);
+  const activePoint =
+    pointClusters.find((cluster) => cluster.id === activePointId) ?? null;
+  const tooltipWidth = 200;
+  const tooltipHeight = activePoint ? 28 + activePoint.entries.length * 14 : 0;
+  const tooltipX = activePoint
+    ? Math.max(
+        4,
+        Math.min(
+          width - tooltipWidth - 4,
+          activePoint.x + 10 + tooltipWidth <= width - 4
+            ? activePoint.x + 10
+            : activePoint.x - tooltipWidth - 10,
+        ),
+      )
+    : 0;
+  const tooltipY = activePoint
+    ? Math.max(
+        4,
+        Math.min(
+          height - tooltipHeight - 4,
+          activePoint.y - tooltipHeight - 10 >= 4
+            ? activePoint.y - tooltipHeight - 10
+            : activePoint.y + 10,
+        ),
+      )
+    : 0;
 
   return (
     <figure
@@ -619,117 +716,182 @@ function ValidationTrendChart({
           <svg
             viewBox={`0 0 ${width} ${height}`}
             className="validation-trend-svg"
-            aria-hidden="true"
-            focusable="false"
+            aria-label={`${title}. Hover or focus a data point for its coordinates.`}
           >
-            {[0, 0.25, 0.5, 0.75, 1].map((value) => (
-              <g key={value}>
-                <line
-                  x1={left}
-                  x2={width - right}
-                  y1={y(value)}
-                  y2={y(value)}
-                  className="validation-trend-grid-line"
-                />
-                <text
-                  x={left - 9}
-                  y={y(value) + 4}
-                  textAnchor="end"
-                  className="validation-trend-tick"
-                >
-                  {Math.round(value * 100)}%
-                </text>
-              </g>
-            ))}
+            <g aria-hidden="true">
+              {[0, 0.25, 0.5, 0.75, 1].map((value) => (
+                <g key={value}>
+                  <line
+                    x1={left}
+                    x2={width - right}
+                    y1={y(value)}
+                    y2={y(value)}
+                    className="validation-trend-grid-line"
+                  />
+                  <text
+                    x={left - 9}
+                    y={y(value) + 4}
+                    textAnchor="end"
+                    className="validation-trend-tick"
+                  >
+                    {Math.round(value * 100)}%
+                  </text>
+                </g>
+              ))}
 
-            <line
-              x1={left}
-              x2={width - right}
-              y1={plotBottom}
-              y2={plotBottom}
-              className="validation-trend-axis-line"
-            />
+              <line
+                x1={left}
+                x2={width - right}
+                y1={plotBottom}
+                y2={plotBottom}
+                className="validation-trend-axis-line"
+              />
 
-            {xTicks.map((value) => (
-              <g key={value}>
-                <line
-                  x1={x(value)}
-                  x2={x(value)}
-                  y1={plotBottom}
-                  y2={plotBottom + 5}
-                  className="validation-trend-axis-line"
-                />
-                <text
-                  x={x(value)}
-                  y={plotBottom + 20}
-                  textAnchor="middle"
-                  className="validation-trend-tick"
-                >
-                  {value}
-                </text>
-              </g>
-            ))}
+              {xTicks.map((value) => (
+                <g key={value}>
+                  <line
+                    x1={x(value)}
+                    x2={x(value)}
+                    y1={plotBottom}
+                    y2={plotBottom + 5}
+                    className="validation-trend-axis-line"
+                  />
+                  <text
+                    x={x(value)}
+                    y={plotBottom + 20}
+                    textAnchor="middle"
+                    className="validation-trend-tick"
+                  >
+                    {value}
+                  </text>
+                </g>
+              ))}
 
-            <text
-              x={(left + width - right) / 2}
-              y={height - 8}
-              textAnchor="middle"
-              className="validation-trend-axis-label"
-            >
-              Number of dimensions filled
-            </text>
-            <text
-              transform={`translate(15 ${(top + plotBottom) / 2}) rotate(-90)`}
-              textAnchor="middle"
-              className="validation-trend-axis-label"
-            >
-              {yAxisLabel}
-            </text>
+              <text
+                x={(left + width - right) / 2}
+                y={height - 8}
+                textAnchor="middle"
+                className="validation-trend-axis-label"
+              >
+                Number of dimensions filled
+              </text>
+              <text
+                transform={`translate(15 ${(top + plotBottom) / 2}) rotate(-90)`}
+                textAnchor="middle"
+                className="validation-trend-axis-label"
+              >
+                {yAxisLabel}
+              </text>
+            </g>
 
-            {series.map((item) => {
-              const plotted = item.points.filter(
-                (point) =>
-                  Number.isFinite(point.dimensionCount) &&
-                  Number.isFinite(point.value),
-              );
-              const linePoints = plotted
+            {plottedSeries.map((item) => {
+              const linePoints = item.points
                 .map((point) => `${x(point.dimensionCount)},${y(point.value)}`)
                 .join(' ');
+              return item.points.length > 1 ? (
+                <polyline
+                  key={item.id}
+                  points={linePoints}
+                  fill="none"
+                  stroke="var(--validation-trend-line)"
+                  strokeWidth="2.5"
+                  strokeDasharray={
+                    validationTrendLinePatterns[item.styleIndex % 4]
+                  }
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                />
+              ) : null;
+            })}
+
+            {pointClusters.map((cluster) => {
+              const labels = cluster.entries.map((entry) => entry.label);
+              const isActive = cluster.id === activePoint?.id;
               return (
-                <g key={item.id}>
-                  {plotted.length > 1 ? (
-                    <polyline
-                      points={linePoints}
-                      fill="none"
-                      stroke="var(--validation-trend-line)"
-                      strokeWidth="2.5"
-                      strokeDasharray={
-                        validationTrendLinePatterns[item.styleIndex % 4]
-                      }
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
+                <g
+                  key={cluster.id}
+                  className="validation-trend-point"
+                  role="graphics-symbol"
+                  tabIndex={0}
+                  focusable="true"
+                  aria-label={validationTrendCoordinateLabel(
+                    labels,
+                    cluster.dimensionCount,
+                    cluster.value,
+                  )}
+                  aria-describedby={isActive ? tooltipId : undefined}
+                  onMouseEnter={() => {
+                    setHoveredPointId(cluster.id);
+                    setDismissedPointId(null);
+                  }}
+                  onMouseLeave={() => setHoveredPointId(null)}
+                  onFocus={() => {
+                    setFocusedPointId(cluster.id);
+                    setDismissedPointId(null);
+                  }}
+                  onBlur={() => {
+                    setFocusedPointId(null);
+                    setDismissedPointId(null);
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key !== 'Escape') return;
+                    setHoveredPointId(null);
+                    setDismissedPointId(cluster.id);
+                  }}
+                >
+                  <circle
+                    cx={cluster.x}
+                    cy={cluster.y}
+                    r={12}
+                    className="validation-trend-hit-target"
+                    aria-hidden="true"
+                  />
+                  {cluster.entries.map((entry) => (
+                    <ValidationTrendMarker
+                      key={entry.seriesId}
+                      x={cluster.x}
+                      y={cluster.y}
+                      styleIndex={entry.styleIndex}
                     />
-                  ) : null}
-                  {plotted.map((point) => (
-                    <g
-                      key={`${item.id}:${point.dimensionCount}`}
-                      className="validation-trend-point"
-                    >
-                      <title>
-                        {item.label}, {point.dimensionCount} dimensions,{' '}
-                        {Math.round(point.value * 100)} percent,{' '}
-                        {validationTrendPointSummary(point)}
-                      </title>
-                      <ValidationTrendMarker
-                        x={x(point.dimensionCount)}
-                        y={y(point.value)}
-                        styleIndex={item.styleIndex}
-                      />
-                    </g>
                   ))}
                 </g>
               );
             })}
+
+            {activePoint ? (
+              <g
+                id={tooltipId}
+                role="tooltip"
+                className="validation-trend-tooltip"
+                pointerEvents="none"
+              >
+                <rect
+                  x={tooltipX}
+                  y={tooltipY}
+                  width={tooltipWidth}
+                  height={tooltipHeight}
+                  rx={8}
+                />
+                <text
+                  x={tooltipX + 10}
+                  y={tooltipY + 16}
+                  className="validation-trend-tooltip-coordinate"
+                >
+                  {activePoint.dimensionCount} dimensions
+                </text>
+                {activePoint.entries.map((entry, index) => (
+                  <text
+                    key={entry.seriesId}
+                    x={tooltipX + 10}
+                    y={tooltipY + 34 + index * 14}
+                    className="validation-trend-tooltip-series"
+                  >
+                    {percent(activePoint.value)} {entry.label}
+                  </text>
+                ))}
+              </g>
+            ) : null}
           </svg>
         </section>
       ) : (
@@ -813,17 +975,17 @@ function ValidationTrendSection({ data }: { data: ValidationTrendData }) {
     >
       <header className="validation-trends-header">
         <div>
-          <span className="section-kicker">Validation history</span>
-          <div className="validation-trend-title-row">
-            <h2 id="validation-trends-title">
-              Performance by persona dimensions
-            </h2>
+          <div className="validation-trend-kicker-row">
+            <span className="section-kicker">Validation history</span>
             <ValidationTrendInfo label="About validation history calculations">
               Each point averages experiments with the same number of filled
               dimensions. Benchmark lines use the currently saved Human
               benchmarks.
             </ValidationTrendInfo>
           </div>
+          <h2 id="validation-trends-title">
+            Performance by persona dimensions
+          </h2>
         </div>
       </header>
 
@@ -837,7 +999,7 @@ function ValidationTrendSection({ data }: { data: ValidationTrendData }) {
               </ValidationTrendInfo>
             </div>
             <label htmlFor="validation-benchmark-trend-mode">
-              <span>View</span>
+              <span className="sr-only">Benchmark match view</span>
               <select
                 id="validation-benchmark-trend-mode"
                 aria-label="Benchmark match view"

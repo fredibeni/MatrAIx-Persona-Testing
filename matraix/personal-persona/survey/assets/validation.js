@@ -13303,9 +13303,11 @@ var wi = [
 ];
 function Ti({ x: e, y: t, styleIndex: n, size: r = 4 }) {
 	let i = {
+		className: "validation-trend-marker",
 		fill: n % 2 == 0 ? "var(--validation-trend-line)" : "var(--validation-trend-marker-fill)",
 		stroke: "var(--validation-trend-line)",
-		strokeWidth: 2
+		strokeWidth: 2,
+		"aria-hidden": !0
 	};
 	switch (n % 4) {
 		case 1: return /* @__PURE__ */ (0, R.jsx)("rect", {
@@ -13332,9 +13334,8 @@ function Ti({ x: e, y: t, styleIndex: n, size: r = 4 }) {
 		});
 	}
 }
-function Ei(e) {
-	let t = `${e.experimentCount} experiment${e.experimentCount === 1 ? "" : "s"}`;
-	return e.partialExperimentCount ? `${t}, including ${e.partialExperimentCount} partial` : t;
+function Ei(e, t, n) {
+	return `${t} dimensions. ${e.map((e) => `${fn(n)} ${e}`).join(". ")}.`;
 }
 function Di({ label: e, children: t }) {
 	let n = (0, C.useId)(), [r, i] = (0, C.useState)(!1);
@@ -13358,7 +13359,30 @@ function Di({ label: e, children: t }) {
 	});
 }
 function Oi({ title: e, description: t, yAxisLabel: n, series: r, dimensionValues: i, emptyMessage: a }) {
-	let o = (0, C.useId)(), s = r.flatMap((e) => e.points), c = i[0] ?? 0, l = i.at(-1) ?? 0, u = (e) => c === l ? 222 : 56 + (e - c) / (l - c) * 332, d = (e) => 14 + (1 - Math.max(0, Math.min(1, e))) * 184, f = i.length <= 6 ? i : Array.from(new Set(Array.from({ length: 6 }, (e, t) => Math.round(t * (i.length - 1) / 5)).map((e) => i[e])));
+	let o = (0, C.useId)(), s = `${o}-tooltip`, [c, l] = (0, C.useState)(null), [u, d] = (0, C.useState)(null), [f, p] = (0, C.useState)(null), m = r.flatMap((e) => e.points), h = i[0] ?? 0, g = i.at(-1) ?? 0, _ = (e) => h === g ? 222 : 56 + (e - h) / (g - h) * 332, v = (e) => 14 + (1 - Math.max(0, Math.min(1, e))) * 184, y = i.length <= 6 ? i : Array.from(new Set(Array.from({ length: 6 }, (e, t) => Math.round(t * (i.length - 1) / 5)).map((e) => i[e]))), b = r.map((e) => ({
+		...e,
+		points: e.points.filter((e) => Number.isFinite(e.dimensionCount) && Number.isFinite(e.value))
+	})), x = /* @__PURE__ */ new Map();
+	b.forEach((e) => {
+		e.points.forEach((t) => {
+			let n = `${t.dimensionCount}:${t.value.toFixed(12)}`, r = {
+				seriesId: e.id,
+				label: e.label,
+				styleIndex: e.styleIndex
+			}, i = x.get(n);
+			i ? i.entries.push(r) : x.set(n, {
+				dimensionCount: t.dimensionCount,
+				value: t.value,
+				x: _(t.dimensionCount),
+				y: v(t.value),
+				entries: [r]
+			});
+		});
+	});
+	let S = [...x.entries()].map(([e, t]) => ({
+		...t,
+		id: `${e}:${t.entries.map((e) => e.seriesId).join("|")}`
+	})), w = c ?? (u && u !== f ? u : null), T = S.find((e) => e.id === w) ?? null, ee = T ? 28 + T.entries.length * 14 : 0, E = T ? Math.max(4, Math.min(196, T.x + 10 + 200 <= 396 ? T.x + 10 : T.x - 200 - 10)) : 0, D = T ? Math.max(4, Math.min(250 - ee - 4, T.y - ee - 10 >= 4 ? T.y - ee - 10 : T.y + 10)) : 0;
 	return /* @__PURE__ */ (0, R.jsxs)("figure", {
 		className: "validation-trend-chart",
 		"aria-labelledby": `${o}-title ${o}-description`,
@@ -13397,103 +13421,157 @@ function Oi({ title: e, description: t, yAxisLabel: n, series: r, dimensionValue
 					})]
 				}), /* @__PURE__ */ (0, R.jsx)("span", { children: e.label })] }, e.id))
 			}) : null,
-			s.length ? /* @__PURE__ */ (0, R.jsx)("section", {
+			m.length ? /* @__PURE__ */ (0, R.jsx)("section", {
 				className: "validation-trend-scroll",
 				"aria-label": `${e} plot`,
 				children: /* @__PURE__ */ (0, R.jsxs)("svg", {
 					viewBox: "0 0 400 250",
 					className: "validation-trend-svg",
-					"aria-hidden": "true",
-					focusable: "false",
+					"aria-label": `${e}. Hover or focus a data point for its coordinates.`,
 					children: [
-						[
-							0,
-							.25,
-							.5,
-							.75,
-							1
-						].map((e) => /* @__PURE__ */ (0, R.jsxs)("g", { children: [/* @__PURE__ */ (0, R.jsx)("line", {
-							x1: 56,
-							x2: 388,
-							y1: d(e),
-							y2: d(e),
-							className: "validation-trend-grid-line"
-						}), /* @__PURE__ */ (0, R.jsxs)("text", {
-							x: 47,
-							y: d(e) + 4,
-							textAnchor: "end",
-							className: "validation-trend-tick",
-							children: [Math.round(e * 100), "%"]
-						})] }, e)),
-						/* @__PURE__ */ (0, R.jsx)("line", {
-							x1: 56,
-							x2: 388,
-							y1: 198,
-							y2: 198,
-							className: "validation-trend-axis-line"
+						/* @__PURE__ */ (0, R.jsxs)("g", {
+							"aria-hidden": "true",
+							children: [
+								[
+									0,
+									.25,
+									.5,
+									.75,
+									1
+								].map((e) => /* @__PURE__ */ (0, R.jsxs)("g", { children: [/* @__PURE__ */ (0, R.jsx)("line", {
+									x1: 56,
+									x2: 388,
+									y1: v(e),
+									y2: v(e),
+									className: "validation-trend-grid-line"
+								}), /* @__PURE__ */ (0, R.jsxs)("text", {
+									x: 47,
+									y: v(e) + 4,
+									textAnchor: "end",
+									className: "validation-trend-tick",
+									children: [Math.round(e * 100), "%"]
+								})] }, e)),
+								/* @__PURE__ */ (0, R.jsx)("line", {
+									x1: 56,
+									x2: 388,
+									y1: 198,
+									y2: 198,
+									className: "validation-trend-axis-line"
+								}),
+								y.map((e) => /* @__PURE__ */ (0, R.jsxs)("g", { children: [/* @__PURE__ */ (0, R.jsx)("line", {
+									x1: _(e),
+									x2: _(e),
+									y1: 198,
+									y2: 203,
+									className: "validation-trend-axis-line"
+								}), /* @__PURE__ */ (0, R.jsx)("text", {
+									x: _(e),
+									y: 218,
+									textAnchor: "middle",
+									className: "validation-trend-tick",
+									children: e
+								})] }, e)),
+								/* @__PURE__ */ (0, R.jsx)("text", {
+									x: 444 / 2,
+									y: 242,
+									textAnchor: "middle",
+									className: "validation-trend-axis-label",
+									children: "Number of dimensions filled"
+								}),
+								/* @__PURE__ */ (0, R.jsx)("text", {
+									transform: `translate(15 ${212 / 2}) rotate(-90)`,
+									textAnchor: "middle",
+									className: "validation-trend-axis-label",
+									children: n
+								})
+							]
 						}),
-						f.map((e) => /* @__PURE__ */ (0, R.jsxs)("g", { children: [/* @__PURE__ */ (0, R.jsx)("line", {
-							x1: u(e),
-							x2: u(e),
-							y1: 198,
-							y2: 203,
-							className: "validation-trend-axis-line"
-						}), /* @__PURE__ */ (0, R.jsx)("text", {
-							x: u(e),
-							y: 218,
-							textAnchor: "middle",
-							className: "validation-trend-tick",
-							children: e
-						})] }, e)),
-						/* @__PURE__ */ (0, R.jsx)("text", {
-							x: 444 / 2,
-							y: 242,
-							textAnchor: "middle",
-							className: "validation-trend-axis-label",
-							children: "Number of dimensions filled"
-						}),
-						/* @__PURE__ */ (0, R.jsx)("text", {
-							transform: `translate(15 ${212 / 2}) rotate(-90)`,
-							textAnchor: "middle",
-							className: "validation-trend-axis-label",
-							children: n
-						}),
-						r.map((e) => {
-							let t = e.points.filter((e) => Number.isFinite(e.dimensionCount) && Number.isFinite(e.value)), n = t.map((e) => `${u(e.dimensionCount)},${d(e.value)}`).join(" ");
-							return /* @__PURE__ */ (0, R.jsxs)("g", { children: [t.length > 1 ? /* @__PURE__ */ (0, R.jsx)("polyline", {
-								points: n,
+						b.map((e) => {
+							let t = e.points.map((e) => `${_(e.dimensionCount)},${v(e.value)}`).join(" ");
+							return e.points.length > 1 ? /* @__PURE__ */ (0, R.jsx)("polyline", {
+								points: t,
 								fill: "none",
 								stroke: "var(--validation-trend-line)",
 								strokeWidth: "2.5",
 								strokeDasharray: wi[e.styleIndex % 4],
 								strokeLinecap: "round",
-								strokeLinejoin: "round"
-							}) : null, t.map((t) => /* @__PURE__ */ (0, R.jsxs)("g", {
+								strokeLinejoin: "round",
+								"aria-hidden": "true"
+							}, e.id) : null;
+						}),
+						S.map((e) => {
+							let t = e.entries.map((e) => e.label), n = e.id === T?.id;
+							return /* @__PURE__ */ (0, R.jsxs)("g", {
 								className: "validation-trend-point",
-								children: [/* @__PURE__ */ (0, R.jsxs)("title", { children: [
-									e.label,
-									", ",
-									t.dimensionCount,
-									" dimensions,",
-									" ",
-									Math.round(t.value * 100),
-									" percent,",
-									" ",
-									Ei(t)
-								] }), /* @__PURE__ */ (0, R.jsx)(Ti, {
-									x: u(t.dimensionCount),
-									y: d(t.value),
-									styleIndex: e.styleIndex
-								})]
-							}, `${e.id}:${t.dimensionCount}`))] }, e.id);
-						})
+								role: "graphics-symbol",
+								tabIndex: 0,
+								focusable: "true",
+								"aria-label": Ei(t, e.dimensionCount, e.value),
+								"aria-describedby": n ? s : void 0,
+								onMouseEnter: () => {
+									l(e.id), p(null);
+								},
+								onMouseLeave: () => l(null),
+								onFocus: () => {
+									d(e.id), p(null);
+								},
+								onBlur: () => {
+									d(null), p(null);
+								},
+								onKeyDown: (t) => {
+									t.key === "Escape" && (l(null), p(e.id));
+								},
+								children: [/* @__PURE__ */ (0, R.jsx)("circle", {
+									cx: e.x,
+									cy: e.y,
+									r: 12,
+									className: "validation-trend-hit-target",
+									"aria-hidden": "true"
+								}), e.entries.map((t) => /* @__PURE__ */ (0, R.jsx)(Ti, {
+									x: e.x,
+									y: e.y,
+									styleIndex: t.styleIndex
+								}, t.seriesId))]
+							}, e.id);
+						}),
+						T ? /* @__PURE__ */ (0, R.jsxs)("g", {
+							id: s,
+							role: "tooltip",
+							className: "validation-trend-tooltip",
+							pointerEvents: "none",
+							children: [
+								/* @__PURE__ */ (0, R.jsx)("rect", {
+									x: E,
+									y: D,
+									width: 200,
+									height: ee,
+									rx: 8
+								}),
+								/* @__PURE__ */ (0, R.jsxs)("text", {
+									x: E + 10,
+									y: D + 16,
+									className: "validation-trend-tooltip-coordinate",
+									children: [T.dimensionCount, " dimensions"]
+								}),
+								T.entries.map((e, t) => /* @__PURE__ */ (0, R.jsxs)("text", {
+									x: E + 10,
+									y: D + 34 + t * 14,
+									className: "validation-trend-tooltip-series",
+									children: [
+										fn(T.value),
+										" ",
+										e.label
+									]
+								}, e.seriesId))
+							]
+						}) : null
 					]
 				})
 			}) : /* @__PURE__ */ (0, R.jsx)("output", {
 				className: "validation-trend-empty",
 				children: a
 			}),
-			s.length ? /* @__PURE__ */ (0, R.jsxs)("table", {
+			m.length ? /* @__PURE__ */ (0, R.jsxs)("table", {
 				className: "sr-only",
 				children: [
 					/* @__PURE__ */ (0, R.jsxs)("caption", { children: ["Exact values plotted in ", e] }),
@@ -13547,18 +13625,18 @@ function ki({ data: e }) {
 		"aria-labelledby": "validation-trends-title",
 		children: [/* @__PURE__ */ (0, R.jsx)("header", {
 			className: "validation-trends-header",
-			children: /* @__PURE__ */ (0, R.jsxs)("div", { children: [/* @__PURE__ */ (0, R.jsx)("span", {
-				className: "section-kicker",
-				children: "Validation history"
-			}), /* @__PURE__ */ (0, R.jsxs)("div", {
-				className: "validation-trend-title-row",
-				children: [/* @__PURE__ */ (0, R.jsx)("h2", {
-					id: "validation-trends-title",
-					children: "Performance by persona dimensions"
+			children: /* @__PURE__ */ (0, R.jsxs)("div", { children: [/* @__PURE__ */ (0, R.jsxs)("div", {
+				className: "validation-trend-kicker-row",
+				children: [/* @__PURE__ */ (0, R.jsx)("span", {
+					className: "section-kicker",
+					children: "Validation history"
 				}), /* @__PURE__ */ (0, R.jsx)(Di, {
 					label: "About validation history calculations",
 					children: "Each point averages experiments with the same number of filled dimensions. Benchmark lines use the currently saved Human benchmarks."
 				})]
+			}), /* @__PURE__ */ (0, R.jsx)("h2", {
+				id: "validation-trends-title",
+				children: "Performance by persona dimensions"
 			})] })
 		}), /* @__PURE__ */ (0, R.jsxs)("div", {
 			className: "validation-trends-grid",
@@ -13574,7 +13652,10 @@ function ki({ data: e }) {
 						})]
 					}), /* @__PURE__ */ (0, R.jsxs)("label", {
 						htmlFor: "validation-benchmark-trend-mode",
-						children: [/* @__PURE__ */ (0, R.jsx)("span", { children: "View" }), /* @__PURE__ */ (0, R.jsxs)("select", {
+						children: [/* @__PURE__ */ (0, R.jsx)("span", {
+							className: "sr-only",
+							children: "Benchmark match view"
+						}), /* @__PURE__ */ (0, R.jsxs)("select", {
 							id: "validation-benchmark-trend-mode",
 							"aria-label": "Benchmark match view",
 							value: t,

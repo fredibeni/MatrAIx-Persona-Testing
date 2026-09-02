@@ -876,6 +876,16 @@ const resultsToolbarStart = validationPageSource.indexOf(
 const validationTrendsStart = validationPageSource.indexOf(
   '<ValidationTrendSection data={trendData} />',
 );
+const validationTrendChartStart = validationPageSource.indexOf(
+  'function ValidationTrendChart(',
+);
+const validationTrendSectionStart = validationPageSource.indexOf(
+  'function ValidationTrendSection(',
+);
+const validationTrendChartSource = validationPageSource.slice(
+  validationTrendChartStart,
+  validationTrendSectionStart,
+);
 const resultsViewStart = validationPageSource.indexOf('function ResultsView(');
 const resultsHeroStart = validationPageSource.indexOf(
   '<section className="hero-wrap">',
@@ -918,6 +928,11 @@ assert.match(
   /id="validation-benchmark-trend-mode"[\s\S]*?aria-label="Benchmark match view"/,
   'the benchmark history selector must have an unambiguous accessible name',
 );
+assert.doesNotMatch(
+  validationPageSource,
+  /<span>View<\/span>/,
+  'the benchmark history selector must not render a redundant visible View label',
+);
 assert.match(
   validationPageSource,
   /surveys\.map\(\(survey, index\) => \(\{[\s\S]*?points: data\.surveyBenchmarkMatches\[survey\.id\],[\s\S]*?styleIndex: index/,
@@ -949,6 +964,61 @@ assert.match(
   'history charts must retain point markers, including when only one dimension is available',
 );
 assert.match(
+  validationTrendChartSource,
+  /className="validation-trend-svg"[\s\S]*?Hover or focus a data point for its coordinates/,
+  'interactive charts must expose their purpose without hiding the SVG from assistive technology',
+);
+assert.match(
+  validationTrendChartSource,
+  /className="validation-trend-point"[\s\S]*?role="graphics-symbol"[\s\S]*?tabIndex=\{0\}[\s\S]*?focusable="true"[\s\S]*?aria-label=\{validationTrendCoordinateLabel/,
+  'every plotted coordinate must be a named keyboard-focusable non-action target',
+);
+assert.match(
+  validationTrendChartSource,
+  /onMouseEnter=[\s\S]*?onMouseLeave=[\s\S]*?onFocus=[\s\S]*?onBlur=[\s\S]*?event\.key !== 'Escape'/,
+  'coordinate tooltips must support hover, focus, dismissal, and Escape',
+);
+assert.match(
+  validationTrendChartSource,
+  /r=\{12\}[\s\S]*?className="validation-trend-hit-target"/,
+  'each small marker must have a larger transparent hover target',
+);
+assert.match(
+  validationTrendChartSource,
+  /pointClustersByCoordinate[\s\S]*?existing\.entries\.push\(entry\)/,
+  'overlapping series must share one reachable tooltip target',
+);
+assert.match(
+  validationTrendChartSource,
+  /role="tooltip"[\s\S]*?\{activePoint\.dimensionCount\} dimensions[\s\S]*?\{percent\(activePoint\.value\)\} \{entry\.label\}/,
+  'visible tooltips must pair the dimension count with each named percentage value',
+);
+assert.match(
+  validationTrendChartSource,
+  /role="tooltip"(?:(?!<text)[\s\S])*?<text[\s\S]*?className="validation-trend-tooltip-coordinate"[\s\S]*?\{activePoint\.dimensionCount\} dimensions/,
+  'the dimension count must be the first line in the tooltip, without a header',
+);
+assert.match(
+  validationPageSource,
+  /return `\$\{dimensionCount\} dimensions\. \$\{labels\s*\.map\(\(label\) => `\$\{percent\(value\)\} \$\{label\}`\)\s*\.join\('\. '\)\}\.\`;/,
+  'accessible point labels must use the same header-free dimension and named percentage format',
+);
+assert.doesNotMatch(
+  validationTrendChartSource,
+  />\s*X:|>\s*Y:/,
+  'visible tooltips must not expose abstract X or Y labels',
+);
+assert.doesNotMatch(
+  validationTrendChartSource,
+  /<title>/,
+  'custom coordinate tooltips must replace delayed native SVG titles',
+);
+assert.match(
+  validationStylesSource,
+  /\.validation-trend-point:focus-visible \.validation-trend-hit-target[\s\S]*?stroke:\s*var\(--validation-trend-line\);/,
+  'keyboard-focused data points must have a visible chart-native halo',
+);
+assert.match(
   validationPageSource,
   /<table className="sr-only">[\s\S]*?Experiments averaged/,
   'history charts must expose exact averages and sample counts accessibly',
@@ -972,6 +1042,11 @@ assert.match(
   validationPageSource,
   /label="About validation history calculations"[\s\S]*?label="About benchmark match"[\s\S]*?label="About Agent consistency"/,
   'all validation history info controls must retain explicit accessible names',
+);
+assert.match(
+  validationPageSource,
+  /className="validation-trend-kicker-row"[\s\S]*?Validation history[\s\S]*?label="About validation history calculations"[\s\S]*?<h2 id="validation-trends-title">/,
+  'the Validation history info control must sit beside the section kicker',
 );
 assert.match(
   validationStylesSource,

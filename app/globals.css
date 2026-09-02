@@ -34,6 +34,10 @@
   --validation-trend-grid: #e2e8f0;
   --validation-trend-axis: #94a3b8;
   --validation-trend-tick: #64748b;
+  --validation-trend-tooltip-surface: #111827;
+  --validation-trend-tooltip-border: #334155;
+  --validation-trend-tooltip-ink: #ffffff;
+  --validation-trend-tooltip-muted: #cbd5e1;
 }
 
 * {
@@ -1017,6 +1021,11 @@ button:disabled {
   letter-spacing: -0.035em;
   line-height: 1.15;
 }
+.validation-trend-kicker-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
 .validation-trends-grid {
   display: grid;
   align-items: stretch;
@@ -1173,7 +1182,44 @@ button:disabled {
   font-weight: 750;
 }
 .validation-trend-point {
-  cursor: default;
+  outline: none;
+  cursor: help;
+}
+.validation-trend-hit-target {
+  fill: transparent;
+  stroke: transparent;
+  stroke-width: 2;
+  pointer-events: all;
+  vector-effect: non-scaling-stroke;
+}
+.validation-trend-point:hover .validation-trend-hit-target,
+.validation-trend-point:focus-visible .validation-trend-hit-target {
+  fill: var(--validation-survey-soft);
+  fill-opacity: 0.65;
+  stroke: var(--validation-trend-line);
+}
+.validation-trend-point:hover .validation-trend-marker,
+.validation-trend-point:focus-visible .validation-trend-marker {
+  stroke-width: 3;
+}
+.validation-trend-tooltip {
+  pointer-events: none;
+}
+.validation-trend-tooltip rect {
+  fill: var(--validation-trend-tooltip-surface);
+  stroke: var(--validation-trend-tooltip-border);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.validation-trend-tooltip-series {
+  fill: var(--validation-trend-tooltip-ink);
+  font-size: 11px;
+  font-weight: 800;
+}
+.validation-trend-tooltip-coordinate {
+  fill: var(--validation-trend-tooltip-muted);
+  font-size: 10.5px;
+  font-weight: 650;
 }
 .validation-trend-empty {
   display: grid;
@@ -1371,6 +1417,10 @@ button:disabled {
   --validation-trend-grid: var(--validation-line);
   --validation-trend-axis: var(--validation-line-strong);
   --validation-trend-tick: var(--validation-muted);
+  --validation-trend-tooltip-surface: var(--validation-surface-inset);
+  --validation-trend-tooltip-border: var(--validation-line-strong);
+  --validation-trend-tooltip-ink: var(--validation-ink);
+  --validation-trend-tooltip-muted: var(--validation-muted);
   min-height: 100vh;
   min-height: 100dvh;
   position: relative;
