@@ -1,18 +1,20 @@
 # MatrAIx Persona Testing
 
-MatrAIx Persona Testing is a private local persona app for macOS. It lets you:
+MatrAIx Persona Testing is for playing around and examining how much you could impart your personality to an AI agent. 
+*The app uses your ChatGPT subscription and does not require a separately billed OpenAI API key.*
 
-- Chat with a persona grounded in your local persona YAML.
-- Fill gaps and correct details in Update persona.
-- Compare your answers with the persona's answers in Validation.
-
-The app uses Codex through your ChatGPT subscription. It does not require a separately billed OpenAI API key.
+- On first start up, the app asks to fill in a list of personality dimensions from your ChatGPT history and memory
+- Then there are 3 functionalities:
+  1. **Chat** directly with the personalised agent based on your local persona YAML
+  2. **Update persona** by answering questions on the missing personality dimensions
+  3. **Validate** how similar the agent's answers are to yours on a set of questions
+    - you answer the questions once, then they are used as the benchmark 
+    - recommended to run Validation each time you add a batch of new personality dimensions
+    - the similarity of the agent's answers to your benchmark is summarised and visualised
 
 ## Relationship to MatrAIx
 
-This repository is an independent personal-testing adaptation of the original [MatrAIx-Persona-8B](https://github.com/MatrAIx-ai/MatrAIx-Persona-8B) project. `MatrAIx` is the name of that original project. This derivative is named **MatrAIx Persona Testing** to distinguish it from the official MatrAIx repository and is not presented as an official MatrAIx release.
-
-Some internal directories, Python packages, environment variables, and launcher filenames retain the `matraix` name for compatibility with the upstream codebase.
+This repository is an independent testing adaptation of the original [MatrAIx-Persona-8B](https://github.com/MatrAIx-ai/MatrAIx-Persona-8B) project. 
 
 ## Requirements
 
