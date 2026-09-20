@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+          cache: npm
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install JavaScript dependencies
+        run: npm ci
+
+      - name: Install Python dependencies
+        run: |
+          python -m venv matraix/.venv
+          matraix/.venv/bin/python -m pip install \
+            --disable-pip-version-check \
+            -r matraix/requirements.txt \
+            -r digital-twin/requirements-mcp.txt
+
+      - name: Build browser assets
+        run: npm run build
+
+      - name: Run release checks
+        run: npm run check

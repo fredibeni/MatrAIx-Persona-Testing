@@ -37,15 +37,68 @@ _PRIVATE_PATH_PATTERN = re.compile(
 )
 _SECRET_PATTERNS = (
     re.compile(
-        r"-----BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----.*?"
-        r"-----END (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----",
+        r"-----BEGIN (?:RSA |EC |OPENSSH |DSA |ENCRYPTED )?PRIVATE KEY-----.*?"
+        r"-----END (?:RSA |EC |OPENSSH |DSA |ENCRYPTED )?PRIVATE KEY-----",
         re.DOTALL,
     ),
     re.compile(r"(?:sk-(?:proj|svcacct)-[A-Za-z0-9_-]{20,}|sk-[A-Za-z0-9]{40,})"),
     re.compile(r"(?:gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,})"),
-    re.compile(r"AKIA[0-9A-Z]{16}"),
+    re.compile(r"A(?:KI|SI)A[0-9A-Z]{16}"),
     re.compile(r"xox[baprs]-[A-Za-z0-9-]{10,}"),
     re.compile(r"AIza[0-9A-Za-z_-]{35}"),
+    re.compile(
+        r"\b(?:"
+        r"ya29\.[A-Za-z0-9_-]{20,}"
+        r"|glpat-[A-Za-z0-9_-]{20,}"
+        r"|npm_[A-Za-z0-9]{36,}"
+        r"|pypi-[A-Za-z0-9_-]{20,}"
+        r"|hf_[A-Za-z0-9]{20,}"
+        r"|dop_v1_[A-Fa-f0-9]{32,}"
+        r"|(?:sk|rk)_(?:live|test)_[A-Za-z0-9]{16,}"
+        r")\b"
+    ),
+    re.compile(
+        r"\beyJ[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]{5,}\."
+        r"[A-Za-z0-9_-]{5,}\b"
+    ),
+    re.compile(
+        r"(?i)\b(?:proxy-)?authorization\b[\"']?\s*[:=]\s*[\"']?\s*"
+        r"(?:bearer|basic)\s+[A-Za-z0-9._~+/=-]{8,}[\"']?"
+    ),
+    re.compile(
+        r"(?i)\b(?:x-api-key|api-key|x-auth-token|x-access-token)\b[\"']?"
+        r"\s*[:=]\s*[\"']?[A-Za-z0-9._~+/=-]{8,}[\"']?"
+    ),
+)
+_CREDENTIAL_URL_PATTERN = re.compile(
+    r"(?i)(?P<scheme>\b[a-z][a-z0-9+.-]{1,31}://)"
+    r"(?P<userinfo>[^\s/@:\"'<>]+:[^\s/@\"'<>]+)(?=@)"
+)
+_CREDENTIAL_ASSIGNMENT_PATTERN = re.compile(
+    r"""
+    (?P<prefix>
+        (?<![\w-])
+        ["']?
+        (?:
+            password|passwd|pwd|
+            secret|client[_-]?secret|
+            api[_-]?key|
+            access[_-]?token|refresh[_-]?token|id[_-]?token|
+            auth[_-]?token|oauth2?[_-]?token|
+            session[_-]?(?:id|token)|jsessionid|phpsessid|connect\.sid
+        )
+        \b
+        ["']?
+        \s*[:=]\s*
+    )
+    (?P<value>
+        "(?:\\.|[^"\\\r\n]){1,4096}" |
+        '(?:\\.|[^'\\\r\n]){1,4096}' |
+        (?!none\b|null\b|true\b|false\b|required\b|optional\b)
+        [^\s,;}\]\"']{6,4096}
+    )
+    """,
+    re.IGNORECASE | re.VERBOSE,
 )
 
 
@@ -81,6 +134,16 @@ def _sanitize_text(value: str) -> tuple[str, bool]:
     for pattern in _SECRET_PATTERNS:
         sanitized, count = pattern.subn("[redacted credential]", sanitized)
         redacted = redacted or count > 0
+    sanitized, url_count = _CREDENTIAL_URL_PATTERN.subn(
+        lambda match: f'{match.group("scheme")}[redacted credential]',
+        sanitized,
+    )
+    redacted = redacted or url_count > 0
+    sanitized, assignment_count = _CREDENTIAL_ASSIGNMENT_PATTERN.subn(
+        lambda match: f'{match.group("prefix")}[redacted credential]',
+        sanitized,
+    )
+    redacted = redacted or assignment_count > 0
     sanitized, path_count = _PRIVATE_PATH_PATTERN.subn("[local-home]/", sanitized)
     redacted = redacted or path_count > 0
     return sanitized.strip(), redacted

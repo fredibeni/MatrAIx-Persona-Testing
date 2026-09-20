@@ -9,7 +9,7 @@ The supported setup sequence is:
 ./start-local.sh
 ```
 
-The installer prepares the runtime and automatically launches onboarding. Onboarding connects Codex to the user's ChatGPT subscription, names the persona, and asks for explicit prepopulation consent. When onboarding finishes, startup launches the private local app.
+The installer prepares the runtime and automatically launches onboarding. Onboarding connects Codex to the user's ChatGPT subscription, names the persona, and asks for explicit prepopulation consent. The installer then creates and validates a private canonical Choiceprint pack without granting runtime consent. When installation finishes, startup launches the private local app.
 
 ## 1. Requirements
 
@@ -36,10 +36,11 @@ The installer:
 - Finds Python 3.11 or newer.
 - Creates the isolated environment at `matraix/.venv/` when needed.
 - Installs the pinned packages in `matraix/requirements.txt`.
-- Records a private install-complete marker only after every required package installs successfully. If installation is interrupted, the next startup automatically retries it.
+- Records a private install-complete marker only after package installation, onboarding, and Choiceprint initialization all succeed. If installation is interrupted, the next startup automatically retries it.
 - Confirms that the bundled browser assets are present.
 - Preserves any existing private active persona.
 - Automatically launches onboarding after installation succeeds.
+- Initializes and validates Choiceprint after onboarding succeeds, without replacing existing private curation or packs.
 
 If Python is missing, follow the exact command printed by the installer and then run `./install.sh` again. The installer must not silently install a system package manager or replace an existing Python installation.
 
@@ -61,7 +62,7 @@ To repeat onboarding later, run:
 ./onboard.sh
 ```
 
-This manual rerun is safe. It validates and preserves an existing active persona. Both automatic and manual onboarding perform the following steps in order on a fresh installation.
+This manual rerun is safe. It validates and preserves an existing active persona. Both automatic and manual onboarding perform the first three steps below. The fourth step belongs to `install.sh` and can also be run manually with the stated command.
 
 ### Step 1: Sign in to ChatGPT through Codex
 
@@ -90,6 +91,35 @@ If the user agrees, onboarding offers only sources that are genuinely available,
 - A user-selected text file containing ChatGPT saved memories.
 
 The user can choose which available sources to include. Missing or unreadable sources are reported as limitations and do not prevent the app from starting.
+
+### Step 4: Initialize the private Choiceprint pack
+
+After onboarding returns successfully, `install.sh` runs the private Choiceprint
+initializer. On a fresh installation it:
+
+1. Runs `./choiceprint.sh init` to create an owner-only curation source with
+   `consent.owner_authorized: false`.
+2. Runs `./choiceprint.sh build --no-curation` to compile the active persona and
+   any safely matched validation results into a canonical pack without applying
+   the unreviewed curation template.
+3. Runs `./choiceprint.sh validate` to prove the resulting pack is structurally
+   valid before installation is marked complete.
+
+An unauthorized pack intentionally has no ChatGPT adapter. The user must review
+the curation file and explicitly authorize its sources and intended uses before
+building an adapter-enabled version.
+
+The initializer is idempotent and does not pass `--force`. On a rerun it keeps
+the existing curation file and validates the existing canonical pack instead of
+rebuilding it. If an existing pack fails validation, setup stops and tells the
+user how to inspect it. It never replaces or repairs private state silently.
+
+When onboarding was run directly rather than through `install.sh`, initialize
+Choiceprint with:
+
+```bash
+/bin/zsh scripts/initialize_choiceprint.sh
+```
 
 ## 4. ChatGPT history and memory boundary
 
@@ -180,6 +210,32 @@ matraix/.venv/
 
 Persona and candidate artifacts are protected with private file permissions. In a Git checkout, the builder also verifies that private artifacts are ignored. In an extracted GitHub ZIP, the shipped `.gitignore` protects those paths if the folder is later initialized as a Git repository.
 
+The normal installer prepares the private Choiceprint curation and canonical
+pack automatically. To initialize them after a manual onboarding run, use:
+
+```bash
+/bin/zsh scripts/initialize_choiceprint.sh
+```
+
+On a fresh setup, the initializer creates the ignored directory at mode `0700`
+and a mode `0600` curation file with `consent.owner_authorized: false`. On a
+rerun, it leaves any existing curation file unchanged. It builds and validates
+the canonical pack without replacing existing files. Use
+`./choiceprint.sh doctor` to check the private owner setup. Review the curation
+file, replace its placeholder profile summary with an owner-reviewed summary,
+and then run `./choiceprint.sh prepare-chatgpt --help`. The guided command
+requires explicit new paths for an authorized curation file, canonical pack,
+and adapter-only upload package. It reviews every source and mode, then builds,
+validates, packages, and verifies in that order. It never uses `--force`, never
+replaces an existing output, and never uploads data. Its final output points to
+the exact `UPLOAD-README.md` that must be followed in a new private ChatGPT
+Project.
+Use `./choiceprint.sh get-context --help` to inspect the local read-only
+scenario retrieval workflow. It does not call a model or connect the pack to
+ChatGPT. Use `./choiceprint.sh collect-interview --help` to collect additional
+private candidate choice evidence without a model or network call. The static
+Project upload remains the implemented zero-service ChatGPT path.
+
 Never force-add private files. Before publishing changes from a configured checkout, run:
 
 ```bash
@@ -187,7 +243,10 @@ git status --short
 npm run check:release
 ```
 
-The release check rejects active persona files, survey state, source material, common credentials, private keys, personal absolute paths, and other local artifacts from a release candidate.
+The release check heuristically inspects the current Git index and worktree
+candidate for known private paths, ignored output categories, secret patterns,
+personal absolute paths, and the reviewed public example fixture. It does not
+scan Git history or prove that arbitrary prose contains no private information.
 
 ## 8. Existing installations and reruns
 
@@ -195,6 +254,7 @@ The release check rejects active persona files, survey state, source material, c
 
 - Reinstalling dependencies does not reset the persona.
 - Running onboarding again does not silently replace an existing persona.
+- Running installation again preserves existing Choiceprint curation and validates rather than replaces an existing canonical pack.
 - Normal startup skips onboarding when an active private persona already exists.
 - Starting the app never replaces the active persona with the blank template.
 - Update persona and an explicitly approved rebuild may refine private local state.
@@ -256,6 +316,14 @@ Stop the process currently using the port, then rerun `./start-local.sh`.
 
 Run the `chmod +x` command from the installation section, then retry.
 
+### Choiceprint initialization stops
+
+Read the specific `Choiceprint setup` and `Choiceprint` messages above the final
+error. Existing curation or packs are deliberately not replaced. Run
+`./choiceprint.sh doctor` and `./choiceprint.sh validate` to inspect the private
+state. Back it up before making a manual change, and do not use `--force` merely
+to bypass a validation failure.
+
 ## 11. Maintainer verification
 
 Node.js is needed only to rebuild and verify the bundled frontend, not for normal app use. Before a GitHub release, run in a clean checkout:
@@ -270,3 +338,8 @@ git status --short
 ```
 
 Then test the automatic `./install.sh` onboarding flow and `./start-local.sh` from both a fresh Git clone and an extracted GitHub archive. Also test a manual `./onboard.sh` rerun. Cover signed-out, already-signed-in, prepopulation-approved, prepopulation-declined, interrupted-onboarding, and repeated-onboarding paths without using private fixture data.
+
+Before the first public push, inspect every Git ref and run a dedicated secret
+scanner across repository history, not only the current tree. Manually review
+the complete public diff and commit history for private prose and personal
+artifacts that heuristic patterns may not recognize.

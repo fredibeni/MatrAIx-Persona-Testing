@@ -1,0 +1,31 @@
+{
+  "bundle_format": "choiceprint/0.1",
+  "schema_version": "0.1",
+  "persona_id": "sample-person",
+  "display_name": "Sample Person",
+  "content_version": "0.1.0",
+  "created_at": "2026-09-19T00:00:00Z",
+  "updated_at": "2026-09-19T00:00:00Z",
+  "default_mode": "predict-choice",
+  "privacy_class": "private",
+  "compatibility": [
+    "chatgpt-project"
+  ],
+  "profile_summary": "A fictional analytical collaborator who verifies important calculations before publishing.",
+  "coverage": {
+    "declared_domains": [],
+    "validated_domains": [],
+    "validation_events": [],
+    "status": "example_only"
+  },
+  "counts": {
+    "claims": 1,
+    "active_claims": 1,
+    "provisional_claims": 0,
+    "withheld_claims": 0,
+    "policies": 1,
+    "decision_cases": 1,
+    "sources": 1,
+    "conflicts": 0
+  }
+}

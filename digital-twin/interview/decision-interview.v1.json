@@ -1,0 +1,212 @@
+{
+  "format": "choiceprint-decision-interview-bank/0.1",
+  "bank_id": "choiceprint-low-stakes-decisions-v1",
+  "version": "1.0.0",
+  "description": "Fictional low-stakes scenarios for collecting direct, reviewable choice evidence. These questions do not contain or imply facts about any owner.",
+  "questions": [
+    {
+      "id": "work-quality-speed-001",
+      "domain": "work_process",
+      "family": "quality_vs_speed",
+      "prompt": "A draft is useful but has one calculation you have not checked. A colleague wants it within the hour. What would you most likely do?",
+      "context": {
+        "stakes": "medium",
+        "reversibility": "medium",
+        "time_horizon": "same_day",
+        "social_context": "colleague"
+      },
+      "options": [
+        {"id": "send_now", "label": "Send it now and flag the unchecked calculation"},
+        {"id": "check_first", "label": "Check the calculation before sending"},
+        {"id": "send_partial", "label": "Send only the checked sections and follow up later"}
+      ]
+    },
+    {
+      "id": "work-meeting-preparation-001",
+      "domain": "work_process",
+      "family": "meeting_preparation",
+      "prompt": "You have thirty minutes before a routine decision meeting. How would you most likely use the time?",
+      "context": {
+        "stakes": "low",
+        "reversibility": "high",
+        "time_horizon": "same_day",
+        "social_context": "small_group"
+      },
+      "options": [
+        {"id": "write_brief", "label": "Write a short decision brief with a recommendation"},
+        {"id": "review_materials", "label": "Review the source materials without drafting a recommendation"},
+        {"id": "arrive_open", "label": "Use the meeting itself to explore the decision"}
+      ]
+    },
+    {
+      "id": "purchase-research-depth-001",
+      "domain": "everyday_purchases",
+      "family": "research_depth",
+      "prompt": "You need a moderately priced household item this week and several options look adequate. What would you most likely do?",
+      "context": {
+        "stakes": "low",
+        "reversibility": "medium",
+        "time_horizon": "one_week",
+        "social_context": "individual"
+      },
+      "options": [
+        {"id": "buy_familiar", "label": "Buy the familiar option immediately"},
+        {"id": "compare_shortlist", "label": "Compare a short list on the features that matter"},
+        {"id": "research_broadly", "label": "Research the category broadly before choosing"}
+      ]
+    },
+    {
+      "id": "purchase-reversibility-001",
+      "domain": "everyday_purchases",
+      "family": "reversibility",
+      "prompt": "Two similar products differ mainly in price and return policy. Which would you most likely choose?",
+      "context": {
+        "stakes": "low",
+        "reversibility": "medium",
+        "time_horizon": "one_month",
+        "social_context": "individual"
+      },
+      "options": [
+        {"id": "cheapest", "label": "The cheapest option with limited returns"},
+        {"id": "flexible_return", "label": "The slightly dearer option with easy returns"},
+        {"id": "delay", "label": "Delay the purchase until the difference is clearer"}
+      ]
+    },
+    {
+      "id": "planning-free-time-001",
+      "domain": "personal_planning",
+      "family": "free_time_structure",
+      "prompt": "An unexpectedly free Saturday appears. What would you most likely do first?",
+      "context": {
+        "stakes": "low",
+        "reversibility": "high",
+        "time_horizon": "one_day",
+        "social_context": "individual"
+      },
+      "options": [
+        {"id": "make_plan", "label": "Make a short plan for the day"},
+        {"id": "start_spontaneously", "label": "Start with whatever feels appealing"},
+        {"id": "protect_rest", "label": "Keep the day deliberately unstructured for rest"}
+      ]
+    },
+    {
+      "id": "planning-deadline-001",
+      "domain": "personal_planning",
+      "family": "deadline_strategy",
+      "prompt": "A small personal task is due in five days and will take about two hours. What would you most likely do?",
+      "context": {
+        "stakes": "low",
+        "reversibility": "high",
+        "time_horizon": "one_week",
+        "social_context": "individual"
+      },
+      "options": [
+        {"id": "finish_early", "label": "Finish it in the next available block"},
+        {"id": "schedule_later", "label": "Schedule a specific block closer to the deadline"},
+        {"id": "work_incrementally", "label": "Do a small part each day"}
+      ]
+    },
+    {
+      "id": "social-disagreement-001",
+      "domain": "social_coordination",
+      "family": "group_disagreement",
+      "prompt": "A small group is choosing between two harmless plans and you prefer the less popular one. What would you most likely do?",
+      "context": {
+        "stakes": "low",
+        "reversibility": "high",
+        "time_horizon": "same_day",
+        "social_context": "friends"
+      },
+      "options": [
+        {"id": "state_case", "label": "Explain your preference once, then accept the group decision"},
+        {"id": "defer_immediately", "label": "Defer to the group without arguing for your option"},
+        {"id": "seek_compromise", "label": "Propose a compromise or a way to try both"}
+      ]
+    },
+    {
+      "id": "social-invitation-001",
+      "domain": "social_coordination",
+      "family": "invitation_tradeoff",
+      "prompt": "You receive a pleasant invitation for an evening when you had planned quiet time alone. What would you most likely do?",
+      "context": {
+        "stakes": "low",
+        "reversibility": "high",
+        "time_horizon": "one_day",
+        "social_context": "friends"
+      },
+      "options": [
+        {"id": "accept", "label": "Accept the invitation"},
+        {"id": "decline", "label": "Keep the quiet evening"},
+        {"id": "short_visit", "label": "Attend for a limited time"}
+      ]
+    },
+    {
+      "id": "travel-itinerary-001",
+      "domain": "travel_planning",
+      "family": "itinerary_flexibility",
+      "prompt": "You are planning a short leisure trip to a new city. Which approach would you most likely take?",
+      "context": {
+        "stakes": "low",
+        "reversibility": "high",
+        "time_horizon": "one_month",
+        "social_context": "individual"
+      },
+      "options": [
+        {"id": "detailed_plan", "label": "Book a detailed itinerary in advance"},
+        {"id": "anchor_plan", "label": "Book a few anchors and leave the rest open"},
+        {"id": "mostly_spontaneous", "label": "Keep almost everything spontaneous"}
+      ]
+    },
+    {
+      "id": "travel-disruption-001",
+      "domain": "travel_planning",
+      "family": "disruption_response",
+      "prompt": "A low-stakes travel plan is disrupted and three acceptable alternatives are available. What would you most likely do first?",
+      "context": {
+        "stakes": "low",
+        "reversibility": "medium",
+        "time_horizon": "same_day",
+        "social_context": "individual"
+      },
+      "options": [
+        {"id": "choose_fast", "label": "Choose the first workable alternative quickly"},
+        {"id": "compare_tradeoffs", "label": "Compare the main trade-offs before choosing"},
+        {"id": "reframe_day", "label": "Abandon the original aim and redesign the day"}
+      ]
+    },
+    {
+      "id": "sharing-feedback-001",
+      "domain": "information_sharing",
+      "family": "feedback_style",
+      "prompt": "A colleague asks for feedback on a draft with several fixable problems. How would you most likely respond?",
+      "context": {
+        "stakes": "low",
+        "reversibility": "high",
+        "time_horizon": "same_day",
+        "social_context": "colleague"
+      },
+      "options": [
+        {"id": "direct_list", "label": "Give a concise prioritized list of changes"},
+        {"id": "balanced_detail", "label": "Give detailed feedback with strengths and weaknesses"},
+        {"id": "question_led", "label": "Ask questions that help them identify the changes"}
+      ]
+    },
+    {
+      "id": "sharing-uncertainty-001",
+      "domain": "information_sharing",
+      "family": "uncertain_claims",
+      "prompt": "You are asked for an answer based on incomplete but useful information. What would you most likely do?",
+      "context": {
+        "stakes": "low",
+        "reversibility": "high",
+        "time_horizon": "same_day",
+        "social_context": "colleague"
+      },
+      "options": [
+        {"id": "answer_with_caveat", "label": "Give the best current answer and state the uncertainty"},
+        {"id": "verify_first", "label": "Delay the answer until the key uncertainty is checked"},
+        {"id": "decline", "label": "Decline to answer without firmer evidence"}
+      ]
+    }
+  ]
+}

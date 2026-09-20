@@ -12,6 +12,7 @@ from unittest.mock import patch
 
 from matraix.onboarding_sources import (
     SourceCollectionError,
+    _sanitize_text,
     collect_authorized_sources,
 )
 
@@ -308,6 +309,66 @@ class OnboardingSourceTests(unittest.TestCase):
             self.assertNotIn("/Users/example/", bundle.documents[0]["text"])
             self.assertIn("[redacted credential]", bundle.documents[0]["text"])
             self.assertIn("[local-home]/", bundle.documents[0]["text"])
+
+    def test_sanitizer_redacts_structured_credentials_and_common_tokens(self) -> None:
+        secrets = {
+            "encrypted_key": "\n".join(
+                (
+                    "-----BEGIN ENCRYPTED " + "PRIVATE KEY-----",
+                    "VGhpcyBpcyBhIHRlc3Qga2V5LCBub3QgYSByZWFsIGtleS4=",
+                    "-----END ENCRYPTED " + "PRIVATE KEY-----",
+                )
+            ),
+            "password": "correct-horse-battery-staple",
+            "client_secret": "client-secret-value-12345",
+            "bearer": "bearer-token-value-1234567890",
+            "api_key": "header-api-key-value-123456",
+            "url_password": "p%40ssword-123",
+            "jwt": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.signature-value-123",
+            "oauth": "oauth-value-1234567890",
+            "session": "session-value-1234567890",
+            "provider_token": "ya29.oauth-token-value-1234567890",
+        }
+        source = "\n".join(
+            (
+                secrets["encrypted_key"],
+                f'password = "{secrets["password"]}"',
+                f'"client_secret": "{secrets["client_secret"]}"',
+                f'Authorization: Bearer {secrets["bearer"]}',
+                f'X-API-Key: {secrets["api_key"]}',
+                f'postgresql://sample-user:{secrets["url_password"]}@db.example.test/app',
+                secrets["jwt"],
+                f'oauth_token={secrets["oauth"]}',
+                f'session_id={secrets["session"]}',
+                secrets["provider_token"],
+            )
+        )
+
+        sanitized, redacted = _sanitize_text(source)
+
+        self.assertTrue(redacted)
+        for secret in secrets.values():
+            with self.subTest(secret=secret[:24]):
+                self.assertNotIn(secret, sanitized)
+        self.assertGreaterEqual(sanitized.count("[redacted credential]"), 10)
+        self.assertIn(
+            "postgresql://[redacted credential]@db.example.test/app", sanitized
+        )
+
+    def test_sanitizer_preserves_noncredential_prose_and_urls(self) -> None:
+        source = """A password policy should require at least 16 characters.
+Authorization is a general security concept.
+Keep the client secret separate from public configuration.
+Review https://example.test/docs?token_count=120.
+The session today is about OAuth token rotation.
+password: required
+session_id: null
+api_key: optional"""
+
+        sanitized, redacted = _sanitize_text(source)
+
+        self.assertFalse(redacted)
+        self.assertEqual(sanitized, source)
 
     def test_invalid_saved_memory_type_and_json_are_rejected(self) -> None:
         with tempfile.TemporaryDirectory(prefix="matraix-onboarding-") as name:

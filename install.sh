@@ -28,6 +28,34 @@ if [[ ! -f "$root_dir/matraix/personal-persona/survey/assets/validation.js" || \
   exit 1
 fi
 
+choiceprint_files=(
+  "$root_dir/choiceprint.sh"
+  "$root_dir/scripts/initialize_choiceprint.sh"
+  "$root_dir/digital-twin/scripts/build_choiceprint.py"
+  "$root_dir/digital-twin/scripts/validate_twin_pack.py"
+  "$root_dir/digital-twin/scripts/check_choiceprint_pack_upgrade.py"
+  "$root_dir/digital-twin/scripts/review_choiceprint_claims.py"
+  "$root_dir/digital-twin/scripts/review_choiceprint_coverage.py"
+  "$root_dir/digital-twin/scripts/review_choiceprint_holdout.py"
+  "$root_dir/digital-twin/scripts/collect_choiceprint_answers.py"
+  "$root_dir/digital-twin/scripts/collect_choiceprint_interview.py"
+  "$root_dir/digital-twin/scripts/prepare_choiceprint_consent.py"
+  "$root_dir/digital-twin/scripts/verify_choiceprint_upload.py"
+  "$root_dir/digital-twin/scripts/retrieve_choiceprint_context.py"
+  "$root_dir/digital-twin/scripts/serve_choiceprint_mcp.py"
+  "$root_dir/digital-twin/requirements-mcp.txt"
+  "$root_dir/digital-twin/interview/decision-interview.v1.json"
+  "$root_dir/digital-twin/templates/curation.example.yaml"
+  "$root_dir/digital-twin/templates/chatgpt-upload-readme.md"
+)
+for required_file in "${choiceprint_files[@]}"; do
+  if [[ ! -f "$required_file" || -L "$required_file" ]]; then
+    echo "A bundled Choiceprint file is missing or unsafe: $required_file" >&2
+    echo "Restore this checkout from GitHub, then run ./install.sh again." >&2
+    exit 1
+  fi
+done
+
 if [[ ! -x "$venv_dir/bin/python" ]]; then
   python_bin="$(find_python || true)"
   if [[ -z "$python_bin" ]]; then
@@ -43,10 +71,11 @@ rm -f -- "$install_complete_marker"
   --disable-pip-version-check \
   --no-cache-dir \
   -r "$runtime_dir/requirements.txt"
-touch "$install_complete_marker"
-chmod 600 "$install_complete_marker"
 
 echo "MatrAIx runtime: installed"
 "$root_dir/onboard.sh"
-echo "MatrAIx installation and onboarding: complete"
+"/bin/zsh" "$root_dir/scripts/initialize_choiceprint.sh"
+touch "$install_complete_marker"
+chmod 600 "$install_complete_marker"
+echo "MatrAIx installation, onboarding, and Choiceprint initialization: complete"
 echo "Start the app by double-clicking Start MatrAIx.command."

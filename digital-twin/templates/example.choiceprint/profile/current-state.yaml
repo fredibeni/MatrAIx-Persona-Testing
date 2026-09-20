@@ -1,0 +1,10 @@
+as_of: '2026-09-19'
+expires_at: '2026-10-19'
+active_goals: []
+current_projects: []
+temporary_constraints: []
+capacity: unknown
+sensitivity: private
+runtime_included: true
+source_refs:
+  - src_sample_interview

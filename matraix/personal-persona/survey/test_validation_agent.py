@@ -28,7 +28,7 @@ class FakeAgentHelpers:
     def load_persona_identity(self, path: object) -> tuple[object, str]:
         self.identity_paths.append(path)
         return (
-            SimpleNamespace(display_name="Alfred", persona_id="alfred"),
+            SimpleNamespace(display_name="Sample Person", persona_id="sample-person"),
             "Current persona identity",
         )
 
@@ -122,7 +122,7 @@ class ValidationAgentTests(unittest.TestCase):
         )
         self.addCleanup(self.temp_directory.cleanup)
         data_dir = Path(self.temp_directory.name)
-        active_persona = data_dir / "persona_alfred.yaml"
+        active_persona = data_dir / "persona_sample.yaml"
         shutil.copyfile(EXAMPLE_PERSONA_PATH, active_persona)
         self.helpers = FakeAgentHelpers()
         self.patchers = (

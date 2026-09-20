@@ -53,7 +53,16 @@ next-env.d.ts
 !/matraix/personal-persona/persona.example.yaml
 /README [0-9]*.md
 /matraix/personal-persona/README [0-9]*.md
-/matraix/personal-persona/source-material/
+/matraix/personal-persona/source-material
+/matraix/personal-persona/digital-twin
+*.choiceprint/
+*.choiceprint.zip
+*.choiceprint.tmp-*/
+*.choiceprint.backup-*/
+!digital-twin/templates/example.choiceprint/
+!digital-twin/templates/example.choiceprint/**
+__pycache__/
+*.pyc
 /matraix/personal-persona/survey/assets/validation [0-9]*.css
 /matraix/personal-persona/survey/assets/validation [0-9]*.js
 /matraix/personal-persona/survey/data/*

@@ -1,0 +1,64 @@
+content_version: 9.9.0-fictional
+profile:
+  summary: A fictional product researcher who prefers reversible tests and concise notes.
+  runtime_included: true
+  sensitivity: private
+  source_refs:
+    - src_fictional_interview
+  communication_style:
+    tone: direct
+    custom_detail: Keep this unknown legitimate profile field.
+
+sources:
+  - id: src_fictional_interview
+    source_type: structured_self_report
+    authorship: person
+    locator: fictional local interview
+    summary: Fictional answers from a reviewed local interview.
+    sensitivity: private
+    runtime_excerpt_allowed: true
+    source_extension:
+      keep: source metadata
+  - id: src_fictional_notes
+    source_type: reviewed_history
+    authorship: mixed
+    locator: fictional local notes
+    summary: Fictional notes about communication preferences.
+    sensitivity: sensitive
+    runtime_excerpt_allowed: false
+
+decision_cases: []
+decision_policies: []
+counterexamples: []
+conflicts: []
+current_state: {}
+
+consent:
+  owner_authorized: false
+  authorized_at: null
+  allowed_sources:
+    - stale_template_value
+  allowed_modes:
+    - predict-choice
+    - write-in-style
+  allowed_uses:
+    - stale template use
+  prohibited_uses:
+    - execute external actions
+    - claim literal identity
+  publication_requires_fresh_approval: true
+  consent_extension:
+    keep: consent metadata
+
+boundaries:
+  allowed:
+    - explain evidence and uncertainty
+  ask_before:
+    - send any external message
+  never:
+    - claim literal identity
+  boundary_extension:
+    keep: boundary metadata
+
+fictional_extension:
+  keep: top-level metadata

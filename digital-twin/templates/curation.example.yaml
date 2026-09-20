@@ -1,0 +1,108 @@
+content_version: 0.1.0
+
+# This file is fictional. Copy it outside tracked source control, replace the
+# example content with reviewed owner-approved evidence, and keep private data
+# under an ignored local path.
+profile:
+  # Replace this only with an owner-reviewed summary before setting
+  # runtime_included to true. The safe default is withheld.
+  summary: No reviewed profile summary is available.
+  runtime_included: false
+  sensitivity: private
+  source_refs:
+    - src_persona_yaml_current
+
+sources:
+  - id: src_persona_yaml_current
+    source_type: persona_yaml
+    authorship: mixed
+    locator: local active persona.yaml
+    summary: Owner-reviewed claims imported from the active local persona.
+    sensitivity: private
+    runtime_excerpt_allowed: true
+
+  # To authorize completed human validation answers, add one reviewed source per
+  # survey, set validation_survey_id to the exact survey ID, and include the
+  # source ID under consent.allowed_sources.
+  # - id: src_human_validation_choices
+  #   source_type: structured_self_report
+  #   authorship: person
+  #   validation_survey_id: choices
+  #   locator: local validation results, choices survey, human answers
+  #   summary: Direct human answers to the reviewed choices survey.
+  #   sensitivity: private
+  #   runtime_excerpt_allowed: true
+
+  # Group sources for evaluation ablations with an optional evidence_set ID.
+  # Keep each source ID out of consent.allowed_sources in a no-email build.
+  # - id: src_email_v1_work_style
+  #   source_type: email_corpus
+  #   authorship: person
+  #   captured_at: 2026-09-01
+  #   locator: fictional reviewed inbox and sent-email sample
+  #   summary: Fictional evidence about a recurring work-style preference.
+  #   sensitivity: private
+  #   runtime_excerpt_allowed: false
+  #   evidence_set: email-v1
+
+# Curated atomic claims enter the pack as provisional and unconfirmed. They are
+# eligible for runtime only after the separate owner claim-review workflow sets
+# them active and owner-confirmed. Every evidence and counterevidence source must
+# exist, and every referenced source must be authorized for runtime exposure.
+claims:
+  # - id: clm_email_v1_work_style
+  #   predicate: preference.work_style
+  #   label: Work style
+  #   value: Prefers a short written plan before beginning a complex task.
+  #   scope:
+  #     domains:
+  #       - planning
+  #     conditions: []
+  #   confidence:
+  #     label: medium
+  #     basis: repeated fictional first-person email statements
+  #   evidence_refs:
+  #     - src_email_v1_work_style
+  #   sensitivity: private
+  #   observed_at: 2026-09-01
+  #   runtime_included: true
+
+decision_cases: []
+decision_policies: []
+counterexamples: []
+conflicts: []
+
+current_state: {}
+
+consent:
+  # Change to true only after the owner reviews the source and intended uses.
+  owner_authorized: false
+  authorized_at: null
+  allowed_sources:
+    - src_persona_yaml_current
+  allowed_modes:
+    - predict-choice
+    - write-in-style
+  allowed_uses:
+    - predict likely choices
+    - draft in documented communication style
+  prohibited_uses:
+    - execute external actions
+    - claim literal identity
+  publication_requires_fresh_approval: true
+
+boundaries:
+  ask_before:
+    - send any external message
+    - make a purchase or commitment
+
+coverage:
+  status: development_only
+  # Declare a narrow evaluation taxonomy before freezing a holdout. Each value
+  # must be a lowercase slug of at most 64 characters. Promotion is limited to
+  # these pack-owned domains.
+  declared_domains: []
+  # Ordinary curation must leave this empty. Only the separate, hash-bound
+  # owner coverage-review workflow can create a non-empty projection.
+  validated_domains: []
+  # validation_events is compiler-owned and must not be added to curation.

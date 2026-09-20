@@ -1,0 +1,16 @@
+owner_authorized: true
+authorized_at: '2026-09-19'
+allowed_sources:
+- src_sample_interview
+allowed_modes:
+- predict-choice
+allowed_uses:
+  - predict likely choices
+  - draft in documented communication style
+prohibited_uses:
+  - execute external actions
+  - claim literal identity
+publication_requires_fresh_approval: true
+withdrawal:
+  method: delete the pack and connected ChatGPT Project sources
+  effect: stop future use and remove local derived artifacts

@@ -12,6 +12,7 @@ import hashlib
 import json
 import os
 import re
+import shutil
 import stat
 import subprocess
 import sys
@@ -65,6 +66,11 @@ SOURCE_TYPES = frozenset(
 MODULE_PATH = Path(__file__).resolve()
 MATRAIX_ROOT = MODULE_PATH.parents[2]
 REPO_ROOT = MODULE_PATH.parents[3]
+GIT = (
+    "/opt/homebrew/bin/git"
+    if Path("/opt/homebrew/bin/git").is_file()
+    else (shutil.which("git") or "git")
+)
 PERSONA_DIR = MATRAIX_ROOT / "personal-persona"
 DEFAULT_SCHEMA_PATH = MATRAIX_ROOT / "persona" / "schema" / "dimensions.json"
 DEFAULT_SENSITIVITY_PATH = PERSONA_DIR / "sensitive-dimensions.json"
@@ -1156,7 +1162,7 @@ def _ensure_git_ignored(path: Path) -> None:
 
     try:
         result = subprocess.run(
-            ["git", "-C", str(REPO_ROOT), "check-ignore", "-q", "--", str(relative)],
+            [GIT, "-C", str(REPO_ROOT), "check-ignore", "-q", "--", str(relative)],
             capture_output=True,
             text=True,
             check=False,

@@ -1,0 +1,20 @@
+- id: pol_sample_validate
+  when:
+    domains:
+      - analysis
+    stakes:
+      - medium
+      - high
+  prefer:
+    - verify important calculations
+  over:
+    - publishing quickly
+  exceptions:
+    - explicitly exploratory work
+  strength: medium
+  case_refs:
+    - case_sample_validation
+  source_refs:
+    - src_sample_interview
+  sensitivity: private
+  reviewed_at: '2026-09-19'

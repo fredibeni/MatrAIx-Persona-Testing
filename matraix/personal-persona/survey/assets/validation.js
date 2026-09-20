@@ -8420,7 +8420,7 @@ var F = (e, t) => {
 }, wt = (e, t, n = !1) => {
 	let r = We.exec(e);
 	return r ? r[1] ? t(r[1]) : n : !1;
-}, Tt = (e) => e === "position" || e === "percentage", Et = (e) => e === "image" || e === "url", Dt = (e) => e === "length" || e === "size" || e === "bg-size", Ot = (e) => e === "length", kt = (e) => e === "number", At = (e) => e === "family-name", jt = (e) => e === "number" || e === "weight", Mt = (e) => e === "shadow", Nt = /* @__PURE__ */ Be(() => {
+}, Tt = (e) => e === "position" || e === "percentage", Et = (e) => e === "image" || e === "url", Dt = (e) => e === "length" || e === "size" || e === "bg-size", Ot = (e) => e === "length", kt = (e) => e === "number", At = (e) => e === "family-name", jt = (e) => e === "number" || e === "weight", Mt = (e) => e === "shadow", Nt = /*#__PURE__*/ Be(() => {
 	let e = He("color"), t = He("font"), n = He("text"), r = He("font-weight"), i = He("tracking"), a = He("leading"), o = He("breakpoint"), s = He("container"), c = He("spacing"), l = He("radius"), u = He("shadow"), d = He("inset-shadow"), f = He("text-shadow"), p = He("drop-shadow"), m = He("blur"), h = He("perspective"), g = He("aspect"), _ = He("ease"), v = He("animate"), y = () => [
 		"auto",
 		"avoid",

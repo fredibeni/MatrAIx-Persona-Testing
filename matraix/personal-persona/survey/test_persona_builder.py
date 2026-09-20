@@ -749,7 +749,7 @@ class PersonaBuilderTests(unittest.TestCase):
                 persona_builder._ensure_git_ignored(private_path)
             run.assert_called_once_with(
                 [
-                    "git",
+                    persona_builder.GIT,
                     "-C",
                     str(root),
                     "check-ignore",

@@ -55,12 +55,12 @@ function answersFor(survey, optionIndex) {
   );
 }
 
-const alfredPersona = {
+const samplePersona = {
   contextId: 'persona-context-1',
-  personaId: 'persona_alfred',
-  displayName: 'Alfred',
+  personaId: 'persona_sample',
+  displayName: 'Sample Person',
   baselineSha256: 'abc123',
-  revisionSha256: 'revision-alfred-1',
+  revisionSha256: 'revision-sample-1',
 };
 const secondPersona = {
   contextId: 'persona-context-2',
@@ -1580,11 +1580,11 @@ const validAgentBody = {
   ok: true,
   survey_id: everyday.id,
   answers: everydayA,
-  context_id: alfredPersona.contextId,
-  persona_id: alfredPersona.personaId,
-  persona_display_name: alfredPersona.displayName,
-  baseline_sha256: alfredPersona.baselineSha256,
-  persona_revision: alfredPersona.revisionSha256,
+  context_id: samplePersona.contextId,
+  persona_id: samplePersona.personaId,
+  persona_display_name: samplePersona.displayName,
+  baseline_sha256: samplePersona.baselineSha256,
+  persona_revision: samplePersona.revisionSha256,
   persona_dimension_count: 198,
   model: 'gpt-5.6-luna',
   reasoning_effort: 'low',
@@ -1600,8 +1600,8 @@ const validAgentBody = {
 const parsedAgentResult = parseValidationAgentResult(
   validAgentBody,
   everyday,
-  alfredPersona.contextId,
-  alfredPersona.revisionSha256,
+  samplePersona.contextId,
+  samplePersona.revisionSha256,
 );
 assert.deepEqual(parsedAgentResult.answers, everydayA);
 assert.equal(parsedAgentResult.executionMode, 'codex-ephemeral');
@@ -1610,8 +1610,8 @@ let requestedAgentUrl;
 let requestedAgentInit;
 const fetchedAgentResult = await runValidationAgentSurvey(
   everyday,
-  alfredPersona.contextId,
-  alfredPersona.revisionSha256,
+  samplePersona.contextId,
+  samplePersona.revisionSha256,
   async (url, init) => {
     requestedAgentUrl = String(url);
     requestedAgentInit = init;
@@ -1624,8 +1624,8 @@ const fetchedAgentResult = await runValidationAgentSurvey(
 assert.equal(requestedAgentUrl, VALIDATION_AGENT_ENDPOINT);
 assert.deepEqual(JSON.parse(requestedAgentInit.body), {
   survey_id: everyday.id,
-  context_id: alfredPersona.contextId,
-  persona_revision: alfredPersona.revisionSha256,
+  context_id: samplePersona.contextId,
+  persona_revision: samplePersona.revisionSha256,
 });
 assert.deepEqual(fetchedAgentResult.answers, everydayA);
 
@@ -1637,8 +1637,8 @@ assert.throws(
         answers: { ...everydayA, restaurant: 'not-an-option' },
       },
       everyday,
-      alfredPersona.contextId,
-      alfredPersona.revisionSha256,
+      samplePersona.contextId,
+      samplePersona.revisionSha256,
     ),
   /unknown survey option/,
 );
@@ -1744,7 +1744,7 @@ const identifiedStore = {
       answers: everydayA,
       startedAt: '2026-01-01T09:00:00.000Z',
       completedAt: '2026-01-01T09:05:00.000Z',
-      personaAgent: alfredPersona,
+      personaAgent: samplePersona,
     },
     agentRuns: [
       {
@@ -1756,7 +1756,7 @@ const identifiedStore = {
         completedAt: '2026-01-01T10:05:00.000Z',
         freshSessionAttestedAt: '2026-01-01T10:00:00.000Z',
         benchmarkId: 'identified-human',
-        personaAgent: alfredPersona,
+        personaAgent: samplePersona,
       },
     ],
     generation: 0,
@@ -1769,11 +1769,11 @@ const identifiedRoundTrip = parseStoredSurveyData(
 );
 assert.deepEqual(
   identifiedRoundTrip.everyday.human.personaAgent,
-  alfredPersona,
+  samplePersona,
 );
 assert.deepEqual(
   identifiedRoundTrip.everyday.agentRuns[0].personaAgent,
-  alfredPersona,
+  samplePersona,
 );
 
 const experimentMetadata = {
@@ -1845,12 +1845,12 @@ assert.deepEqual(
 );
 
 const backfilledLegacyIdentity = backfillSurveyStorePersonaAgent(migrated, {
-  ...alfredPersona,
+  ...samplePersona,
   revisionSha256: null,
 });
 assert.equal(
   backfilledLegacyIdentity.everyday.human.personaAgent.displayName,
-  'Alfred',
+  'Sample Person',
 );
 assert.equal(
   backfilledLegacyIdentity.everyday.agentRuns[0].personaAgent.revisionSha256,
@@ -2085,7 +2085,7 @@ assert.equal(
 );
 
 const mismatchedPersonaHistory = {
-  human: { ...laterHuman, personaAgent: alfredPersona },
+  human: { ...laterHuman, personaAgent: samplePersona },
   agentRuns: [
     {
       ...agentFirstComplete,
@@ -2181,7 +2181,7 @@ function experimentRun({
     completedAt,
     freshSessionAttestedAt: completedAt,
     benchmarkId,
-    personaAgent: alfredPersona,
+    personaAgent: samplePersona,
     ...(experiment
       ? {
           experiment: {
@@ -2353,7 +2353,7 @@ const aggregateStore = {
       answers: everydayA,
       startedAt: '2026-03-31T09:00:00.000Z',
       completedAt: '2026-03-31T09:05:00.000Z',
-      personaAgent: alfredPersona,
+      personaAgent: samplePersona,
     },
     agentRuns: [everydayA, everydayA, everydayB].map((answers, index) =>
       experimentRun({
@@ -2374,7 +2374,7 @@ const aggregateStore = {
       answers: lowDials,
       startedAt: '2026-03-31T09:00:00.000Z',
       completedAt: '2026-03-31T09:05:00.000Z',
-      personaAgent: alfredPersona,
+      personaAgent: samplePersona,
     },
     agentRuns: [lowDials, highDials].map((answers, index) =>
       experimentRun({
@@ -2476,7 +2476,7 @@ const trendStore = {
       answers: everydayA,
       startedAt: '2026-04-30T09:00:00.000Z',
       completedAt: '2026-04-30T09:05:00.000Z',
-      personaAgent: alfredPersona,
+      personaAgent: samplePersona,
     },
     agentRuns: [
       ...[everydayA, everydayB].map((answers, index) =>
@@ -2537,7 +2537,7 @@ const trendStore = {
       answers: lowDials,
       startedAt: '2026-04-30T09:00:00.000Z',
       completedAt: '2026-04-30T09:05:00.000Z',
-      personaAgent: alfredPersona,
+      personaAgent: samplePersona,
     },
     agentRuns: [
       experimentRun({
@@ -2689,7 +2689,7 @@ const missingBenchmarkTrends = aggregateValidationTrends({
       answers: everydayA,
       startedAt: '2026-05-05T09:00:00.000Z',
       completedAt: '2026-05-05T09:05:00.000Z',
-      personaAgent: alfredPersona,
+      personaAgent: samplePersona,
     },
     agentRuns: [
       experimentRun({
@@ -2876,7 +2876,7 @@ const draftHumanWithAnswer = {
     [firstEverydayQuestion.id]: firstEverydayQuestion.options[0].id,
   },
   startedAt: '2026-01-03T09:00:00.000Z',
-  personaAgent: alfredPersona,
+  personaAgent: samplePersona,
 };
 const humanAnswerCleared = mergeSurveyStores(
   {
@@ -2957,7 +2957,7 @@ const draftAgentWithAnswer = {
   startedAt: '2026-01-03T10:00:00.000Z',
   freshSessionAttestedAt: '2026-01-03T10:00:00.000Z',
   benchmarkId: null,
-  personaAgent: alfredPersona,
+  personaAgent: samplePersona,
 };
 const agentAnswerCleared = mergeSurveyStores(
   {
@@ -3050,8 +3050,8 @@ const identityBackfillMerge = mergeSurveyStores(
   },
   {
     everyday: {
-      human: { ...savedCompletedHuman, personaAgent: alfredPersona },
-      agentRuns: [{ ...savedCompletedAgent, personaAgent: alfredPersona }],
+      human: { ...savedCompletedHuman, personaAgent: samplePersona },
+      agentRuns: [{ ...savedCompletedAgent, personaAgent: samplePersona }],
       generation: 0,
       deletedAgentRuns: [],
     },
@@ -3059,11 +3059,11 @@ const identityBackfillMerge = mergeSurveyStores(
 );
 assert.deepEqual(
   identityBackfillMerge.everyday.human.personaAgent,
-  alfredPersona,
+  samplePersona,
 );
 assert.deepEqual(
   identityBackfillMerge.everyday.agentRuns[0].personaAgent,
-  alfredPersona,
+  samplePersona,
 );
 const conflictingIdentityMerge = mergeSurveyStores(identityBackfillMerge, {
   everyday: {
@@ -3075,11 +3075,11 @@ const conflictingIdentityMerge = mergeSurveyStores(identityBackfillMerge, {
 });
 assert.deepEqual(
   conflictingIdentityMerge.everyday.human.personaAgent,
-  alfredPersona,
+  samplePersona,
 );
 assert.deepEqual(
   conflictingIdentityMerge.everyday.agentRuns[0].personaAgent,
-  alfredPersona,
+  samplePersona,
 );
 
 const discardedDraftStaysDeleted = mergeSurveyStores(
@@ -3196,10 +3196,10 @@ const persistedStore = JSON.parse(
 const diskEnvelope = {
   schema_version: 1,
   context_id: 'persona-context-1',
-  persona_id: 'persona_alfred',
-  persona_display_name: 'Alfred',
+  persona_id: 'persona_sample',
+  persona_display_name: 'Sample Person',
   baseline_sha256: 'abc123',
-  persona_revision: 'revision-alfred-1',
+  persona_revision: 'revision-sample-1',
   persona_dimension_count: 198,
   save_revision: 3,
   saved_at: '2026-08-31T17:47:00.000Z',
@@ -3207,10 +3207,10 @@ const diskEnvelope = {
 };
 const parsedDiskState = parseValidationDiskState(diskEnvelope);
 assert.equal(parsedDiskState.contextId, 'persona-context-1');
-assert.equal(parsedDiskState.personaDisplayName, 'Alfred');
-assert.equal(parsedDiskState.personaRevision, 'revision-alfred-1');
+assert.equal(parsedDiskState.personaDisplayName, 'Sample Person');
+assert.equal(parsedDiskState.personaRevision, 'revision-sample-1');
 assert.equal(parsedDiskState.personaDimensionCount, 198);
-assert.deepEqual(parsedDiskState.personaAgent, alfredPersona);
+assert.deepEqual(parsedDiskState.personaAgent, samplePersona);
 assert.equal(parsedDiskState.saveRevision, 3);
 assert.equal(parsedDiskState.store.everyday.agentRuns.length, 5);
 assert.equal(
@@ -3287,11 +3287,11 @@ assert.equal(savedBody.expected_save_revision, 3);
 assert.equal(savedBody.store.version, 2);
 assert.deepEqual(
   savedBody.store.surveys.everyday.human.personaAgent,
-  alfredPersona,
+  samplePersona,
 );
 assert.deepEqual(
   savedBody.store.surveys.everyday.agentRuns[0].personaAgent,
-  alfredPersona,
+  samplePersona,
 );
 assert.equal(savedToDisk.saveRevision, 4);
 

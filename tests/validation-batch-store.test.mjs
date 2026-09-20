@@ -9,8 +9,8 @@ const startedAt = '2026-09-01T09:00:00.000Z';
 const completedAt = '2026-09-01T09:01:00.000Z';
 const personaAgent = {
   contextId: 'persona-context-1',
-  personaId: 'alfred',
-  displayName: 'Alfred',
+  personaId: 'sample-person',
+  displayName: 'Sample Person',
   baselineSha256: 'a'.repeat(64),
   revisionSha256: 'b'.repeat(64),
 };

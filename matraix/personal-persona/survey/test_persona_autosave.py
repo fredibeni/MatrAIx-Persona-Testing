@@ -155,7 +155,7 @@ class PersonaAutosaveTests(unittest.TestCase):
             responses_path = data_dir / "responses.json"
             events_path = data_dir / "response-events.jsonl"
             derived_path = data_dir / "derived-dimensions.json"
-            active_path = data_dir / "persona_alfred.yaml"
+            active_path = data_dir / "persona_sample.yaml"
             persona_store = data_dir / "personas"
             registry_path = data_dir / "persona-registry.json"
             active_path.write_text(

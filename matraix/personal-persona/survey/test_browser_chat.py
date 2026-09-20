@@ -27,7 +27,7 @@ class FakeChatHelpers:
 
     def load_identity(self, path: object) -> tuple[object, str]:
         self.identity_paths.append(path)
-        persona = SimpleNamespace(display_name="Alfred", persona_id="alfred")
+        persona = SimpleNamespace(display_name="Sample Person", persona_id="sample-person")
         return persona, "Current persona identity"
 
     def codex_reply(self, **kwargs: object) -> str:
@@ -45,7 +45,7 @@ class BrowserChatTests(unittest.TestCase):
         )
         self.addCleanup(self.temp_directory.cleanup)
         data_dir = Path(self.temp_directory.name)
-        active_persona = data_dir / "persona_alfred.yaml"
+        active_persona = data_dir / "persona_sample.yaml"
         shutil.copyfile(source_persona, active_persona)
         self.helpers = FakeChatHelpers()
         self.patchers = (
@@ -89,11 +89,11 @@ class BrowserChatTests(unittest.TestCase):
             server.CHAT_MESSAGES.clear()
 
     def test_success_commits_ordered_turn_and_reset_clears_it(self) -> None:
-        result = server.generate_chat_reply("Hello Alfred")
+        result = server.generate_chat_reply("Hello Sample Person")
         self.assertEqual(
             result["messages"],
             [
-                {"role": "user", "content": "Hello Alfred"},
+                {"role": "user", "content": "Hello Sample Person"},
                 {
                     "role": "assistant",
                     "content": "Fixture reply <img src=x onerror=window.__xss=1>",

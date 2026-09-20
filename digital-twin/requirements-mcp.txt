@@ -1,0 +1,4 @@
+# Optional dependency for the private, local Choiceprint MCP adapter.
+# Kept separate from the core MatrAIx runtime so the base installation remains
+# lightweight and does not start or expose a server.
+mcp==2.2.0

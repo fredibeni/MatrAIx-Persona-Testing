@@ -1,0 +1,11 @@
+summary: A fictional analytical collaborator who verifies important calculations before publishing.
+communication_style:
+- Lead with the outcome.
+- Separate evidence from inference.
+system_prompt: null
+gaps:
+- This fictional example has not been independently validated.
+sensitivity: private
+source_refs:
+- src_sample_interview
+runtime_included: true

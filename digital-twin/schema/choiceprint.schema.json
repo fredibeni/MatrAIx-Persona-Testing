@@ -1,0 +1,696 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/choiceprint/0.1/schema.json",
+  "title": "Choiceprint canonical data schemas",
+  "description": "Canonical file and record shapes for a Choiceprint Twin Pack. Cross-file references are checked by the pack validator.",
+  "$defs": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,127}$"
+    },
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "nullableString": {
+      "type": ["string", "null"]
+    },
+    "dateOrDateTime": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}(?:T.*)?$"
+    },
+    "nullableDateOrDateTime": {
+      "oneOf": [
+        {"$ref": "#/$defs/dateOrDateTime"},
+        {"type": "null"}
+      ]
+    },
+    "idList": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/id"},
+      "uniqueItems": true
+    },
+    "stringList": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/nonEmptyString"}
+    },
+    "sensitivity": {
+      "enum": ["public", "private", "sensitive"]
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "coverageDomain": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[a-z0-9]+(?:[_-][a-z0-9]+)*$"
+    },
+    "coverageDomainList": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/coverageDomain"},
+      "uniqueItems": true
+    },
+    "revocationReasonCode": {
+      "enum": [
+        "evidence_no_longer_reliable",
+        "evaluation_invalidated",
+        "owner_withdrew_validation",
+        "safety_or_privacy_restriction",
+        "scope_definition_changed"
+      ]
+    },
+    "validationEvent": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "event_id",
+            "domain",
+            "action",
+            "scope",
+            "prepared_at",
+            "reviewed_at",
+            "recorded_at",
+            "review_receipt_sha256",
+            "source_build_metadata_sha256",
+            "evaluation_evidence_sha256",
+            "supersedes_event_id"
+          ],
+          "properties": {
+            "event_id": {"$ref": "#/$defs/id"},
+            "domain": {"$ref": "#/$defs/coverageDomain"},
+            "action": {"const": "validate"},
+            "scope": {"const": "forced_choice_prediction/1"},
+            "prepared_at": {"$ref": "#/$defs/dateOrDateTime"},
+            "reviewed_at": {"$ref": "#/$defs/dateOrDateTime"},
+            "recorded_at": {"$ref": "#/$defs/dateOrDateTime"},
+            "review_receipt_sha256": {"$ref": "#/$defs/sha256"},
+            "source_build_metadata_sha256": {"$ref": "#/$defs/sha256"},
+            "evaluation_evidence_sha256": {"$ref": "#/$defs/sha256"},
+            "supersedes_event_id": {
+              "oneOf": [
+                {"$ref": "#/$defs/id"},
+                {"type": "null"}
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "event_id",
+            "domain",
+            "action",
+            "scope",
+            "prepared_at",
+            "reviewed_at",
+            "recorded_at",
+            "review_receipt_sha256",
+            "source_build_metadata_sha256",
+            "supersedes_event_id",
+            "reason_code"
+          ],
+          "properties": {
+            "event_id": {"$ref": "#/$defs/id"},
+            "domain": {"$ref": "#/$defs/coverageDomain"},
+            "action": {"const": "revoke"},
+            "scope": {"const": "forced_choice_prediction/1"},
+            "prepared_at": {"$ref": "#/$defs/dateOrDateTime"},
+            "reviewed_at": {"$ref": "#/$defs/dateOrDateTime"},
+            "recorded_at": {"$ref": "#/$defs/dateOrDateTime"},
+            "review_receipt_sha256": {"$ref": "#/$defs/sha256"},
+            "source_build_metadata_sha256": {"$ref": "#/$defs/sha256"},
+            "supersedes_event_id": {
+              "oneOf": [
+                {"$ref": "#/$defs/id"},
+                {"type": "null"}
+              ]
+            },
+            "reason_code": {"$ref": "#/$defs/revocationReasonCode"}
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "scope": {
+      "type": "object",
+      "properties": {
+        "domains": {"$ref": "#/$defs/stringList"},
+        "conditions": {"$ref": "#/$defs/stringList"},
+        "stakes": {"$ref": "#/$defs/stringList"}
+      },
+      "additionalProperties": true
+    },
+    "confidence": {
+      "type": "object",
+      "required": ["label", "basis"],
+      "properties": {
+        "label": {"enum": ["high", "medium", "low", "unknown"]},
+        "basis": {"$ref": "#/$defs/nonEmptyString"},
+        "score": {"type": "number", "minimum": 0, "maximum": 1},
+        "directness": {"type": ["number", "string"]},
+        "repetition": {"type": ["number", "string"]},
+        "consistency": {"type": ["number", "string"]},
+        "recency": {"type": ["number", "string"]},
+        "context_match": {"type": ["number", "string"]}
+      },
+      "additionalProperties": true
+    },
+    "coverage": {
+      "type": "object",
+      "required": ["validated_domains", "validation_events", "status"],
+      "properties": {
+        "declared_domains": {"$ref": "#/$defs/coverageDomainList"},
+        "validated_domains": {"$ref": "#/$defs/coverageDomainList"},
+        "validation_events": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/validationEvent"}
+        },
+        "status": {"enum": ["unvalidated", "development_only", "example_only"]},
+        "notes": {"type": "string"},
+        "baseline_only": {
+          "type": "object",
+          "properties": {
+            "system": {"$ref": "#/$defs/nonEmptyString"},
+            "experiments": {"type": "integer", "minimum": 0},
+            "agent_runs": {"type": "integer", "minimum": 0},
+            "questions": {"type": "integer", "minimum": 0},
+            "benchmarked_surveys": {"type": "integer", "minimum": 0},
+            "agent_consistency_percent": {"type": "number", "minimum": 0, "maximum": 100},
+            "benchmark_similarity_percent": {"type": "number", "minimum": 0, "maximum": 100},
+            "exact_match_percent": {"type": "number", "minimum": 0, "maximum": 100},
+            "comparisons": {"type": "integer", "minimum": 0},
+            "note": {"type": "string"}
+          },
+          "additionalProperties": false
+        },
+        "next_gate": {
+          "type": "object",
+          "properties": {
+            "minimum_private_holdout_cases_per_claimed_domain": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "human_retest_required": {"type": "boolean"}
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "manifestCounts": {
+      "type": "object",
+      "required": [
+        "claims",
+        "active_claims",
+        "provisional_claims",
+        "withheld_claims",
+        "policies",
+        "decision_cases",
+        "sources",
+        "conflicts"
+      ],
+      "properties": {
+        "claims": {"type": "integer", "minimum": 0},
+        "active_claims": {"type": "integer", "minimum": 0},
+        "provisional_claims": {"type": "integer", "minimum": 0},
+        "withheld_claims": {"type": "integer", "minimum": 0},
+        "policies": {"type": "integer", "minimum": 0},
+        "decision_cases": {"type": "integer", "minimum": 0},
+        "sources": {"type": "integer", "minimum": 0},
+        "conflicts": {"type": "integer", "minimum": 0}
+      },
+      "additionalProperties": false
+    },
+    "manifest": {
+      "type": "object",
+      "required": [
+        "bundle_format",
+        "schema_version",
+        "persona_id",
+        "display_name",
+        "content_version",
+        "created_at",
+        "updated_at",
+        "default_mode",
+        "privacy_class",
+        "compatibility",
+        "coverage",
+        "counts"
+      ],
+      "properties": {
+        "bundle_format": {"const": "choiceprint/0.1"},
+        "schema_version": {"const": "0.1"},
+        "persona_id": {"$ref": "#/$defs/id"},
+        "display_name": {"$ref": "#/$defs/nonEmptyString"},
+        "content_version": {"$ref": "#/$defs/nonEmptyString"},
+        "created_at": {"$ref": "#/$defs/dateOrDateTime"},
+        "updated_at": {"$ref": "#/$defs/dateOrDateTime"},
+        "default_mode": {
+          "type": ["string", "null"],
+          "enum": [
+            "predict-choice",
+            "advise-person",
+            "write-in-style",
+            "draft-action",
+            null
+          ]
+        },
+        "privacy_class": {"$ref": "#/$defs/sensitivity"},
+        "compatibility": {"$ref": "#/$defs/stringList"},
+        "source_persona_version": {"$ref": "#/$defs/nullableString"},
+        "profile_summary": {"type": "string"},
+        "coverage": {"$ref": "#/$defs/coverage"},
+        "counts": {"$ref": "#/$defs/manifestCounts"}
+      },
+      "additionalProperties": true
+    },
+    "buildMetadata": {
+      "type": "object",
+      "required": [
+        "built_at",
+        "persona_id",
+        "chatgpt_adapter_generated",
+        "file_sha256"
+      ],
+      "properties": {
+        "built_at": {"$ref": "#/$defs/dateOrDateTime"},
+        "persona_id": {"$ref": "#/$defs/id"},
+        "human_validation_cases": {"type": "integer", "minimum": 0},
+        "curated_cases": {"type": "integer", "minimum": 0},
+        "chatgpt_adapter_generated": {"type": "boolean"},
+        "file_sha256": {
+          "type": "object",
+          "propertyNames": {"type": "string", "minLength": 1},
+          "additionalProperties": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        },
+        "warning": {"type": "string"}
+      },
+      "additionalProperties": true
+    },
+    "profileOverview": {
+      "type": "object",
+      "required": [
+        "summary",
+        "communication_style",
+        "gaps",
+        "sensitivity",
+        "source_refs",
+        "runtime_included"
+      ],
+      "properties": {
+        "summary": {"type": "string"},
+        "communication_style": {"$ref": "#/$defs/stringList"},
+        "system_prompt": {"$ref": "#/$defs/nullableString"},
+        "gaps": {"$ref": "#/$defs/stringList"},
+        "sensitivity": {"$ref": "#/$defs/sensitivity"},
+        "source_refs": {"$ref": "#/$defs/idList"},
+        "runtime_included": {"type": "boolean"}
+      },
+      "additionalProperties": false
+    },
+    "claim": {
+      "type": "object",
+      "required": [
+        "id",
+        "predicate",
+        "value",
+        "status",
+        "confidence",
+        "evidence_refs",
+        "sensitivity",
+        "runtime_included"
+      ],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "subject": {"$ref": "#/$defs/nonEmptyString"},
+        "predicate": {"$ref": "#/$defs/nonEmptyString"},
+        "label": {"type": ["string", "null"]},
+        "category": {"type": ["string", "null"]},
+        "value": {},
+        "scope": {"$ref": "#/$defs/scope"},
+        "status": {
+          "enum": ["active", "provisional", "disputed", "superseded", "withheld"]
+        },
+        "confidence": {"$ref": "#/$defs/confidence"},
+        "evidence_refs": {"$ref": "#/$defs/idList"},
+        "counterevidence_refs": {"$ref": "#/$defs/idList"},
+        "sensitivity": {"$ref": "#/$defs/sensitivity"},
+        "observed_at": {"$ref": "#/$defs/dateOrDateTime"},
+        "effective_from": {"$ref": "#/$defs/nullableDateOrDateTime"},
+        "effective_to": {"$ref": "#/$defs/nullableDateOrDateTime"},
+        "reviewed_at": {"$ref": "#/$defs/dateOrDateTime"},
+        "runtime_included": {"type": "boolean"},
+        "source_selection": {"$ref": "#/$defs/nullableString"},
+        "needs_review": {"type": "boolean"},
+        "user_confirmed": {"type": "boolean"}
+      },
+      "additionalProperties": true
+    },
+    "source": {
+      "type": "object",
+      "required": [
+        "id",
+        "source_type",
+        "authorship",
+        "summary",
+        "sensitivity",
+        "runtime_excerpt_allowed"
+      ],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "source_type": {"$ref": "#/$defs/nonEmptyString"},
+        "authorship": {"enum": ["person", "assistant", "mixed", "unknown"]},
+        "captured_at": {"$ref": "#/$defs/dateOrDateTime"},
+        "locator": {"type": "string"},
+        "summary": {"$ref": "#/$defs/nonEmptyString"},
+        "sensitivity": {"$ref": "#/$defs/sensitivity"},
+        "runtime_excerpt_allowed": {"type": "boolean"},
+        "parent_source_ref": {"$ref": "#/$defs/id"},
+        "validation_survey_id": {"$ref": "#/$defs/id"},
+        "evidence_set": {"$ref": "#/$defs/id"}
+      },
+      "additionalProperties": true
+    },
+    "policyWhen": {
+      "type": "object",
+      "properties": {
+        "domains": {"$ref": "#/$defs/stringList"},
+        "stakes": {"$ref": "#/$defs/stringList"},
+        "conditions": {"$ref": "#/$defs/stringList"}
+      },
+      "additionalProperties": true
+    },
+    "decisionPolicy": {
+      "type": "object",
+      "required": [
+        "id",
+        "when",
+        "prefer",
+        "over",
+        "exceptions",
+        "strength",
+        "case_refs",
+        "source_refs",
+        "sensitivity",
+        "reviewed_at"
+      ],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "summary": {"type": "string"},
+        "when": {"$ref": "#/$defs/policyWhen"},
+        "prefer": {"$ref": "#/$defs/stringList"},
+        "over": {"$ref": "#/$defs/stringList"},
+        "exceptions": {"$ref": "#/$defs/stringList"},
+        "strength": {"enum": ["high", "medium", "low", "unknown"]},
+        "case_refs": {"$ref": "#/$defs/idList"},
+        "source_refs": {"$ref": "#/$defs/idList"},
+        "claim_refs": {"$ref": "#/$defs/idList"},
+        "sensitivity": {"$ref": "#/$defs/sensitivity"},
+        "reviewed_at": {"$ref": "#/$defs/dateOrDateTime"}
+      },
+      "additionalProperties": true
+    },
+    "decisionOption": {
+      "oneOf": [
+        {"type": ["string", "number", "boolean"]},
+        {
+          "type": "object",
+          "properties": {
+            "id": {"$ref": "#/$defs/nonEmptyString"},
+            "label": {"$ref": "#/$defs/nonEmptyString"}
+          },
+          "anyOf": [
+            {"required": ["id"]},
+            {"required": ["label"]}
+          ],
+          "additionalProperties": true
+        }
+      ]
+    },
+    "scenario": {
+      "type": "object",
+      "required": ["domain", "summary"],
+      "properties": {
+        "domain": {"$ref": "#/$defs/nonEmptyString"},
+        "summary": {"$ref": "#/$defs/nonEmptyString"},
+        "survey_title": {"$ref": "#/$defs/nullableString"},
+        "stakes": {"type": "string"},
+        "reversibility": {"type": "string"},
+        "time_horizon": {"type": "string"},
+        "social_context": {"type": "string"},
+        "actors": {"$ref": "#/$defs/stringList"},
+        "constraints": {"$ref": "#/$defs/stringList"}
+      },
+      "additionalProperties": true
+    },
+    "decisionCase": {
+      "type": "object",
+      "required": [
+        "id",
+        "observed_at",
+        "scenario",
+        "options",
+        "choice",
+        "source_refs",
+        "sensitivity",
+        "dataset_role"
+      ],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "observed_at": {"$ref": "#/$defs/dateOrDateTime"},
+        "scenario": {"$ref": "#/$defs/scenario"},
+        "options": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/decisionOption"},
+          "minItems": 1
+        },
+        "choice": {"$ref": "#/$defs/decisionOption"},
+        "selected_option_id": {"type": "string"},
+        "ranking": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/decisionOption"}
+        },
+        "user_rationale": {"$ref": "#/$defs/nullableString"},
+        "derived_rationale": {"$ref": "#/$defs/nullableString"},
+        "outcome": {},
+        "evidence_type": {
+          "enum": [
+            "direct_self_report",
+            "direct_statement",
+            "observed_behavior",
+            "derived_summary"
+          ]
+        },
+        "source_refs": {"$ref": "#/$defs/idList"},
+        "claim_refs": {"$ref": "#/$defs/idList"},
+        "policy_refs": {"$ref": "#/$defs/idList"},
+        "sensitivity": {"$ref": "#/$defs/sensitivity"},
+        "dataset_role": {"enum": ["training", "development"]}
+      },
+      "additionalProperties": true
+    },
+    "developmentEval": {
+      "type": "object",
+      "required": [
+        "id",
+        "case_id",
+        "target_type",
+        "expected",
+        "source",
+        "exposed_to_runtime"
+      ],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "case_id": {"$ref": "#/$defs/id"},
+        "target_type": {"const": "choice"},
+        "expected": {"$ref": "#/$defs/decisionOption"},
+        "source": {"$ref": "#/$defs/nonEmptyString"},
+        "exposed_to_runtime": {"type": "boolean"},
+        "dataset_role": {"const": "development"}
+      },
+      "additionalProperties": true
+    },
+    "counterexample": {
+      "type": "object",
+      "required": [
+        "id",
+        "claim_or_policy_id",
+        "observed_at",
+        "context",
+        "behavior",
+        "source_refs",
+        "sensitivity"
+      ],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "claim_or_policy_id": {"$ref": "#/$defs/id"},
+        "observed_at": {"$ref": "#/$defs/dateOrDateTime"},
+        "context": {"$ref": "#/$defs/nonEmptyString"},
+        "behavior": {"$ref": "#/$defs/nonEmptyString"},
+        "source_refs": {"$ref": "#/$defs/idList"},
+        "sensitivity": {"$ref": "#/$defs/sensitivity"}
+      },
+      "additionalProperties": true
+    },
+    "conflictPosition": {
+      "type": "object",
+      "required": ["value", "source_refs"],
+      "properties": {
+        "value": {},
+        "source_refs": {"$ref": "#/$defs/idList"},
+        "evidence_kind": {"type": "string"}
+      },
+      "additionalProperties": true
+    },
+    "conflict": {
+      "type": "object",
+      "required": [
+        "id",
+        "domain",
+        "status",
+        "summary",
+        "positions",
+        "handling",
+        "runtime_effect",
+        "sensitivity"
+      ],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "domain": {"$ref": "#/$defs/nonEmptyString"},
+        "status": {"$ref": "#/$defs/nonEmptyString"},
+        "observed_at": {"$ref": "#/$defs/dateOrDateTime"},
+        "summary": {"$ref": "#/$defs/nonEmptyString"},
+        "positions": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/conflictPosition"},
+          "minItems": 2
+        },
+        "handling": {"$ref": "#/$defs/nonEmptyString"},
+        "runtime_effect": {"$ref": "#/$defs/nonEmptyString"},
+        "claim_refs": {"$ref": "#/$defs/idList"},
+        "policy_refs": {"$ref": "#/$defs/idList"},
+        "sensitivity": {"$ref": "#/$defs/sensitivity"}
+      },
+      "additionalProperties": true
+    },
+    "currentState": {
+      "type": "object",
+      "required": [
+        "as_of",
+        "expires_at",
+        "active_goals",
+        "current_projects",
+        "temporary_constraints",
+        "capacity",
+        "sensitivity",
+        "runtime_included"
+      ],
+      "properties": {
+        "as_of": {"$ref": "#/$defs/dateOrDateTime"},
+        "expires_at": {"$ref": "#/$defs/nullableDateOrDateTime"},
+        "active_goals": {"$ref": "#/$defs/stringList"},
+        "current_projects": {"$ref": "#/$defs/stringList"},
+        "temporary_constraints": {"$ref": "#/$defs/stringList"},
+        "capacity": {"type": ["string", "number", "null"]},
+        "mood": {"type": ["string", "null"]},
+        "source_refs": {"$ref": "#/$defs/idList"},
+        "sensitivity": {"$ref": "#/$defs/sensitivity"},
+        "runtime_included": {"type": "boolean"}
+      },
+      "additionalProperties": true
+    },
+    "withdrawal": {
+      "type": "object",
+      "required": ["method", "effect"],
+      "properties": {
+        "method": {"$ref": "#/$defs/nonEmptyString"},
+        "effect": {"$ref": "#/$defs/nonEmptyString"}
+      },
+      "additionalProperties": true
+    },
+    "consent": {
+      "type": "object",
+      "required": [
+        "owner_authorized",
+        "authorized_at",
+        "allowed_sources",
+        "allowed_modes",
+        "allowed_uses",
+        "prohibited_uses",
+        "publication_requires_fresh_approval",
+        "withdrawal"
+      ],
+      "properties": {
+        "owner_authorized": {"type": "boolean"},
+        "authorized_at": {"$ref": "#/$defs/nullableDateOrDateTime"},
+        "authorization_source_ref": {"$ref": "#/$defs/id"},
+        "allowed_sources": {"$ref": "#/$defs/idList"},
+        "allowed_modes": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "predict-choice",
+              "advise-person",
+              "write-in-style",
+              "draft-action"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "allowed_uses": {"$ref": "#/$defs/stringList"},
+        "prohibited_uses": {"$ref": "#/$defs/stringList"},
+        "publication_requires_fresh_approval": {"type": "boolean"},
+        "withdrawal": {"$ref": "#/$defs/withdrawal"}
+      },
+      "additionalProperties": true
+    },
+    "boundaries": {
+      "type": "object",
+      "required": ["allowed", "ask_before", "never"],
+      "properties": {
+        "allowed": {"$ref": "#/$defs/stringList"},
+        "ask_before": {"$ref": "#/$defs/stringList"},
+        "never": {"$ref": "#/$defs/stringList"}
+      },
+      "additionalProperties": true
+    },
+    "legacyDimensions": {
+      "type": "object",
+      "required": ["schema_version", "source", "dimensions"],
+      "properties": {
+        "schema_version": {"$ref": "#/$defs/nullableString"},
+        "source": {"$ref": "#/$defs/nonEmptyString"},
+        "dimensions": {"type": "object"}
+      },
+      "additionalProperties": true
+    }
+  },
+  "type": "object",
+  "minProperties": 1,
+  "properties": {
+    "manifest": {"$ref": "#/$defs/manifest"},
+    "build_metadata": {"$ref": "#/$defs/buildMetadata"},
+    "profile_overview": {"$ref": "#/$defs/profileOverview"},
+    "claim": {"$ref": "#/$defs/claim"},
+    "source": {"$ref": "#/$defs/source"},
+    "decision_policy": {"$ref": "#/$defs/decisionPolicy"},
+    "decision_case": {"$ref": "#/$defs/decisionCase"},
+    "development_eval": {"$ref": "#/$defs/developmentEval"},
+    "counterexample": {"$ref": "#/$defs/counterexample"},
+    "conflict": {"$ref": "#/$defs/conflict"},
+    "current_state": {"$ref": "#/$defs/currentState"},
+    "consent": {"$ref": "#/$defs/consent"},
+    "boundaries": {"$ref": "#/$defs/boundaries"},
+    "legacy_dimensions": {"$ref": "#/$defs/legacyDimensions"}
+  },
+  "additionalProperties": false
+}
